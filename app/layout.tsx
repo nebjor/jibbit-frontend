@@ -4,7 +4,7 @@ import { CartProvider } from "@/components/CartProvider";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { STORE } from "@/lib/config";
+import { STORE, THEME_COLOR } from "@/lib/config";
 
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${STORE.domain}`),
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f6f5f3",
+  themeColor: THEME_COLOR,
 };
 
 export default function RootLayout({

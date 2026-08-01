@@ -69,6 +69,7 @@ export default async function ShopPage({
       <p className={styles.count} aria-live="polite">
         <span className="tnum">{products.length}</span>{" "}
         {products.length === 1 ? "Produkt" : "Produkte"}
+        {activeCat ? ` in ${activeCat.name}` : ""}
       </p>
 
       {products.length === 0 ? (

@@ -62,9 +62,8 @@ export function CartDrawer() {
         <header className={styles.head}>
           <h2 className={styles.title}>
             Warenkorb{" "}
-            <span className={styles.count}>
-              {count} {count === 1 ? "Artikel" : "Artikel"}
-            </span>
+            {/* "Artikel" is invariant in the German plural. */}
+            <span className={styles.count}>{count} Artikel</span>
           </h2>
           <button
             className={styles.close}
