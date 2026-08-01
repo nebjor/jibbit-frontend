@@ -57,18 +57,29 @@ async function getRegionId(): Promise<string | undefined> {
 // Categories
 // ---------------------------------------------------------------------------
 
-export async function getCategories(): Promise<CategoryView[]> {
-  if (!isBackendConfigured) return MOCK_CATEGORIES;
+/**
+ * Categories straight from the backend, or `null` when it is unreachable.
+ *
+ * Kept separate from `getCategories` because the mock catalogue's ids are not
+ * real Medusa ids — passing one back to the API as a filter would silently
+ * return nothing. Callers that need a *real* id must use this.
+ */
+async function fetchBackendCategories(): Promise<CategoryView[] | null> {
+  if (!isBackendConfigured) return null;
   try {
     const { product_categories } = await sdk.store.category.list({
       fields: "id,name,handle,description",
     });
-    if (!product_categories?.length) return MOCK_CATEGORIES;
+    if (!product_categories?.length) return null;
     return product_categories.map(toCategoryView);
   } catch (err) {
     warnFallback("categories", err);
-    return MOCK_CATEGORIES;
+    return null;
   }
+}
+
+export async function getCategories(): Promise<CategoryView[]> {
+  return (await fetchBackendCategories()) ?? MOCK_CATEGORIES;
 }
 
 export async function getCategory(
@@ -100,17 +111,29 @@ export async function getProducts(opts?: {
   if (!regionId) return filterMock(MOCK_PRODUCTS);
 
   try {
-    // Category filtering happens on the view type after mapping: `category`
-    // here is our internal handle, not a Medusa category id, so it must not be
-    // passed to the API as a filter.
+    // `opts.category` is our internal handle, not a Medusa category id, so it
+    // cannot be passed to the API directly. Resolve the real id first and
+    // filter server-side — otherwise `limit` would be applied before the
+    // category filter and silently drop matching products.
+    let categoryId: string | undefined;
+    if (opts?.category) {
+      const backendCategories = await fetchBackendCategories();
+      categoryId = backendCategories?.find(
+        (c) => c.handle === opts.category,
+      )?.id;
+    }
+
     const { products } = await sdk.store.product.list({
       region_id: regionId,
       limit: opts?.limit ?? 100,
       fields: PRODUCT_FIELDS,
+      ...(categoryId ? { category_id: [categoryId] } : {}),
     });
     if (!products?.length) return filterMock(MOCK_PRODUCTS);
+
     const views = products.map(toProductView);
-    return opts?.category
+    // Belt and braces: if the id lookup failed we still narrow client-side.
+    return opts?.category && !categoryId
       ? views.filter((p) => p.categoryHandle === opts.category)
       : views;
   } catch (err) {
@@ -148,12 +171,20 @@ export async function getFeaturedProducts(
   return (featured.length ? featured : all).slice(0, limit);
 }
 
-/** Same-category suggestions for the PDP, excluding the product itself. */
+/**
+ * Same-category suggestions for the PDP, excluding the product itself.
+ *
+ * Fetches `limit + 1` so that removing the current product still leaves enough
+ * suggestions — without pulling the full catalogue on every product page.
+ */
 export async function getRelatedProducts(
   product: ProductView,
   limit = 4,
 ): Promise<ProductView[]> {
-  const all = await getProducts({ category: product.categoryHandle });
+  const all = await getProducts({
+    category: product.categoryHandle,
+    limit: limit + 1,
+  });
   return all.filter((p) => p.handle !== product.handle).slice(0, limit);
 }
 
