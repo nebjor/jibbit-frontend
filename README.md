@@ -15,6 +15,7 @@ npm install
 cp .env.example .env.local   # optional until the backend exists
 npm run dev                  # http://localhost:8000
 npm run build && npm start   # production build
+npm test                     # vitest — tenant resolution, config cache, cross-tenant isolation
 ```
 
 The dev server runs on **port 8000** deliberately — Medusa's default CORS
@@ -55,6 +56,41 @@ semver ranges with:
 ```bash
 npm install @medusajs/js-sdk@latest @medusajs/types@latest
 ```
+
+---
+
+## Multi-tenancy
+
+This deployment serves **many tenants from one Next.js instance**, each with
+their own Medusa backend, publishable key and (minimal) branding. Tenant is
+resolved from the request's `Host` header in `proxy.ts`, before any data
+fetch — never from a default/hardcoded store.
+
+- **Local dev, no control plane needed:** with `LOCAL_TENANT_ENABLED=true` in
+  `.env.local` (the `.env.example` default), `Host` is ignored entirely and
+  every request is served by one tenant built from
+  `NEXT_PUBLIC_MEDUSA_BACKEND_URL` / `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` —
+  today's single-tenant workflow, unchanged. This is **hard-disabled whenever
+  `NODE_ENV=production`**, regardless of the flag (`lib/tenant/local-fallback.ts`).
+- **Unknown host → 404, always.** `proxy.ts` never falls back to any tenant it
+  didn't positively resolve.
+- **The control plane (a separate service, not in this repo) is never on the
+  request path.** `lib/tenant/config-cache.ts` resolves a host once, then
+  serves that last-known-good config indefinitely — a control-plane outage
+  degrades to stale-but-correct config, not an outage of every storefront.
+  See the doc comment at the top of that file for the one deliberate
+  exception (a host's very first request ever, with nothing cached yet).
+- **No cross-tenant leakage.** There is no shared "current tenant" anywhere —
+  `lib/medusa.ts` keys its Medusa clients by tenant id, `lib/data.ts` keys its
+  per-tenant caches (region id, fallback-warning log) by tenant id, and
+  `lib/tenant/context.ts` reads the tenant for the *current* request only,
+  off a header `proxy.ts` sets per request. Run `npm test` —
+  `lib/medusa.test.ts` drives two tenants' concurrent requests through the
+  real SDK's HTTP layer and asserts neither ever sees the other's
+  publishable key.
+- Full architectural reasoning: `medusa-ecom/docs/multi-tenancy-architecture.md`
+  (a sibling repo), particularly §3 (principles) and §6.2(b) (why the control
+  plane must never be on the request path).
 
 ---
 
@@ -104,6 +140,8 @@ To self-host a real DIN-like face, add `@font-face` rules and point
 ## Structure
 
 ```
+proxy.ts                        ★ tenant resolution — runs before every request
+
 app/
   layout.tsx                    root shell: header, footer, cart provider/drawer
   page.tsx                      landing page
@@ -122,13 +160,21 @@ components/                     Logo, Header, Footer, ProductCard, Price,
                                 AddToCart, CartProvider, CartDrawer, …
 
 lib/
-  medusa.ts                     SDK singleton (publishable key, base URL)
+  medusa.ts                     Medusa client factory, one per tenant (never a singleton)
   data.ts                       ★ the only place components fetch data from
   adapters.ts                   Medusa entity -> internal view type
   mock-catalog.ts               fallback catalog (real jibbit products/prices)
   types.ts                      internal view types
   format.ts                     CHF formatting
   config.ts                     shipping rules, payment methods, brand strings
+  tenant/
+    context.ts                  ★ getTenantContext() — how components learn "which tenant"
+    config-cache.ts             ★ stale-while-revalidate cache, last-known-good on outage
+    control-plane-client.ts     the one function that calls the control plane over HTTP
+    local-fallback.ts           single-tenant dev fallback (LOCAL_TENANT_ENABLED)
+    resolve-host.ts             subdomain vs. custom-domain host parsing (pure, tested)
+    header-codec.ts             encodes/decodes the tenant config carried proxy.ts -> app
+    types.ts, constants.ts
 ```
 
 ### Data-layer rules
@@ -142,6 +188,9 @@ lib/
   CHF 27.00 arrives as `27`.
 - Components read `ProductView`, never `StoreProduct`. The mapping lives in
   `lib/adapters.ts` and is the only file that changes if the backend schema does.
+- **Never add a module-level "current tenant" variable.** Every per-process
+  cache in `lib/data.ts`, `lib/medusa.ts` and `lib/tenant/` is keyed by tenant
+  id for exactly this reason — see "Multi-tenancy" above.
 
 ---
 

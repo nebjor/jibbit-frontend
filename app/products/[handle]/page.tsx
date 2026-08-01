@@ -10,8 +10,9 @@ import {
 import { ProductImage } from "@/components/ProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { AddToCart } from "@/components/AddToCart";
-import { SHIPPING, STORE, MIN_AGE } from "@/lib/config";
+import { SHIPPING, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
+import { getTenantContext } from "@/lib/tenant/context";
 import styles from "./product.module.css";
 
 /**
@@ -49,9 +50,10 @@ export default async function ProductPage({
   const product = await getProduct(handle);
   if (!product) notFound();
 
-  const [related, category] = await Promise.all([
+  const [related, category, tenant] = await Promise.all([
     getRelatedProducts(product),
     getCategory(product.categoryHandle),
+    getTenantContext(),
   ]);
 
   // Product schema for rich results / Google Shopping.
@@ -68,7 +70,7 @@ export default async function ProductPage({
       availability: product.variants.some((v) => v.inStock)
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
-      url: `https://${STORE.domain}/products/${product.handle}`,
+      url: `https://${tenant.theme.domain}/products/${product.handle}`,
     },
   };
 
