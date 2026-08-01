@@ -1,0 +1,104 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.variants {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
+.option {
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.option[aria-pressed="true"] {
+  border-color: var(--c-ink);
+  border-width: 2px;
+  font-weight: 600;
+}
+
+.option:disabled {
+  color: var(--c-muted);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.oos {
+  font-size: 12px;
+}
+
+/* Mobile: sticky, thumb-reachable, safe-area aware. */
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--page-pad);
+  padding-bottom: calc(var(--s-3) + env(safe-area-inset-bottom));
+  background: var(--c-surface);
+  border-top: var(--border-w) solid var(--c-line);
+  box-shadow: var(--shadow-sticky);
+}
+
+.barPrice {
+  flex-shrink: 0;
+}
+
+/* The one primary action on the PDP — the only accent-filled control. */
+.cta {
+  flex: 1;
+  min-height: 52px;
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  border: 0;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  cursor: pointer;
+}
+
+.cta:disabled {
+  background: var(--c-muted);
+  cursor: not-allowed;
+}
+
+@media (min-width: 900px) {
+  .bar {
+    position: static;
+    padding: 0;
+    border-top: 0;
+    box-shadow: none;
+    background: transparent;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-4);
+  }
+  .cta {
+    min-height: 56px;
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,31 @@
+.logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--c-ink);
+  letter-spacing: -0.04em;
+  text-transform: lowercase;
+  line-height: 1;
+  /* Slight skew stands in for the graffiti tag until the real SVG lands. */
+  transform: skewX(-8deg);
+  display: inline-block;
+  user-select: none;
+}
+
+.sm {
+  font-size: 20px;
+}
+.md {
+  font-size: 28px;
+}
+.lg {
+  font-size: 44px;
+}
+
+@media (min-width: 768px) {
+  .md {
+    font-size: 32px;
+  }
+  .lg {
+    font-size: 64px;
+  }
+}

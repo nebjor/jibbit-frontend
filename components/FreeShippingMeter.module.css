@@ -1,0 +1,45 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3) 0;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--c-ink);
+}
+
+.label strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.win {
+  color: var(--c-success);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-label);
+}
+
+.track {
+  height: 6px;
+  width: 100%;
+  background: var(--c-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--c-ink);
+  transition: width var(--dur) var(--ease);
+}
+
+.fill[data-reached="true"] {
+  background: var(--c-success);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--c-muted);
+}
