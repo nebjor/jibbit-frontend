@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
-import { STORE } from "@/lib/config";
 import { getProducts, getCategories } from "@/lib/data";
+import { getTenantContext } from "@/lib/tenant/context";
 
-const BASE = `https://${STORE.domain}`;
-
+/** MULTI-TENANT: every URL below must be under the resolved tenant's own domain. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const tenant = await getTenantContext();
+  const BASE = `https://${tenant.theme.domain}`;
+
   const [products, categories] = await Promise.all([
     getProducts(),
     getCategories(),
