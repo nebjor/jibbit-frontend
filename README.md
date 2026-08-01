@@ -34,6 +34,28 @@ falls back to `lib/mock-catalog.ts` when the backend is unreachable or when
 Builds and dev runs therefore work with the backend down. To go live against
 Medusa, set both env vars in `.env.local` — no code change required.
 
+### Known issue: `@medusajs/*` are pinned to tarball URLs
+
+At setup time, npm's **metadata** endpoint was returning `429 Too Many Requests`
+for the entire `@medusajs` scope (confirmed server-side: a raw `curl` of
+`https://registry.npmjs.org/@medusajs%2fjs-sdk` also returned 429, while
+unscoped packages resolved normally). The **tarball** endpoint on the same
+official registry returned 200, so both packages are installed from pinned
+tarball URLs:
+
+```json
+"@medusajs/js-sdk": "https://registry.npmjs.org/@medusajs/js-sdk/-/js-sdk-2.18.0.tgz",
+"@medusajs/types":  "https://registry.npmjs.org/@medusajs/types/-/types-2.18.0.tgz"
+```
+
+These are the official registry's own artifacts — no mirror or third-party
+registry is involved. Once the scope resolves normally again, restore ordinary
+semver ranges with:
+
+```bash
+npm install @medusajs/js-sdk@latest @medusajs/types@latest
+```
+
 ---
 
 ## Swapping the colorway
@@ -60,6 +82,10 @@ The variables that define the look:
 | `--radius` | `0px` | corner rounding (Kiosk is square) |
 | `--font-display` | condensed grotesque stack | headings, prices, labels |
 | `--font-body` | neutral sans stack | body copy |
+
+One value lives outside `tokens.css` and must be kept in sync: `THEME_COLOR` in
+`lib/config.ts`, which mirrors `--c-ground`. Next emits it into
+`<meta name="theme-color">` at build time, so it cannot read a CSS variable.
 
 Two conventions worth preserving when swapping:
 
