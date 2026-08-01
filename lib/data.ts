@@ -7,37 +7,54 @@
  *
  * Rule for callers: never import `mock-catalog` or `medusa` directly from a
  * component. Import from here.
+ *
+ * MULTI-TENANT: every exported function below resolves its own tenant via
+ * `getTenantContext()` and gets that tenant's SDK client via
+ * `getSdkForTenant()` — component call sites (`getCategories()`,
+ * `getProducts()`, ...) are unchanged and stay tenant-agnostic on purpose.
+ * The two module-level caches here (`regionIdPromises`, `warnedFor`) are
+ * `Map`s keyed by tenant id, not bare variables — a bare `let regionIdPromise`
+ * shared across all tenants (which is what this file used to have) would mean
+ * tenant A's first request could pin tenant B's region id for the rest of the
+ * process. Keep that in mind before "simplifying" either cache back to a
+ * single slot.
  */
 
 import "server-only";
 
-import { sdk, isBackendConfigured } from "./medusa";
+import { getSdkForTenant, isBackendConfigured } from "./medusa";
+import { getTenantContext } from "./tenant/context";
+import type { TenantConfig } from "./tenant/types";
 import { toProductView, toCategoryView } from "./adapters";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "./mock-catalog";
 import type { CategoryHandle, CategoryView, ProductView } from "./types";
+import type Medusa from "@medusajs/js-sdk";
 
-/** Set once per process so the build log shows the fallback exactly once. */
-let warned = false;
-function warnFallback(where: string, err: unknown) {
+/** Per-tenant, so the build/runtime log shows the fallback once per tenant, not once ever. */
+const warnedFor = new Set<string>();
+function warnFallback(tenant: TenantConfig, where: string, err: unknown) {
   const msg = err instanceof Error ? err.message : String(err);
-  if (!warned) {
+  const key = `${tenant.id}:${where}`;
+  if (!warnedFor.has(key)) {
     console.warn(
-      `[jibbit] Medusa backend unavailable — serving MOCK catalog. (${where}: ${msg})`,
+      `[jibbit:${tenant.id}] Medusa backend unavailable — serving MOCK catalog. (${where}: ${msg})`,
     );
-    warned = true;
+    warnedFor.add(key);
   }
 }
 
 /**
- * The region determines currency and pricing. Resolved lazily and cached for
- * the process; falls back to undefined, in which case we serve mocks.
+ * The region determines currency and pricing. Resolved lazily and cached per
+ * tenant for the process; falls back to undefined, in which case we serve
+ * mocks. Keyed by tenant id — see module doc comment.
  */
-let regionIdPromise: Promise<string | undefined> | undefined;
+const regionIdPromises = new Map<string, Promise<string | undefined>>();
 
-async function getRegionId(): Promise<string | undefined> {
-  if (!isBackendConfigured) return undefined;
-  if (!regionIdPromise) {
-    regionIdPromise = (async () => {
+async function getRegionId(tenant: TenantConfig, sdk: Medusa): Promise<string | undefined> {
+  if (!isBackendConfigured(tenant)) return undefined;
+  let promise = regionIdPromises.get(tenant.id);
+  if (!promise) {
+    promise = (async () => {
       try {
         const { regions } = await sdk.store.region.list();
         const ch = regions?.find((r) =>
@@ -45,12 +62,13 @@ async function getRegionId(): Promise<string | undefined> {
         );
         return (ch ?? regions?.[0])?.id;
       } catch (err) {
-        warnFallback("regions", err);
+        warnFallback(tenant, "regions", err);
         return undefined;
       }
     })();
+    regionIdPromises.set(tenant.id, promise);
   }
-  return regionIdPromise;
+  return promise;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,8 +82,11 @@ async function getRegionId(): Promise<string | undefined> {
  * real Medusa ids — passing one back to the API as a filter would silently
  * return nothing. Callers that need a *real* id must use this.
  */
-async function fetchBackendCategories(): Promise<CategoryView[] | null> {
-  if (!isBackendConfigured) return null;
+async function fetchBackendCategories(
+  tenant: TenantConfig,
+  sdk: Medusa,
+): Promise<CategoryView[] | null> {
+  if (!isBackendConfigured(tenant)) return null;
   try {
     const { product_categories } = await sdk.store.category.list({
       fields: "id,name,handle,description",
@@ -73,13 +94,15 @@ async function fetchBackendCategories(): Promise<CategoryView[] | null> {
     if (!product_categories?.length) return null;
     return product_categories.map(toCategoryView);
   } catch (err) {
-    warnFallback("categories", err);
+    warnFallback(tenant, "categories", err);
     return null;
   }
 }
 
 export async function getCategories(): Promise<CategoryView[]> {
-  return (await fetchBackendCategories()) ?? MOCK_CATEGORIES;
+  const tenant = await getTenantContext();
+  const sdk = getSdkForTenant(tenant);
+  return (await fetchBackendCategories(tenant, sdk)) ?? MOCK_CATEGORIES;
 }
 
 export async function getCategory(
@@ -107,7 +130,10 @@ export async function getProducts(opts?: {
     return opts?.limit ? scoped.slice(0, opts.limit) : scoped;
   };
 
-  const regionId = await getRegionId();
+  const tenant = await getTenantContext();
+  const sdk = getSdkForTenant(tenant);
+
+  const regionId = await getRegionId(tenant, sdk);
   if (!regionId) return filterMock(MOCK_PRODUCTS);
 
   try {
@@ -117,7 +143,7 @@ export async function getProducts(opts?: {
     // category filter and silently drop matching products.
     let categoryId: string | undefined;
     if (opts?.category) {
-      const backendCategories = await fetchBackendCategories();
+      const backendCategories = await fetchBackendCategories(tenant, sdk);
       categoryId = backendCategories?.find(
         (c) => c.handle === opts.category,
       )?.id;
@@ -137,7 +163,7 @@ export async function getProducts(opts?: {
       ? views.filter((p) => p.categoryHandle === opts.category)
       : views;
   } catch (err) {
-    warnFallback("products", err);
+    warnFallback(tenant, "products", err);
     return filterMock(MOCK_PRODUCTS);
   }
 }
@@ -145,7 +171,10 @@ export async function getProducts(opts?: {
 export async function getProduct(
   handle: string,
 ): Promise<ProductView | undefined> {
-  const regionId = await getRegionId();
+  const tenant = await getTenantContext();
+  const sdk = getSdkForTenant(tenant);
+
+  const regionId = await getRegionId(tenant, sdk);
   if (!regionId) return MOCK_PRODUCTS.find((p) => p.handle === handle);
 
   try {
@@ -158,7 +187,7 @@ export async function getProduct(
     const found = products?.[0];
     if (found) return toProductView(found);
   } catch (err) {
-    warnFallback("product", err);
+    warnFallback(tenant, "product", err);
   }
   return MOCK_PRODUCTS.find((p) => p.handle === handle);
 }
