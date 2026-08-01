@@ -1,0 +1,44 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  background: none;
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.btn:hover {
+  background: var(--c-ink);
+  color: var(--c-ground);
+}
+
+.label {
+  display: none;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+
+@media (min-width: 600px) {
+  .label {
+    display: inline;
+  }
+}

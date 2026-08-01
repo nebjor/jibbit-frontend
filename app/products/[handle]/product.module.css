@@ -1,0 +1,146 @@
+.wrap {
+  padding-block: var(--s-4) var(--s-8);
+  /* Room for the mobile sticky add-to-cart bar. */
+  padding-bottom: calc(var(--s-9) + env(safe-area-inset-bottom));
+}
+
+.crumbs {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--c-muted);
+  padding-block: var(--s-3);
+}
+
+.crumbCurrent {
+  color: var(--c-ink);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-5);
+  padding-top: var(--s-3);
+}
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-2);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.title {
+  font-size: clamp(26px, 6vw, 42px);
+}
+
+.subtitle {
+  color: var(--c-muted);
+  font-size: 15px;
+  margin-bottom: var(--s-3);
+}
+
+.desc {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: var(--border-w) solid var(--c-line);
+  max-width: 60ch;
+}
+
+.signals {
+  list-style: none;
+  padding: var(--s-4) 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  border-top: var(--border-w) solid var(--c-line);
+  margin-top: var(--s-4);
+}
+
+.signals li {
+  font-size: 13px;
+  color: var(--c-muted);
+  padding-left: var(--s-4);
+  position: relative;
+}
+
+.signals li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  background: var(--c-ink);
+}
+
+.serviceLinks {
+  display: flex;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  font-size: 13px;
+  padding-top: var(--s-4);
+}
+
+.serviceLinks a {
+  text-decoration: underline;
+  color: var(--c-muted);
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.serviceLinks a:hover {
+  color: var(--c-ink);
+}
+
+/* ---- related ----------------------------------------------------------- */
+.related {
+  margin-top: var(--s-8);
+  padding-top: var(--s-6);
+  border-top: var(--border-w) solid var(--c-line);
+}
+
+.relatedTitle {
+  font-size: clamp(22px, 4vw, 32px);
+  margin-bottom: var(--s-5);
+}
+
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+}
+
+@media (min-width: 640px) {
+  .relatedGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-4);
+  }
+}
+
+@media (min-width: 900px) {
+  .wrap {
+    padding-bottom: var(--s-8);
+  }
+  .layout {
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--s-7);
+    align-items: start;
+  }
+}
