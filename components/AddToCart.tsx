@@ -1,58 +1,157 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "./CartProvider";
 import { Price } from "./Price";
+import { PriceTable } from "./PriceTable";
+import { formatAmount, formatPrice } from "@/lib/format";
+import {
+  defaultVariant,
+  packAdvantagePercent,
+  pricePerUnit,
+  unitPriceFor,
+} from "@/lib/pricing";
 import type { ProductView } from "@/lib/types";
 import styles from "./AddToCart.module.css";
 
+const MAX_QUANTITY = 999;
+
 /**
- * Variant selection + add to cart. On mobile this renders as a sticky bar
- * pinned to the bottom of the viewport so the CTA is always in thumb reach,
- * with safe-area padding so iOS's home indicator doesn't clip it.
+ * Variant selection + quantity + add to cart. On mobile the CTA renders as a
+ * sticky bar pinned to the bottom of the viewport so it is always in thumb
+ * reach, with safe-area padding so iOS's home indicator doesn't clip it.
+ *
+ * The cheapest variant is PRESELECTED, deliberately. Leaving the choice empty
+ * costs a click and dead-ends the CTA; preselecting a display would mean a
+ * customer who misses the selector adds CHF 33.60 instead of CHF 1.95. The
+ * upsell lives in the price table, where it is transparent and reversible —
+ * not in a default nobody chose.
  */
 export function AddToCart({ product }: { product: ProductView }) {
   const { addLine } = useCart();
   const multi = product.variants.length > 1;
-  // With a single variant there is nothing to choose, so preselect it.
+
   const [variantId, setVariantId] = useState<string | null>(
-    multi ? null : (product.variants[0]?.id ?? null),
+    () => defaultVariant(product.variants)?.id ?? null,
   );
+  const [quantity, setQuantity] = useState(1);
 
   const selected = product.variants.find((v) => v.id === variantId);
   const canAdd = Boolean(selected?.inStock);
+
+  const single = useMemo(
+    () => product.variants.find((v) => v.packType === "single"),
+    [product.variants],
+  );
+
+  const unitPrice = selected
+    ? unitPriceFor(selected.tiers, quantity, selected.price)
+    : product.price;
+
+  const perUnit = selected ? pricePerUnit(selected, quantity) : null;
+  const lineTotal = unitPrice * quantity;
+
+  const setQuantitySafely = (next: number) =>
+    setQuantity(Math.min(MAX_QUANTITY, Math.max(1, Math.floor(next) || 1)));
 
   return (
     <div className={styles.wrap}>
       {multi && (
         <fieldset className={styles.variants}>
-          <legend className="eyebrow">Variante wählen</legend>
+          <legend className="eyebrow">Verpackungseinheit</legend>
           <div className={styles.options}>
-            {product.variants.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                className={styles.option}
-                aria-pressed={v.id === variantId}
-                disabled={!v.inStock}
-                onClick={() => setVariantId(v.id)}
-              >
-                {v.title}
-                {!v.inStock && <span className={styles.oos}> · ausverkauft</span>}
-              </button>
-            ))}
+            {product.variants.map((v) => {
+              const advantage = packAdvantagePercent(v, single);
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  className={styles.option}
+                  aria-pressed={v.id === variantId}
+                  disabled={!v.inStock}
+                  onClick={() => {
+                    setVariantId(v.id);
+                    // A quantity that made sense for singles rarely does for a
+                    // display — 24 displays is not what anyone meant to click.
+                    setQuantity(1);
+                  }}
+                >
+                  {v.title}
+                  {advantage !== null && (
+                    <span className={styles.deal}>Bestes Angebot −{advantage}%</span>
+                  )}
+                  {!v.inStock && <span className={styles.oos}> · ausverkauft</span>}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
       )}
 
+      {selected && (
+        <PriceTable
+          tiers={selected.tiers}
+          quantity={quantity}
+          currency={product.currency}
+          onPick={setQuantitySafely}
+        />
+      )}
+
+      <div className={styles.quantity}>
+        <label htmlFor="qty" className="eyebrow">
+          Menge
+        </label>
+        <div className={styles.stepper}>
+          <button
+            type="button"
+            className={styles.step}
+            aria-label="Menge verringern"
+            disabled={quantity <= 1}
+            onClick={() => setQuantitySafely(quantity - 1)}
+          >
+            &minus;
+          </button>
+          <input
+            id="qty"
+            className={`${styles.qtyInput} tnum`}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={MAX_QUANTITY}
+            value={quantity}
+            onChange={(e) => setQuantitySafely(Number(e.target.value))}
+          />
+          <button
+            type="button"
+            className={styles.step}
+            aria-label="Menge erhöhen"
+            disabled={quantity >= MAX_QUANTITY}
+            onClick={() => setQuantitySafely(quantity + 1)}
+          >
+            +
+          </button>
+        </div>
+
+        {perUnit !== null && (
+          <span className={styles.perUnit}>
+            {product.currency} {formatAmount(perUnit)} / Stk.
+          </span>
+        )}
+      </div>
+
       <div className={styles.bar}>
         <div className={styles.barPrice}>
           <Price
-            price={selected?.price ?? product.price}
+            price={unitPrice}
             compareAt={selected?.compareAt ?? product.compareAt}
             currency={product.currency}
             size="md"
           />
+          {quantity > 1 && (
+            <span className={styles.total}>
+              Total {formatPrice(lineTotal)}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -60,21 +159,24 @@ export function AddToCart({ product }: { product: ProductView }) {
           disabled={!canAdd}
           onClick={() => {
             if (!selected) return;
-            addLine({
-              variantId: selected.id,
-              productHandle: product.handle,
-              title: product.title,
-              variantTitle: multi ? selected.title : "",
-              price: selected.price,
-              compareAt: selected.compareAt,
-            });
+            addLine(
+              {
+                variantId: selected.id,
+                productHandle: product.handle,
+                title: product.title,
+                variantTitle: multi ? selected.title : "",
+                price: selected.price,
+                compareAt: selected.compareAt,
+                // Carried along so the cart can reprice itself when the
+                // customer changes the quantity there.
+                tiers: selected.tiers,
+                unitsPerPack: selected.unitsPerPack,
+              },
+              quantity,
+            );
           }}
         >
-          {!variantId
-            ? "Variante wählen"
-            : canAdd
-              ? "In den Warenkorb"
-              : "Ausverkauft"}
+          {canAdd ? "In den Warenkorb" : "Ausverkauft"}
         </button>
       </div>
     </div>

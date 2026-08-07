@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { FreeShippingMeter } from "./FreeShippingMeter";
 import { formatPrice } from "@/lib/format";
+import { lineTotal, lineUnitPrice } from "@/lib/pricing";
 import styles from "./CartDrawer.module.css";
 
 /**
@@ -101,7 +102,13 @@ export function CartDrawer() {
                       <p className={styles.lineVariant}>{l.variantTitle}</p>
                     )}
                     <p className={`${styles.linePrice} tnum`}>
-                      {formatPrice(l.price)}
+                      {formatPrice(lineUnitPrice(l))}
+                      {l.quantity > 1 && (
+                        <span className={styles.lineTotal}>
+                          {" "}
+                          &times; {l.quantity} = {formatPrice(lineTotal(l))}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className={styles.lineActions}>
