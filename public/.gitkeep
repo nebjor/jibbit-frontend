@@ -1,0 +1,7 @@
+# Statische Dateien, die unverändert unter / ausgeliefert werden:
+# favicon.ico, og-image.png, apple-touch-icon.png und ähnliches.
+#
+# Das Verzeichnis muss existieren, auch wenn es leer ist: der Dockerfile
+# kopiert es explizit ins Runtime-Image, weil `output: "standalone"` es NICHT
+# mitbringt. Ohne dieses Verzeichnis bricht der Image-Build ab
+# ("/app/public not found").
