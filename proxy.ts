@@ -4,6 +4,7 @@ import { TENANT_CONFIG_HEADER } from "@/lib/tenant/constants";
 import { resolveTenantConfig } from "@/lib/tenant/config-cache";
 import { encodeTenantHeader } from "@/lib/tenant/header-codec";
 import { resolveLocalFallbackTenant } from "@/lib/tenant/local-fallback";
+import { resolveStaticTenant } from "@/lib/tenant/static-tenants";
 import { classifyHost } from "@/lib/tenant/resolve-host";
 
 /**
@@ -21,6 +22,12 @@ import { classifyHost } from "@/lib/tenant/resolve-host";
  *   - The control plane is never *directly* on this request's latency path
  *     except on a cold cache (see lib/tenant/config-cache.ts) — `resolveTenantConfig`
  *     is what implements the last-known-good fallback, this file just calls it.
+ *
+ * Resolution order: dev fallback, then the operator's static table, then the
+ * control plane. The static table is how jibbit.ch itself is served on a box
+ * with no control plane deployed — it is keyed by exact host and can only ADD
+ * known hosts, so the "unknown host -> 404" rule above still holds. See
+ * lib/tenant/static-tenants.ts.
  */
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const rawHost = request.headers.get("host") ?? "";
@@ -28,6 +35,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const local = resolveLocalFallbackTenant();
   const tenant =
     local ??
+    resolveStaticTenant(rawHost) ??
     (await resolveTenantConfig(rawHost, {
       waitUntil: (p) => event.waitUntil(p),
     }));
@@ -65,8 +73,14 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
 export const config = {
   matcher: [
-    // Everything except static assets and the favicon. Sitemap/robots are
-    // intentionally NOT excluded — they render per-tenant domain data.
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // Everything except static assets, the favicon and the health probe.
+    // Sitemap/robots are intentionally NOT excluded — they render per-tenant
+    // domain data.
+    //
+    // `healthz` must be excluded: the container health check connects to
+    // 127.0.0.1, which is in no tenant table and would 404 forever, marking a
+    // healthy container unhealthy. It serves no tenant content — see
+    // app/healthz/route.ts.
+    "/((?!_next/static|_next/image|favicon.ico|healthz).*)",
   ],
 };
