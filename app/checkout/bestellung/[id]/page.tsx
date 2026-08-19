@@ -1,0 +1,107 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ClearCartOnMount } from "@/components/checkout/ClearCartOnMount";
+import { formatPrice } from "@/lib/format";
+import { getOrder } from "@/lib/checkout/order";
+import styles from "@/components/checkout/checkout.module.css";
+
+export const metadata: Metadata = {
+  title: "Bestellung bestätigt",
+  // The order id is the only thing protecting this page; it must never be
+  // indexed or followed.
+  robots: { index: false, follow: false },
+};
+
+/**
+ * Order confirmation.
+ *
+ * Reachable without a login on purpose — this is a guest checkout, and the id
+ * in the URL is the customer's only handle on their order. It is therefore also
+ * `noindex, nofollow`, and never linked from anywhere public.
+ */
+export default async function OrderConfirmationPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const order = await getOrder(id);
+  if (!order) notFound();
+
+  return (
+    <div className={styles.confirmation}>
+      {/* The cart lives in client state; the cookie is already gone. */}
+      <ClearCartOnMount />
+
+      <p className="eyebrow">Bestellung {order.displayId || ""}</p>
+      <h1 className={styles.confirmTitle}>Danke — das ist bestellt.</h1>
+      <p className={styles.confirmText}>
+        Wir haben deine Bestellung erhalten. Eine Bestätigung geht an{" "}
+        <strong>{order.email}</strong>. Sobald das Paket unterwegs ist, meldet
+        sich die Post bei dir.
+      </p>
+
+      <section className={styles.card}>
+        <h2 className={styles.cardTitle}>Deine Artikel</h2>
+        <ul className={styles.summaryList}>
+          {order.lines.map((line) => (
+            <li key={line.id} className={styles.summaryLine}>
+              <span>
+                {line.title}
+                {line.variantTitle && ` · ${line.variantTitle}`}
+                <span className={styles.summaryQty}> × {line.quantity}</span>
+              </span>
+              <span className="tnum">{formatPrice(line.lineTotal)}</span>
+            </li>
+          ))}
+        </ul>
+        <dl className={styles.totals}>
+          <div>
+            <dt>Zwischensumme</dt>
+            <dd className="tnum">{formatPrice(order.subtotal)}</dd>
+          </div>
+          <div>
+            <dt>Versand</dt>
+            <dd className="tnum">
+              {order.shipping === 0 ? "Gratis" : formatPrice(order.shipping)}
+            </dd>
+          </div>
+          <div className={styles.grand}>
+            <dt>Total</dt>
+            <dd className="tnum">{formatPrice(order.total)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {order.address && (
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Lieferadresse</h2>
+          <address className={styles.address}>
+            {order.address.firstName} {order.address.lastName}
+            <br />
+            {order.address.company && (
+              <>
+                {order.address.company}
+                <br />
+              </>
+            )}
+            {order.address.address1}
+            <br />
+            {order.address.address2 && (
+              <>
+                {order.address.address2}
+                <br />
+              </>
+            )}
+            {order.address.postalCode} {order.address.city}
+          </address>
+        </section>
+      )}
+
+      <Link href="/shop" className={styles.secondaryCta}>
+        Weiter einkaufen
+      </Link>
+    </div>
+  );
+}
