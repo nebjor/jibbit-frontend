@@ -1,0 +1,229 @@
+/* Formulare und Bausteine des Kontobereichs. Liest ausschliesslich Tokens. */
+
+.form {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.row {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.input {
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  width: 100%;
+}
+
+.input:hover {
+  border-color: var(--c-ink);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--c-accent);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+
+.fieldError {
+  font-size: 13px;
+  color: var(--c-accent);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 14px;
+}
+
+.checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--c-ink);
+}
+
+/* ---- Aktionen --------------------------------------------------------- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.primary {
+  min-height: 48px;
+  padding: 0 var(--s-5);
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.secondary {
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  background: none;
+  color: inherit;
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.secondary:hover {
+  background: var(--c-ink);
+  color: var(--c-ground);
+}
+
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.danger {
+  border-color: var(--c-line);
+  color: var(--c-muted);
+}
+
+.danger:hover {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-on-accent);
+}
+
+/* ---- Meldungen -------------------------------------------------------- */
+
+.message {
+  padding: var(--s-3) var(--s-4);
+  border: var(--border-w) solid var(--c-line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  font-size: 15px;
+}
+
+.messageOk {
+  border-left-color: var(--c-success);
+}
+
+.messageError {
+  border-left-color: var(--c-accent);
+}
+
+/* ---- Adressbuch ------------------------------------------------------- */
+
+.addressGrid {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.addressCard {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+}
+
+.addressName {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.addressBody {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.badge {
+  padding: 2px var(--s-2);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.disclosure {
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  padding: var(--s-4);
+}
+
+.disclosure > summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.disclosureBody {
+  padding-top: var(--s-4);
+}
+
+@media (min-width: 700px) {
+  .row2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rowPlz {
+    grid-template-columns: 140px 1fr;
+  }
+  .addressGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
