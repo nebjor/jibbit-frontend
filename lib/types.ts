@@ -16,6 +16,23 @@ export interface CategoryView {
   description: string;
 }
 
+/**
+ * One quantity break. `maxQuantity: null` marks the top tier, open-ended.
+ *
+ * Mirrors a `price` row in Medusa's pricing module (`min_quantity` /
+ * `max_quantity`). Display only: the binding price is always recalculated
+ * server-side when a line item is created or its quantity changes.
+ */
+export interface PriceTier {
+  minQuantity: number;
+  maxQuantity: number | null;
+  /** Decimal CHF for ONE unit of this variant at this quantity. */
+  price: number;
+}
+
+/** How a variant is packaged. Drives the unit-price line and the deal badge. */
+export type PackType = "single" | "display" | "box";
+
 export interface ProductVariantView {
   id: string;
   title: string;
@@ -24,6 +41,14 @@ export interface ProductVariantView {
   /** Original / struck-through price ("was"). Undefined when not on sale. */
   compareAt?: number;
   inStock: boolean;
+  /**
+   * Quantity breaks, ascending and gap-free. Empty when the variant has one
+   * flat price — the price table then renders nothing at all.
+   */
+  tiers: PriceTier[];
+  /** Units inside one of these: 1 for a single item, 24 for a display. */
+  unitsPerPack: number;
+  packType: PackType;
 }
 
 export interface ProductView {
@@ -50,7 +75,15 @@ export interface CartLine {
   productHandle: string;
   title: string;
   variantTitle: string;
+  /**
+   * Unit price at quantity 1. Kept for lines without tiers; with `tiers` set
+   * the displayed unit price is derived from the quantity instead, so the
+   * drawer cannot drift from what Medusa charges at checkout.
+   */
   price: number;
   compareAt?: number;
   quantity: number;
+  /** Copied from the variant so the cart can reprice itself on quantity change. */
+  tiers?: PriceTier[];
+  unitsPerPack?: number;
 }

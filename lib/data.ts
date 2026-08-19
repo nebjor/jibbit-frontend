@@ -25,7 +25,7 @@ import "server-only";
 import { getSdkForTenant, isBackendConfigured } from "./medusa";
 import { getTenantContext } from "./tenant/context";
 import type { TenantConfig } from "./tenant/types";
-import { toProductView, toCategoryView } from "./adapters";
+import { toProductView, toCategoryView, type TiersByVariant } from "./adapters";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "./mock-catalog";
 import type { CategoryHandle, CategoryView, ProductView } from "./types";
 import type Medusa from "@medusajs/js-sdk";
@@ -157,7 +157,10 @@ export async function getProducts(opts?: {
     });
     if (!products?.length) return filterMock(MOCK_PRODUCTS);
 
-    const views = products.map(toProductView);
+    // Not `products.map(toProductView)` — map would hand the array index in as
+    // the tiers argument. The listing needs no tiers anyway: cards show the
+    // "from" price, and one extra request per product page is enough.
+    const views = products.map((p) => toProductView(p));
     // Belt and braces: if the id lookup failed we still narrow client-side.
     return opts?.category && !categoryId
       ? views.filter((p) => p.categoryHandle === opts.category)
@@ -165,6 +168,53 @@ export async function getProducts(opts?: {
   } catch (err) {
     warnFallback(tenant, "products", err);
     return filterMock(MOCK_PRODUCTS);
+  }
+}
+
+/**
+ * Quantity breaks for the given variants.
+ *
+ * A separate request on purpose: `/store/products` always prices at quantity 1
+ * (`api/store/products/helpers.js` hard-codes `quantity: 1`, and the query
+ * validator has no quantity parameter at all), so the full staggering cannot
+ * come from the product call. `/store/price-tiers` is a custom route in this
+ * project's backend; see `backend/src/api/store/price-tiers/route.ts`.
+ *
+ * Failure is not fatal. An older backend without the route simply yields no
+ * tiers, and the product page renders without a price table — same as any
+ * product that has a single flat price.
+ */
+async function fetchPriceTiers(
+  tenant: TenantConfig,
+  sdk: Medusa,
+  variantIds: string[],
+  regionId: string,
+): Promise<TiersByVariant> {
+  if (!variantIds.length) return {};
+
+  try {
+    const res = await sdk.client.fetch<{
+      tiers: Record<
+        string,
+        { min_quantity: number; max_quantity: number | null; amount: number }[]
+      >;
+    }>("/store/price-tiers", {
+      query: { variant_id: variantIds, region_id: regionId },
+    });
+
+    return Object.fromEntries(
+      Object.entries(res?.tiers ?? {}).map(([variantId, rows]) => [
+        variantId,
+        rows.map((r) => ({
+          minQuantity: r.min_quantity,
+          maxQuantity: r.max_quantity,
+          price: r.amount,
+        })),
+      ]),
+    );
+  } catch (err) {
+    warnFallback(tenant, "price-tiers", err);
+    return {};
   }
 }
 
@@ -185,7 +235,15 @@ export async function getProduct(
       fields: PRODUCT_FIELDS,
     });
     const found = products?.[0];
-    if (found) return toProductView(found);
+    if (found) {
+      const tiers = await fetchPriceTiers(
+        tenant,
+        sdk,
+        (found.variants ?? []).map((v) => v.id),
+        regionId,
+      );
+      return toProductView(found, tiers);
+    }
   } catch (err) {
     warnFallback(tenant, "product", err);
   }
