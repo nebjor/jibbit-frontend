@@ -159,8 +159,16 @@ export async function anmelden(
   // Wohin nach der Anmeldung. Nur relative Pfade — ein aus dem Formular
   // übernommenes `https://…` wäre eine offene Weiterleitung, mit der sich
   // Phishing-Links tarnen lassen, die auf der echten Shop-Domain beginnen.
+  //
+  // Der Rückschrägstrich muss mit: Browser normalisieren `/\boese.example`
+  // zu `//boese.example` und landen damit auf einem fremden Host, obwohl der
+  // Pfad mit einem einzelnen `/` beginnt. Eine Prüfung nur auf `//` geht
+  // genau daran vorbei.
   const rawNext = field(formData, "next")
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/konto"
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\")
+      ? rawNext
+      : "/konto"
 
   if (!email || !password) {
     return { ok: false, message: ANMELDUNG_FEHLGESCHLAGEN }

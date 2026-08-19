@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { getOrders } from "@/lib/auth/customer"
-import { formatPrice } from "@/lib/format"
+import { formatMoney } from "@/lib/format"
 import { STORE } from "@/lib/config"
 import styles from "../../konto.module.css"
 
@@ -98,7 +98,7 @@ export default async function BestellungenPage() {
                         <span className="tnum">{i.quantity}</span>&times; {i.title}
                         {i.variantTitle ? ` · ${i.variantTitle}` : ""}
                       </span>
-                      <span className="tnum">{formatPrice(i.total)}</span>
+                      <span className="tnum">{formatMoney(i.total, o.currency)}</span>
                     </li>
                   ))}
                 </ul>
@@ -106,7 +106,7 @@ export default async function BestellungenPage() {
 
               <div className={styles.orderTotal}>
                 <span>Total</span>
-                <span className="tnum">{formatPrice(o.total)}</span>
+                <span className="tnum">{formatMoney(o.total, o.currency)}</span>
               </div>
             </article>
           ))}

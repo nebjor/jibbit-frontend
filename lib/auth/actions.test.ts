@@ -236,7 +236,14 @@ describe("anmelden", () => {
     ).toString("base64url")
     vi.stubGlobal("fetch", vi.fn(async () => json({ token: `h.${payload}.s` })))
 
-    for (const evil of ["https://boese.example", "//boese.example", "javascript:x"]) {
+    for (const evil of [
+      "https://boese.example",
+      "//boese.example",
+      // Browser normalisieren den Rückschrägstrich zu `//` und landen auf
+      // einem fremden Host — obwohl der Pfad mit einem einzelnen `/` beginnt.
+      "/\\boese.example",
+      "javascript:x",
+    ]) {
       const err = await anmelden(
         IDLE,
         form({ email: "a@b.ch", password: "geheim123", next: evil }),
