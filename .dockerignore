@@ -1,0 +1,29 @@
+# Was NICHT in den Build-Context gehört.
+#
+# node_modules muss hier stehen: der Build installiert im Image selbst
+# (`npm ci`), und ein mitkopiertes lokales node_modules wäre nicht nur riesig,
+# sondern auch für die falsche Plattform gebaut (native Module aus WSL/macOS
+# in einem alpine-Container).
+
+node_modules
+.next
+out
+coverage
+
+.git
+.gitignore
+
+# Secrets. .env.local enthält den Publishable Key und die Backend-URL der
+# lokalen Entwicklung — im Image hat beides nichts verloren, die Konfiguration
+# kommt zur Laufzeit aus der TenantConfig.
+.env
+.env.*
+!.env.example
+
+npm-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+
+Dockerfile
+.dockerignore
+README.md
