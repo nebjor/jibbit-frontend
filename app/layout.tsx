@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { STORE } from "@/lib/config";
 import { getTenantContext } from "@/lib/tenant/context";
+import { readCartState } from "@/lib/cart/server";
 
 /**
  * MULTI-TENANT: metadataBase, title and OG siteName come from the resolved
@@ -48,13 +49,22 @@ export async function generateViewport(): Promise<Viewport> {
   };
 }
 
-export default function RootLayout({
+/**
+ * The cart is read SERVER-SIDE here and handed to the provider as its initial
+ * state, so the header badge is right in the first paint instead of counting up
+ * from 0 after hydration. `readCartState` is deliberately read-only — it never
+ * creates a cart and never writes a cookie, because `cookies().set()` throws
+ * outside a Server Action. Creating a cart is the job of the first mutation.
+ */
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const initialCart = await readCartState();
+
   return (
     <html lang="de-CH">
       <body>
-        <CartProvider>
+        <CartProvider initialCart={initialCart}>
           <a href="#main" className="srOnly">
             Zum Inhalt springen
           </a>
