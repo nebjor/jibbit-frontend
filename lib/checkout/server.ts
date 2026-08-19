@@ -1,0 +1,261 @@
+/**
+ * CHECKOUT STEPS AGAINST MEDUSA — server-only.
+ *
+ * The order Medusa requires, and the order the UI follows:
+ *
+ *   1. e-mail + delivery address   -> POST /store/carts/:id
+ *   2. delivery method             -> GET  /store/shipping-options
+ *                                     POST /store/carts/:id/shipping-methods
+ *   3. payment                     -> lib/checkout/payment.ts   (SEAM)
+ *   4. place order                 -> POST /store/carts/:id/complete
+ *
+ * GUEST CHECKOUT: step 1 sets `email` on the cart and nothing else. No customer
+ * record, no login. Accounts are a separate strand and nothing here assumes one.
+ */
+
+import "server-only";
+
+import type Medusa from "@medusajs/js-sdk";
+import type { HttpTypes } from "@medusajs/types";
+import { toCartState } from "@/lib/cart/adapter";
+import {
+  CART_FIELDS,
+  NETWORK_ERROR,
+  cartContext,
+  clearCartId,
+  currentCartId,
+  logCartError,
+  readCartState,
+} from "@/lib/cart/server";
+import { EMPTY_CART, type CartActionResult, type ShippingOptionView } from "@/lib/cart/types";
+import type { CheckoutAddress } from "@/lib/cart/types";
+import {
+  hasErrors,
+  normalizeAddress,
+  validateAddress,
+  type AddressErrors,
+} from "./address";
+import { PaymentSetupError, preparePayment } from "./payment";
+
+const NO_CART =
+  "Dein Warenkorb ist leer oder abgelaufen. Bitte lege die Artikel neu in den Warenkorb.";
+
+/** What placing an order can end in. */
+export type PlaceOrderResult =
+  | { kind: "order"; orderId: string }
+  /** The payment provider wants the customer on its own page first. */
+  | { kind: "redirect"; url: string }
+  | { kind: "error"; message: string };
+
+interface LiveCart {
+  cart: HttpTypes.StoreCart;
+  sdk: Medusa;
+}
+
+/** The live Medusa cart, or null when there is none to check out. */
+async function loadCart(): Promise<LiveCart | null> {
+  const ctx = await cartContext();
+  const cartId = await currentCartId();
+  if (!ctx || !cartId) return null;
+
+  try {
+    const { cart } = await ctx.sdk.store.cart.retrieve(cartId, {
+      fields: CART_FIELDS,
+    });
+    if (cart.completed_at) return null;
+    return { cart, sdk: ctx.sdk };
+  } catch (error) {
+    logCartError("checkout:retrieve", error);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 1 — contact + delivery address
+// ---------------------------------------------------------------------------
+
+export type SaveAddressResult =
+  | { ok: true; cart: CartActionResult["cart"] }
+  | { ok: false; message?: string; errors: AddressErrors };
+
+export async function saveContactAndAddress(
+  email: string,
+  address: CheckoutAddress,
+): Promise<SaveAddressResult> {
+  const normalized = normalizeAddress(address);
+  const errors = validateAddress(normalized, email);
+  if (hasErrors(errors)) return { ok: false, errors };
+
+  const live = await loadCart();
+  if (!live) return { ok: false, message: NO_CART, errors: {} };
+
+  const medusaAddress = {
+    first_name: normalized.firstName,
+    last_name: normalized.lastName,
+    company: normalized.company,
+    address_1: normalized.address1,
+    address_2: normalized.address2,
+    postal_code: normalized.postalCode,
+    city: normalized.city,
+    country_code: normalized.countryCode,
+    phone: normalized.phone,
+  };
+
+  try {
+    const { cart } = await live.sdk.store.cart.update(
+      live.cart.id,
+      {
+        email: email.trim(),
+        shipping_address: medusaAddress,
+        // Same address for billing. A separate billing address is a later
+        // refinement; asking for two addresses up front costs more orders than
+        // it saves support tickets.
+        billing_address: medusaAddress,
+      },
+      { fields: CART_FIELDS },
+    );
+    return { ok: true, cart: toCartState(cart) };
+  } catch (error) {
+    logCartError("checkout:address", error);
+    return { ok: false, message: NETWORK_ERROR, errors: {} };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 2 — delivery method
+// ---------------------------------------------------------------------------
+
+export async function listShippingOptions(): Promise<ShippingOptionView[]> {
+  const live = await loadCart();
+  if (!live) return [];
+
+  try {
+    const { shipping_options } = await live.sdk.store.fulfillment.listCartOptions({
+      cart_id: live.cart.id,
+      // `type.description` carries the operator's prose ("Schweizer Post,
+      // 2–3 Werktage"). It is NOT in the route's default field list.
+      fields: "+type.label,+type.description",
+    });
+
+    return (shipping_options ?? []).map((option) => ({
+      id: option.id,
+      name: option.name ?? "Versand",
+      description: option.type?.description ?? "",
+      // undefined for `price_type: "calculated"` options — see the doc comment
+      // on ShippingOptionView. The binding price appears as
+      // `cart.shipping_total` once the method is on the cart.
+      amount:
+        typeof option.amount === "number" && Number.isFinite(option.amount)
+          ? option.amount
+          : null,
+    }));
+  } catch (error) {
+    logCartError("checkout:shipping-options", error);
+    return [];
+  }
+}
+
+export async function selectShippingOption(
+  optionId: string,
+): Promise<CartActionResult> {
+  const live = await loadCart();
+  if (!live) return { ok: false, message: NO_CART, cart: EMPTY_CART };
+
+  try {
+    const { cart } = await live.sdk.store.cart.addShippingMethod(
+      live.cart.id,
+      { option_id: optionId },
+      { fields: CART_FIELDS },
+    );
+    return { ok: true, cart: toCartState(cart) };
+  } catch (error) {
+    logCartError("checkout:shipping-method", error);
+    return { ok: false, message: NETWORK_ERROR, cart: await readCartState() };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Steps 3 + 4 — payment, then place the order
+// ---------------------------------------------------------------------------
+
+export async function placeOrder(): Promise<PlaceOrderResult> {
+  const live = await loadCart();
+  if (!live) return { kind: "error", message: NO_CART };
+
+  const cart = live.cart;
+
+  if (!cart.items?.length) {
+    return { kind: "error", message: "Der Warenkorb ist leer." };
+  }
+  if (!cart.email) {
+    return { kind: "error", message: "Bitte zuerst die E-Mail-Adresse angeben." };
+  }
+  if (!cart.shipping_address?.country_code) {
+    return { kind: "error", message: "Bitte zuerst die Lieferadresse angeben." };
+  }
+  if (!cart.shipping_methods?.length) {
+    return { kind: "error", message: "Bitte zuerst eine Versandart wählen." };
+  }
+
+  let handoff;
+  try {
+    handoff = await preparePayment(live.sdk, cart);
+  } catch (error) {
+    logCartError("checkout:payment", error);
+    return {
+      kind: "error",
+      message:
+        error instanceof PaymentSetupError
+          ? error.message
+          : "Die Zahlung liess sich nicht vorbereiten. Bitte nochmals versuchen.",
+    };
+  }
+
+  // ⚠️ SEAM: a redirect provider takes over here. The order is NOT completed
+  // yet — the customer comes back from the PSP and the return route calls this
+  // function's tail (or `completeCart`) again. See lib/checkout/payment.ts.
+  if (handoff.kind === "redirect") {
+    return { kind: "redirect", url: handoff.url };
+  }
+
+  return completeCart();
+}
+
+/**
+ * Turn the cart into an order.
+ *
+ * Exported separately because the payment strand's return route needs exactly
+ * this and nothing else, once the customer comes back from the PSP.
+ *
+ * `complete` answers with `{ type: "order" }` OR `{ type: "cart", error }` —
+ * a failed completion is a 200 response, not an exception, so both are handled.
+ */
+export async function completeCart(): Promise<PlaceOrderResult> {
+  const live = await loadCart();
+  if (!live) return { kind: "error", message: NO_CART };
+
+  try {
+    const result = await live.sdk.store.cart.complete(live.cart.id);
+
+    if (result.type === "order") {
+      // The cart is gone the moment it becomes an order. Keeping the cookie
+      // would leave the customer holding a cart that rejects every mutation.
+      await clearCartId();
+      return { kind: "order", orderId: result.order.id };
+    }
+
+    const message =
+      typeof result.error?.message === "string"
+        ? result.error.message
+        : "Die Bestellung konnte nicht abgeschlossen werden.";
+    console.warn(`[checkout] complete returned a cart: ${message}`);
+    return { kind: "error", message };
+  } catch (error) {
+    logCartError("checkout:complete", error);
+    return {
+      kind: "error",
+      message:
+        "Die Bestellung konnte nicht abgeschlossen werden. Es wurde nichts belastet.",
+    };
+  }
+}
