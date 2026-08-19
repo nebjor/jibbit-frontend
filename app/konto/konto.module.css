@@ -1,0 +1,198 @@
+/* Layout des Kontobereichs. Nur Tokens, keine Farbliterale. */
+
+.wrap {
+  padding-block: var(--s-6) var(--s-8);
+  display: grid;
+  gap: var(--s-6);
+}
+
+/* Schmale Spalte für Anmelden / Registrieren / Passwort — ein Formular liest
+   sich schlecht über die volle Breite eines Desktops. */
+.narrow {
+  max-width: 460px;
+}
+
+.title {
+  font-size: clamp(28px, 5vw, 40px);
+}
+
+.lead {
+  color: var(--c-muted);
+  max-width: 60ch;
+}
+
+.panel {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+}
+
+.panelTitle {
+  font-size: 18px;
+}
+
+.footNote {
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+/* ---- Navigation im Kontobereich --------------------------------------- */
+
+.shell {
+  display: grid;
+  gap: var(--s-6);
+  padding-block: var(--s-6) var(--s-8);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  border-bottom: var(--border-w) solid var(--c-line);
+  padding-bottom: var(--s-3);
+}
+
+.nav a {
+  padding: var(--s-2) var(--s-3);
+  border: var(--border-w) solid transparent;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.nav a:hover {
+  border-color: var(--c-ink);
+  text-decoration: none;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+/* ---- Bestellungen ------------------------------------------------------ */
+
+.orders {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.order {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+}
+
+.orderHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.orderNo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+}
+
+.orderMeta {
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+.orderStates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.state {
+  padding: 2px var(--s-2);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.lines {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--border-w) solid var(--c-line);
+  padding-top: var(--s-3);
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: 15px;
+}
+
+.orderTotal {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  border-top: var(--border-w) solid var(--c-line);
+  padding-top: var(--s-3);
+  font-weight: 700;
+}
+
+/* ---- Kacheln auf der Übersicht ---------------------------------------- */
+
+.tiles {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.tile {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-5);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+}
+
+.tile:hover {
+  border-color: var(--c-ink);
+  text-decoration: none;
+}
+
+.tileTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.tileText {
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+@media (min-width: 700px) {
+  .tiles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

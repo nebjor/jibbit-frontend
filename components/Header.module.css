@@ -30,6 +30,13 @@
   text-decoration: none;
 }
 
+/* Kontolink und Warenkorb rücken zusammen an den rechten Rand. */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
 .nav {
   display: none;
   gap: var(--s-5);
