@@ -208,8 +208,13 @@ lib/
 
 - `<Logo>` (`components/Logo.tsx`) renders a text placeholder. Drop the real
   graffiti-tag SVG in and replace the `<span>` — nothing else changes.
-- Product imagery: no photos exist, so `ProductImage` renders a placeholder
-  tile. Real URLs flow through automatically once Medusa serves them.
+- Product imagery is **partly real**: 8 of the 25 catalogue products have
+  photos, uploaded to Medusa by `backend/src/scripts/import-product-images.ts`.
+  They are served same-origin through `app/media/[...path]/route.ts` — see
+  `lib/media.ts` for why they cannot be loaded from the backend URL directly.
+  The remaining products get a generated tile built from brand name and product
+  kind (`lib/placeholder.ts`); it is a deliberate design, not an error state,
+  so the grid stays coherent whatever the photo coverage is.
 - The cart is **local only** (React Context + `localStorage`). Mutations are
   isolated in `components/CartProvider.tsx` for swapping to
   `sdk.store.cart.*` later.
