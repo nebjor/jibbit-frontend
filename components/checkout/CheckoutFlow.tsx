@@ -71,14 +71,23 @@ export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
 
-  // The page was server-rendered from the live cart; the provider may be
-  // holding an older snapshot from before this navigation.
+  /**
+   * Adopt the server-rendered cart ONLY when the provider is holding nothing.
+   *
+   * Deliberately one-way. The provider is updated by every mutation, so its
+   * state is normally the NEWER of the two; pushing a server snapshot over it
+   * unconditionally would let a cached RSC payload move the cart backwards —
+   * a customer adds an item, walks to the checkout, and it is gone again.
+   * The only case worth covering is a provider that never saw a cart at all
+   * (a cart started in another tab), and that is what the guard checks.
+   */
   const seeded = useRef(false);
+  const { applyCart, cartId } = cart;
   useEffect(() => {
     if (seeded.current) return;
     seeded.current = true;
-    cart.applyCart(initialCart);
-  }, [cart, initialCart]);
+    if (!cartId) applyCart(initialCart);
+  }, [applyCart, cartId, initialCart]);
 
   const loadOptions = useCallback(() => {
     startTransition(async () => {
