@@ -21,7 +21,13 @@ export function toCustomerView(c: StoreCustomer): CustomerView {
     lastName: c.last_name ?? "",
     phone: c.phone ?? "",
     companyName: c.company_name ?? "",
-    importedFromOdoo: c.metadata?.imported_from === "odoo",
+    // Zwei Schlüssel, weil zwei Importwege existieren: `source` schreibt
+    // `backend/src/scripts/import-customers.ts` (Odoo-Export),
+    // `imported_from` schreibt `prepare-odoo-logins.ts`. Nur auf einen zu
+    // prüfen hiesse, der Hälfte der migrierten Kundschaft den Hinweis im
+    // Kontobereich vorzuenthalten.
+    importedFromOdoo:
+      c.metadata?.source === "odoo" || c.metadata?.imported_from === "odoo",
   }
 }
 
