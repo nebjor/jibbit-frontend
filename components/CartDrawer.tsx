@@ -5,24 +5,37 @@ import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { FreeShippingMeter } from "./FreeShippingMeter";
 import { formatPrice } from "@/lib/format";
-import { lineTotal, lineUnitPrice } from "@/lib/pricing";
 import styles from "./CartDrawer.module.css";
 
 /**
  * Slide-over cart. Opens automatically on add-to-cart so the customer stays on
  * the product page (never navigate away after adding).
+ *
+ * PRICES COME FROM MEDUSA. `l.unitPrice` and `l.lineTotal` are the numbers the
+ * backend will charge, already quantity-break aware; this component does no
+ * arithmetic. It used to call `lineUnitPrice(l)` / `lineTotal(l)` from
+ * lib/pricing.ts, which recomputed the price client-side from tier data copied
+ * onto the line — a second source of truth, and the reason a basket could be
+ * quoted at one price here and charged at another at checkout.
+ *
+ * Quantity controls are disabled while a mutation is in flight: the operations
+ * are network calls now, and a customer who taps "+" five times must not see
+ * the count jump around as the responses land.
  */
 export function CartDrawer() {
   const {
     lines,
     subtotal,
     shipping,
+    shippingIsEstimate,
     total,
     isOpen,
     closeCart,
     setQuantity,
     removeLine,
     count,
+    isPending,
+    error,
   } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +88,12 @@ export function CartDrawer() {
           </button>
         </header>
 
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+
         {lines.length === 0 ? (
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>Noch nix drin.</p>
@@ -87,7 +106,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            <ul className={styles.list}>
+            <ul className={styles.list} data-busy={isPending ? "true" : "false"}>
               {lines.map((l) => (
                 <li key={l.variantId} className={styles.line}>
                   <div className={styles.lineMain}>
@@ -102,11 +121,11 @@ export function CartDrawer() {
                       <p className={styles.lineVariant}>{l.variantTitle}</p>
                     )}
                     <p className={`${styles.linePrice} tnum`}>
-                      {formatPrice(lineUnitPrice(l))}
+                      {formatPrice(l.unitPrice)}
                       {l.quantity > 1 && (
                         <span className={styles.lineTotal}>
                           {" "}
-                          &times; {l.quantity} = {formatPrice(lineTotal(l))}
+                          &times; {l.quantity} = {formatPrice(l.lineTotal)}
                         </span>
                       )}
                     </p>
@@ -115,6 +134,7 @@ export function CartDrawer() {
                     <div className={styles.qty}>
                       <button
                         onClick={() => setQuantity(l.variantId, l.quantity - 1)}
+                        disabled={isPending}
                         aria-label={`Menge von ${l.title} verringern`}
                       >
                         &minus;
@@ -124,6 +144,7 @@ export function CartDrawer() {
                       </span>
                       <button
                         onClick={() => setQuantity(l.variantId, l.quantity + 1)}
+                        disabled={isPending}
                         aria-label={`Menge von ${l.title} erhöhen`}
                       >
                         +
@@ -132,6 +153,7 @@ export function CartDrawer() {
                     <button
                       className={styles.remove}
                       onClick={() => removeLine(l.variantId)}
+                      disabled={isPending}
                     >
                       Entfernen
                     </button>
@@ -148,7 +170,12 @@ export function CartDrawer() {
                   <dd className="tnum">{formatPrice(subtotal)}</dd>
                 </div>
                 <div>
-                  <dt>Versand</dt>
+                  <dt>
+                    Versand
+                    {shippingIsEstimate && (
+                      <span className={styles.estimate}> (geschätzt)</span>
+                    )}
+                  </dt>
                   <dd className="tnum">
                     {shipping === 0 ? "Gratis" : formatPrice(shipping)}
                   </dd>
@@ -159,13 +186,18 @@ export function CartDrawer() {
                 </div>
               </dl>
               {/* Primary CTA — the one accent-coloured action in this view. */}
-              <button className={styles.checkout} disabled>
+              <Link
+                href="/checkout"
+                className={styles.checkout}
+                onClick={closeCart}
+              >
                 Zur Kasse
-              </button>
-              <p className={styles.soon}>
-                Checkout kommt, sobald die Zahlungsanbindung (TWINT, Powerpay)
-                live ist.
-              </p>
+              </Link>
+              {shippingIsEstimate && (
+                <p className={styles.soon}>
+                  Versandkosten werden an der Kasse definitiv berechnet.
+                </p>
+              )}
             </footer>
           </>
         )}
