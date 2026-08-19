@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
 import { CartButton } from "./CartButton";
+import { AccountLink } from "./AccountLink";
 import { getCategories } from "@/lib/data";
 import { SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
@@ -45,7 +46,10 @@ export async function Header() {
             ))}
           </nav>
 
-          <CartButton />
+          <div className={styles.actions}>
+            <AccountLink />
+            <CartButton />
+          </div>
         </div>
 
         {/* Mobile category strip */}
