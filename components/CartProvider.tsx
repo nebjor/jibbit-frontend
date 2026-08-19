@@ -30,6 +30,7 @@ import {
 } from "react";
 import type { CartLine } from "@/lib/types";
 import { SHIPPING } from "@/lib/config";
+import { lineTotal } from "@/lib/pricing";
 
 const STORAGE_KEY = "jibbit.cart.v1";
 
@@ -160,9 +161,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CartContextValue>(() => {
     const count = lines.reduce((n, l) => n + l.quantity, 0);
-    const subtotal = round2(
-      lines.reduce((sum, l) => sum + l.price * l.quantity, 0),
-    );
+    // Tier-aware: `l.price` is the rate at quantity 1, so multiplying it by the
+    // quantity would show 24 x 1.95 = 46.80 for a basket Medusa charges 33.60
+    // for. The drawer must not be more expensive than the checkout — that is
+    // how you lose a customer just before they see the real price.
+    const subtotal = round2(lines.reduce((sum, l) => sum + lineTotal(l), 0));
     const qualifies = subtotal >= SHIPPING.freeThreshold;
     const shipping = count === 0 || qualifies ? 0 : SHIPPING.flatRate;
 

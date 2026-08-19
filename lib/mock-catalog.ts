@@ -266,6 +266,10 @@ const SEEDS: Seed[] = [
 
 export const MOCK_PRODUCTS: ProductView[] = SEEDS.map((s, i) => {
   const extra = s.variants ?? [];
+  // No quantity breaks in the mock catalogue: the tiers live in the backend's
+  // pricing module and are fetched separately. An empty `tiers` array is the
+  // honest representation — the product page then shows no price table, which
+  // is exactly right for a fallback that cannot know the real staggering.
   const variants = [
     {
       id: `variant_${s.handle}_default`,
@@ -273,6 +277,9 @@ export const MOCK_PRODUCTS: ProductView[] = SEEDS.map((s, i) => {
       price: s.price,
       compareAt: s.compareAt,
       inStock: true,
+      tiers: [],
+      unitsPerPack: 1,
+      packType: "single" as const,
     },
     ...extra.map((v, j) => ({
       id: `variant_${s.handle}_${j}`,
@@ -280,6 +287,9 @@ export const MOCK_PRODUCTS: ProductView[] = SEEDS.map((s, i) => {
       price: v.price,
       compareAt: v.compareAt,
       inStock: true,
+      tiers: [],
+      unitsPerPack: 1,
+      packType: "single" as const,
     })),
   ];
 

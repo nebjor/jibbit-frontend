@@ -145,6 +145,18 @@
   color: var(--c-accent);
 }
 
+/*
+ * "× 24 = CHF 33.60" next to the unit price. Muted and lighter, because the
+ * unit price is what changes when a quantity break kicks in — that is the
+ * number the customer is watching.
+ */
+.lineTotal {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--c-muted);
+}
+
 .lineActions {
   display: flex;
   flex-direction: column;

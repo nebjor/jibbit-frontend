@@ -63,6 +63,92 @@
 
 .barPrice {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.total {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+
+/* Badge on a pack that really is cheaper per unit than the same count of
+   singles. Only rendered where that is true — see packAdvantagePercent(). */
+.deal {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-success);
+}
+
+.quantity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.stepper {
+  display: flex;
+  align-items: stretch;
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.step {
+  width: 44px;
+  min-height: 44px;
+  background: var(--c-surface);
+  border: 0;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--c-ink);
+}
+
+.step:hover:not(:disabled) {
+  background: var(--c-ground);
+}
+
+.step:disabled {
+  color: var(--c-muted);
+  cursor: not-allowed;
+}
+
+.qtyInput {
+  width: 4.5rem;
+  min-height: 44px;
+  padding: 0 var(--s-2);
+  border: 0;
+  border-left: var(--border-w) solid var(--c-line);
+  border-right: var(--border-w) solid var(--c-line);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  text-align: center;
+}
+
+/* Spinners would sit next to our own +/- buttons and do the same thing. */
+.qtyInput::-webkit-outer-spin-button,
+.qtyInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.qtyInput {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.perUnit {
+  font-size: 14px;
+  color: var(--c-muted);
 }
 
 /* The one primary action on the PDP — the only accent-filled control. */
