@@ -252,7 +252,14 @@ export async function clearCart(): Promise<CartActionResult> {
   try {
     const current = await readCartState();
     for (const line of current.lines) {
-      await ctx.sdk.store.cart.deleteLineItem(cartId, line.id);
+      try {
+        await ctx.sdk.store.cart.deleteLineItem(cartId, line.id);
+      } catch (error) {
+        // The snapshot was taken before this loop's turn in the queue, so a
+        // line can already be gone — another tab, a "remove" that landed
+        // first. That is the outcome we wanted anyway; anything else is real.
+        if (!isNotFound(error)) throw error;
+      }
     }
     const { cart } = await ctx.sdk.store.cart.retrieve(cartId, {
       fields: CART_FIELDS,
