@@ -1,0 +1,43 @@
+/* Sprite-Masse sind ASSET-Wissen, keine Design-Tokens: 32x56 px je Bild,
+   16 Bilder, 70 ms je Bild (16 x 70 ms = 1.12 s je Schleife). Sie stehen im
+   Generator (tools/pixel-art/gen_joint_loader.py) und nur dort ändern sie
+   sich. Alles Gestalterische (Tempo-Ausnahme unten, Farben der Umgebung)
+   kommt aus app/tokens.css. */
+
+.joint {
+  --px: 2; /* ganzzahlige Skalierung, siehe PixelJoint.tsx */
+  display: block;
+  width: calc(32px * var(--px));
+  height: calc(56px * var(--px));
+  /* Pflicht bei Pixel-Art: ohne dies verwischt der Browser die Skalierung. */
+  image-rendering: pixelated;
+  flex: none;
+}
+
+.px3 {
+  --px: 3;
+}
+
+.loading {
+  background-image: url("/loader/joint-loader-sheet.png");
+  background-repeat: no-repeat;
+  background-size: calc(512px * var(--px)) calc(56px * var(--px));
+  /* steps(16): das Sheet wird bildweise durchgeschaltet, nie interpoliert. */
+  animation: puff 1.12s steps(16) infinite;
+}
+
+@keyframes puff {
+  to {
+    background-position-x: calc(-512px * var(--px));
+  }
+}
+
+/* `animation: none` — NICHT nur die globale Regel aus globals.css. Die kürzt
+   jede animation-duration auf 0.01ms; bei einer ENDLOS-Animation hiesse das
+   16 Bildwechsel je 0.01 ms, also Flimmern statt Ruhe. `none` lässt das
+   erste Bild des Sheets als stehendes Bild zurück. */
+@media (prefers-reduced-motion: reduce) {
+  .loading {
+    animation: none;
+  }
+}
