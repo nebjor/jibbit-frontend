@@ -33,7 +33,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: path === "" ? 1 : 0.6,
     })),
     ...categories.map((c) => ({
-      url: `${BASE}/shop?kategorie=${c.handle}`,
+      // Kodieren: Handles können `&` oder Umlaute enthalten.
+      url: `${BASE}/shop?kategorie=${encodeURIComponent(c.handle)}`,
       lastModified: new Date(),
       priority: 0.8,
     })),
