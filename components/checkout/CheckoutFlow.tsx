@@ -479,7 +479,7 @@ export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
               <dd className="tnum">{formatPrice(cart.total)}</dd>
             </div>
           </dl>
-          <p className={styles.vatNote}>Alle Preise inkl. MwSt.</p>
+          <p className={styles.vatNote}>Endpreise — keine Mehrwertsteuer (nicht steuerpflichtig)</p>
         </aside>
       </div>
     </div>
