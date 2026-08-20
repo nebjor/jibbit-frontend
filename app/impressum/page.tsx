@@ -30,18 +30,17 @@ export default function ImpressumPage() {
           <dd>
             Joris Neber
             <br />
-            <Platzhalter>
-              Rechtsform und genaue Firmenbezeichnung gemäss Handelsregister,
-              falls eingetragen — z. B. Einzelunternehmen oder GmbH
-            </Platzhalter>
+            Neber Import
+              <br />
+              Einzelunternehmen
           </dd>
         </div>
         <div>
           <dt>Adresse</dt>
           <dd>
-            <Platzhalter>Strasse und Nummer</Platzhalter>
+            Unterwegli 1
             <br />
-            <Platzhalter>PLZ und Ort</Platzhalter>
+            8404 Winterthur
             <br />
             Schweiz
           </dd>
@@ -49,34 +48,20 @@ export default function ImpressumPage() {
         <div>
           <dt>E-Mail</dt>
           <dd>
-            <a href="mailto:j.neber@gmx.ch">j.neber@gmx.ch</a>
+            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
           </dd>
         </div>
         <div>
           <dt>Telefon</dt>
           <dd>
-            <Platzhalter>
-              Telefonnummer, falls telefonischer Kontakt angeboten wird — sonst
-              diese Zeile streichen
-            </Platzhalter>
-          </dd>
-        </div>
-        <div>
-          <dt>Handelsregister / UID</dt>
-          <dd>
-            <Platzhalter>
-              UID (CHE-XXX.XXX.XXX), falls im Handelsregister eingetragen —
-              sonst diese Zeile streichen
-            </Platzhalter>
+            <a href="tel:+41764140890">076 414 08 90</a>
           </dd>
         </div>
         <div>
           <dt>Mehrwertsteuer</dt>
           <dd>
-            <Platzhalter>
-              MWST-Nummer, falls mehrwertsteuerpflichtig — sonst diese Zeile
-              streichen
-            </Platzhalter>
+            Nicht mehrwertsteuerpflichtig. Auf den Preisen wird keine
+              Mehrwertsteuer erhoben und keine ausgewiesen.
           </dd>
         </div>
       </dl>
