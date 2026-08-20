@@ -1,0 +1,138 @@
+/* Instant-search combobox. Reads ONLY tokens.css custom properties.
+   Kiosk direction: flat, lines instead of shadows, accent only on price. */
+
+.root {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 420px;
+}
+
+@media (min-width: 900px) {
+  .root {
+    max-width: 340px;
+    margin-left: auto;
+  }
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font-size: 15px;
+  transition: border-color var(--dur) var(--ease);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.input::placeholder {
+  color: var(--c-muted);
+}
+
+.input:hover,
+.input:focus {
+  border-color: var(--c-ink);
+}
+
+/* The dropdown overlays the page; it never pushes content down, so the
+   layout cannot jump while typing. */
+.panel {
+  position: absolute;
+  top: calc(100% + var(--s-1));
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  max-height: min(420px, 65vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  min-height: 48px;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: var(--border-w) solid var(--c-line);
+  cursor: pointer;
+}
+
+/* Hover and keyboard cursor share one visual state. */
+.option[aria-selected="true"] {
+  background: var(--c-ground);
+}
+
+.optionText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.optionBrand {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.optionTitle {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionPrice {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-accent);
+}
+
+.showAll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.showAll[aria-selected="true"] {
+  background: var(--c-ink);
+  color: var(--c-ground);
+}
+
+.empty {
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  font-size: 14px;
+}
+
+.emptyHint {
+  color: var(--c-muted);
+  font-size: 13px;
+}
