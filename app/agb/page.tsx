@@ -30,9 +30,7 @@ export default function AgbPage() {
         Diese Allgemeinen Geschäftsbedingungen gelten für sämtliche
         Bestellungen, die über den Onlineshop {STORE.domain} getätigt werden.
         Betreiber ist Joris Neber,{" "}
-        <Platzhalter>
-          Rechtsform bzw. Firma und Postanschrift eintragen
-        </Platzhalter>{" "}
+        Neber Import, Einzelunternehmen, Unterwegli 1, 8404 Winterthur{" "}
         (nachfolgend &laquo;wir&raquo;). Abweichende Bedingungen der Kundin
         oder des Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich
         zustimmen.
@@ -77,7 +75,7 @@ export default function AgbPage() {
       <h2>5. Preise</h2>
       <p>
         Alle Preise verstehen sich in Schweizer Franken (CHF) und inklusive
-        der gesetzlichen Mehrwertsteuer. Massgeblich ist der Preis, der zum
+        Endpreise; wir sind nicht mehrwertsteuerpflichtig. Massgeblich ist der Preis, der zum
         Zeitpunkt der Bestellung im Shop angezeigt wird. Versandkosten werden
         im Warenkorb und vor Abschluss der Bestellung separat ausgewiesen.
       </p>
@@ -102,9 +100,7 @@ export default function AgbPage() {
         Es gelten die im Bestellprozess angezeigten Zahlungsarten; vorgesehen
         sind TWINT und Kauf auf Rechnung. Die Zahlungsabwicklung erfolgt über
         einen externen Zahlungsdienstleister:{" "}
-        <Platzhalter>
-          Zahlungsdienstleister eintragen, sobald der Anbieter feststeht
-        </Platzhalter>
+        Payrexx AG, Thun
         . Beim Kauf auf Rechnung gelten zusätzlich die Bedingungen des
         Rechnungsanbieters, insbesondere zur Bonitätsprüfung.
       </p>

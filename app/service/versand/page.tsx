@@ -55,10 +55,7 @@ export default function VersandPage() {
       <h2>Versandart</h2>
       <p>
         Wir versenden mit{" "}
-        <Platzhalter>
-          Versanddienstleister und Produkt eintragen, z. B. Post Economy /
-          Priority
-        </Platzhalter>
+        Die Schweizerische Post
         . Die Sendungen sind neutral verpackt — von aussen ist nicht
         ersichtlich, was drin ist.
       </p>

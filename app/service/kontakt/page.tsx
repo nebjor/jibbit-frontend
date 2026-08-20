@@ -19,19 +19,19 @@ export default function KontaktPage() {
         <div>
           <dt>Allgemeine Fragen</dt>
           <dd>
-            <Platzhalter>allgemeine Kontakt-E-Mail</Platzhalter>
+            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
           </dd>
         </div>
         <div>
           <dt>Bestellungen und Retouren</dt>
           <dd>
-            <Platzhalter>Bestell-/Retouren-E-Mail</Platzhalter>
+            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
           </dd>
         </div>
         <div>
           <dt>Erreichbarkeit</dt>
           <dd>
-            <Platzhalter>Antwortzeiten, z.B. Mo–Fr</Platzhalter>
+            In der Regel innert zwei Stunden
           </dd>
         </div>
       </dl>
