@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
-import type { CategoryHandle } from "@/lib/types";
 import styles from "./shop.module.css";
 
 export const metadata: Metadata = {
@@ -11,66 +10,51 @@ export const metadata: Metadata = {
     "Papers, Filter und Zubehör für die Schweiz. Faire Preise, Versand ab Lager, Gratisversand ab CHF 100.",
 };
 
-const VALID: CategoryHandle[] = ["papers", "filter", "zubehoer"];
-
-function parseCategory(v: string | string[] | undefined): CategoryHandle | undefined {
-  const s = Array.isArray(v) ? v[0] : v;
-  return s && (VALID as string[]).includes(s) ? (s as CategoryHandle) : undefined;
-}
-
+/**
+ * Die Kategorienavigation lebt im Header (`CategoryNav`) — diese Seite
+ * rendert bewusst KEINE eigene Filterreihe mehr. Vorher standen dieselben
+ * Kategorielinks doppelt übereinander (Header-Leiste + Filterknöpfe) und
+ * zusammen mit dem grossen Seitenkopf war auf einem Notebook die halbe
+ * Bildschirmhöhe belegt, bevor das erste Produkt kam.
+ *
+ * Der `kategorie`-Parameter wird gegen die GELADENEN Kategorien geprüft
+ * (exakter Handle-Vergleich), nicht gegen eine fest verdrahtete Liste —
+ * der Betreiber legt Kategorien im Admin an, und jede davon muss hier
+ * ohne Code-Änderung funktionieren. Unbekannte Werte fallen auf „Alles“
+ * zurück statt auf eine leere Seite.
+ */
 export default async function ShopPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const active = parseCategory(params.kategorie);
+  const raw = Array.isArray(params.kategorie)
+    ? params.kategorie[0]
+    : params.kategorie;
 
-  const [categories, products] = await Promise.all([
-    getCategories(),
-    getProducts({ category: active }),
-  ]);
+  const categories = await getCategories();
+  const activeCat = categories.find((c) => c.handle === raw);
+  const products = await getProducts({ category: activeCat?.handle });
 
-  const activeCat = categories.find((c) => c.handle === active);
+  const description = activeCat
+    ? activeCat.description
+    : "Das ganze Sortiment: Papers, Filter und Zubehör. Boxen und Displays sind pro Stück günstiger — es lohnt sich, kurz nachzurechnen.";
 
   return (
     <div className={`page ${styles.wrap}`}>
       <header className={styles.head}>
-        <p className="eyebrow">Shop</p>
-        <h1 className={styles.title}>{activeCat ? activeCat.name : "Alles"}</h1>
-        <p className={styles.desc}>
-          {activeCat
-            ? activeCat.description
-            : "Das ganze Sortiment: Papers, Filter und Zubehör. Boxen und Displays sind pro Stück günstiger — es lohnt sich, kurz nachzurechnen."}
-        </p>
+        <div className={styles.headRow}>
+          <h1 className={styles.title}>
+            {activeCat ? activeCat.name : "Shop"}
+          </h1>
+          <p className={styles.count} aria-live="polite">
+            <span className="tnum">{products.length}</span>{" "}
+            {products.length === 1 ? "Produkt" : "Produkte"}
+          </p>
+        </div>
+        {description ? <p className={styles.desc}>{description}</p> : null}
       </header>
-
-      {/* Category filter — options come from the data layer, not hardcoded. */}
-      <nav className={styles.filters} aria-label="Nach Kategorie filtern">
-        <Link
-          href="/shop"
-          className={styles.filter}
-          aria-current={!active ? "page" : undefined}
-        >
-          Alles
-        </Link>
-        {categories.map((c) => (
-          <Link
-            key={c.id}
-            href={`/shop?kategorie=${c.handle}`}
-            className={styles.filter}
-            aria-current={active === c.handle ? "page" : undefined}
-          >
-            {c.name}
-          </Link>
-        ))}
-      </nav>
-
-      <p className={styles.count} aria-live="polite">
-        <span className="tnum">{products.length}</span>{" "}
-        {products.length === 1 ? "Produkt" : "Produkte"}
-        {activeCat ? ` in ${activeCat.name}` : ""}
-      </p>
 
       {products.length === 0 ? (
         <div className={styles.empty}>

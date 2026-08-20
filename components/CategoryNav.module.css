@@ -1,0 +1,65 @@
+/* Kategorieleiste: ein Element für alle Breiten.
+   Mobil eine eigene, waagrecht scrollende Zeile unter der Kopfleiste;
+   ab 900px sitzt sie in der Kopfleiste selbst (Grid-Area `nav` in
+   Header.module.css). Bricht nie um — bei vielen Kategorien scrollt sie
+   mit Scroll-Snap statt in die Höhe zu wachsen. */
+
+.nav {
+  grid-area: nav;
+  display: flex;
+  align-items: stretch;
+  gap: var(--s-4);
+  min-width: 0;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Mobil randlos scrollen: das Seitenpadding der Kopfleiste aufheben,
+     damit Einträge bis an die Bildschirmkante laufen können. */
+  margin-inline: calc(-1 * var(--page-pad));
+  padding-inline: var(--page-pad);
+  border-top: var(--border-w) solid var(--c-line);
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.nav a {
+  scroll-snap-align: start;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* Touch-Ziel */
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  border-bottom: 2px solid transparent;
+}
+
+.nav a:hover {
+  border-bottom-color: var(--c-line);
+  text-decoration: none;
+}
+
+.nav a[aria-current="page"] {
+  border-bottom-color: var(--c-ink);
+}
+
+@media (min-width: 900px) {
+  .nav {
+    margin-inline: 0;
+    padding-inline: 0;
+    border-top: 0;
+    gap: var(--s-5);
+    /* Kein `center`: bei überlaufendem Flex-Container wäre der linke Rand
+       sonst unerreichbar abgeschnitten. Links ausgerichtet neben dem Logo. */
+  }
+
+  .nav a {
+    font-size: 15px;
+    min-height: var(--header-h);
+  }
+}
