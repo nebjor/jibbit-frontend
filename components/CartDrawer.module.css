@@ -264,3 +264,47 @@
   color: var(--c-muted);
   text-align: center;
 }
+
+/* ---- async states ------------------------------------------------------ */
+
+/*
+ * Cart mutations are network calls now. The list dims while one is in flight so
+ * the customer sees that the tap registered, without the layout shifting.
+ */
+.list[data-busy="true"] {
+  opacity: 0.55;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.error {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-ground);
+  border-bottom: var(--border-w) solid var(--c-line);
+  font-size: 13px;
+  color: var(--c-warning);
+}
+
+.estimate {
+  font-size: 12px;
+  color: var(--c-muted);
+}
+
+.qty button:disabled,
+.remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The checkout CTA is a link now, not a button — same look. */
+a.checkout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+a.checkout:hover {
+  text-decoration: none;
+  color: var(--c-on-accent);
+}

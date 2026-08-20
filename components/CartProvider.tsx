@@ -1,196 +1,222 @@
 "use client";
 
 /**
- * LOCAL CART — module-level store + localStorage, exposed via Context.
+ * MEDUSA CART — one real server-side cart, mirrored into React state.
  *
- * ⚠️ SEAM FOR THE MEDUSA BACKEND.
- * The Medusa backend is not up yet, so the cart lives entirely client-side.
- * Every mutation goes through one of four functions (`addLine`, `setQuantity`,
- * `removeLine`, `clear`). When the backend is ready, replace their bodies with
- * `sdk.store.cart.createLineItem` / `updateLineItem` / `deleteLineItem` and keep
- * the context surface identical — no consumer component changes.
+ * ══ WHAT CHANGED, AND WHY ═════════════════════════════════════════════════
+ * This used to be a localStorage array with a note saying "replace the four
+ * mutation bodies when the backend is ready". The backend is ready. The four
+ * mutations (`addLine`, `setQuantity`, `removeLine`, `clear`) now call Server
+ * Actions that talk to Medusa; the cart id lives in an httpOnly cookie
+ * (lib/cart/cookie.ts), not in localStorage.
  *
- * Why `useSyncExternalStore` rather than `useState` + an effect: localStorage is
- * an external store that does not exist during SSR. `getServerSnapshot` returns
- * an empty cart, so the server markup and the first client render always agree,
- * and React re-reads the snapshot right after subscribing to pick up the
- * hydrated value. That avoids both a hydration mismatch and a setState-in-effect
- * cascade.
+ * The context surface is deliberately almost identical — `CartDrawer`,
+ * `CartButton` and `FreeShippingMeter` needed no structural change. Three
+ * things had to be added, because the operations are now network calls:
  *
- * Prices are decimal CHF throughout. No cents conversion anywhere.
+ *   isPending  — a mutation is in flight. Consumers disable their controls;
+ *                without it, a customer can queue five clicks and watch the
+ *                quantity jump around as the responses land.
+ *   error      — the backend can be unreachable. A cart that silently ignores
+ *                an "add to cart" click is worse than one that says so.
+ *   applyCart  — the checkout steps get a fresh cart back from their own
+ *                actions and push it in here, so the drawer and the checkout
+ *                summary can never show different totals.
+ *
+ * ══ NO PRICES ARE COMPUTED HERE ═══════════════════════════════════════════
+ * `subtotal` and `total` come from Medusa (`item_total` / `total`). The old
+ * implementation summed `lineTotal(line)` locally, which is exactly how a
+ * drawer starts disagreeing with the checkout. `lib/pricing.ts` still serves
+ * the product page, where there is no cart to ask.
+ *
+ * The one number that IS derived locally is shipping BEFORE a delivery method
+ * exists — Medusa reports 0 until then, and showing "Versand: gratis" to
+ * someone who will be charged CHF 9.00 is not an option. It is flagged as an
+ * estimate (`shippingIsEstimate`) and uses the same rule as the backend
+ * provider; see lib/cart/shipping.ts.
+ *
+ * ══ MUTATIONS ARE SERIALISED ══════════════════════════════════════════════
+ * Each mutation plans itself from the CURRENT SERVER CART, so two overlapping
+ * "+1" clicks must not both read quantity 20 and both write 21. They are
+ * chained through `queue`, so they apply in order.
  */
 
 import {
   createContext,
+  useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
-  useSyncExternalStore,
+  useTransition,
   type ReactNode,
 } from "react";
+import {
+  addLineAction,
+  clearCartAction,
+  removeLineAction,
+  setQuantityAction,
+} from "@/app/actions/cart";
+import {
+  estimateShipping,
+  freeShippingProgress,
+  remainingForFreeShipping,
+} from "@/lib/cart/shipping";
+import type {
+  CartActionResult,
+  CartLineView,
+  CartState,
+} from "@/lib/cart/types";
+import { EMPTY_CART } from "@/lib/cart/types";
 import type { CartLine } from "@/lib/types";
-import { SHIPPING } from "@/lib/config";
-import { lineTotal } from "@/lib/pricing";
 
-const STORAGE_KEY = "jibbit.cart.v1";
-
-/** Stable empty reference — snapshots must be referentially stable. */
-const EMPTY: readonly CartLine[] = Object.freeze([]);
-
-// ---------------------------------------------------------------------------
-// External store
-// ---------------------------------------------------------------------------
-
-let snapshot: readonly CartLine[] = EMPTY;
-let hydrated = false;
-const listeners = new Set<() => void>();
-
-function emit() {
-  for (const listener of listeners) listener();
-}
-
-function readStorage(): readonly CartLine[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return EMPTY;
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as CartLine[]) : EMPTY;
-  } catch {
-    // Corrupt JSON, or storage blocked (private mode) — start empty.
-    return EMPTY;
-  }
-}
-
-function writeStorage(lines: readonly CartLine[]) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
-  } catch {
-    // Quota exceeded or storage blocked — the cart just won't persist.
-  }
-}
-
-function update(next: (prev: readonly CartLine[]) => readonly CartLine[]) {
-  snapshot = next(snapshot);
-  writeStorage(snapshot);
-  emit();
-}
-
-function subscribe(listener: () => void) {
-  // Hydrate once, on the first subscription — i.e. after the initial client
-  // render has already matched the server's empty cart.
-  if (!hydrated) {
-    hydrated = true;
-    const stored = readStorage();
-    if (stored.length > 0) snapshot = stored;
-  }
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const getSnapshot = () => snapshot;
-const getServerSnapshot = () => EMPTY;
-
-// ---------------------------------------------------------------------------
-// Mutations (the SDK seam)
-// ---------------------------------------------------------------------------
-
-function addLineToStore(line: Omit<CartLine, "quantity">, qty: number) {
-  update((prev) => {
-    const i = prev.findIndex((l) => l.variantId === line.variantId);
-    if (i === -1) return [...prev, { ...line, quantity: qty }];
-    const next = [...prev];
-    next[i] = { ...next[i], quantity: next[i].quantity + qty };
-    return next;
-  });
-}
-
-function setQuantityInStore(variantId: string, qty: number) {
-  update((prev) =>
-    qty <= 0
-      ? prev.filter((l) => l.variantId !== variantId)
-      : prev.map((l) => (l.variantId === variantId ? { ...l, quantity: qty } : l)),
-  );
-}
-
-function removeLineFromStore(variantId: string) {
-  update((prev) => prev.filter((l) => l.variantId !== variantId));
-}
-
-function clearStore() {
-  update(() => EMPTY);
-}
-
-// ---------------------------------------------------------------------------
-// Context
-// ---------------------------------------------------------------------------
+/**
+ * What `AddToCart` hands over. Only `variantId` reaches the backend — the
+ * price, tiers and titles in here are the PRODUCT PAGE's view of the line, and
+ * sending any of them would be actively harmful: a `unit_price` in the request
+ * is treated by Medusa as a custom price and taken at face value. They are
+ * accepted and ignored so the call site did not have to change.
+ */
+export type AddLineInput = Omit<CartLine, "quantity">;
 
 interface CartContextValue {
-  lines: readonly CartLine[];
+  /** Medusa cart id, or null when nothing has been added yet. */
+  cartId: string | null;
+  lines: readonly CartLineView[];
   /** Total item count, for the header badge. */
   count: number;
-  /** Goods subtotal in CHF. */
+  /** Goods subtotal in CHF, gross — Medusa's `item_total`. */
   subtotal: number;
-  /** Shipping cost given the current subtotal. */
+  /** Shipping in CHF. Estimated until a delivery method is on the cart. */
   shipping: number;
+  /** True while `shipping` is the storefront's estimate, not Medusa's charge. */
+  shippingIsEstimate: boolean;
+  /** True once a delivery method is on the cart, i.e. `shipping` is binding. */
+  hasShippingMethod: boolean;
   total: number;
+  currency: string;
+  /** Guest e-mail on the cart, or null. Set in the checkout's first step. */
+  email: string | null;
+  /** True once a delivery address is on the cart. */
+  hasShippingAddress: boolean;
   /** CHF still needed for free shipping; 0 once reached. */
   remainingForFreeShipping: number;
   /** 0..1 progress toward the free-shipping threshold. */
   freeShippingProgress: number;
+  /** A cart mutation is in flight. */
+  isPending: boolean;
+  /** Last failure, in German, or null. */
+  error: string | null;
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addLine: (line: Omit<CartLine, "quantity">, qty?: number) => void;
+  addLine: (line: AddLineInput, qty?: number) => void;
   setQuantity: (variantId: string, qty: number) => void;
   removeLine: (variantId: string) => void;
   clear: () => void;
+  /** Replace the whole cart — used by the checkout steps. */
+  applyCart: (cart: CartState) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-/** Round to rappen — guards against float drift when summing line totals. */
+/** Round to rappen — guards against float drift in the shipping estimate. */
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const lines = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+export function CartProvider({
+  initialCart = EMPTY_CART,
+  children,
+}: {
+  /**
+   * Rendered server-side by the root layout, so the header badge is correct in
+   * the very first paint — no hydration mismatch, no count flashing from 0.
+   */
+  initialCart?: CartState;
+  children: ReactNode;
+}) {
+  const [cart, setCart] = useState<CartState>(initialCart);
+  const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  /** Serialises mutations; see the header. */
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+
+  const run = useCallback(
+    (operation: () => Promise<CartActionResult>) => {
+      const previous = queue.current;
+      // Run regardless of how the previous mutation ended — one failure must
+      // not wedge the queue for the rest of the session.
+      const next = previous.then(
+        () => operation(),
+        () => operation(),
+      );
+      queue.current = next.then(
+        () => undefined,
+        () => undefined,
+      );
+
+      startTransition(async () => {
+        try {
+          const result = await next;
+          setCart(result.cart);
+          setError(result.ok ? null : result.message);
+        } catch {
+          setError(
+            "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.",
+          );
+        }
+      });
+    },
+    [],
+  );
 
   const value = useMemo<CartContextValue>(() => {
-    const count = lines.reduce((n, l) => n + l.quantity, 0);
-    // Tier-aware: `l.price` is the rate at quantity 1, so multiplying it by the
-    // quantity would show 24 x 1.95 = 46.80 for a basket Medusa charges 33.60
-    // for. The drawer must not be more expensive than the checkout — that is
-    // how you lose a customer just before they see the real price.
-    const subtotal = round2(lines.reduce((sum, l) => sum + lineTotal(l), 0));
-    const qualifies = subtotal >= SHIPPING.freeThreshold;
-    const shipping = count === 0 || qualifies ? 0 : SHIPPING.flatRate;
+    const shippingIsEstimate = !cart.hasShippingMethod && cart.count > 0;
+    const shipping = cart.hasShippingMethod
+      ? cart.shipping
+      : estimateShipping(cart.subtotal);
+    const total = cart.hasShippingMethod
+      ? cart.total
+      : round2(cart.subtotal + shipping);
 
     return {
-      lines,
-      count,
-      subtotal,
+      cartId: cart.id,
+      lines: cart.lines,
+      count: cart.count,
+      subtotal: cart.subtotal,
       shipping,
-      total: round2(subtotal + shipping),
-      remainingForFreeShipping: qualifies
-        ? 0
-        : round2(SHIPPING.freeThreshold - subtotal),
-      freeShippingProgress: Math.min(subtotal / SHIPPING.freeThreshold, 1),
+      shippingIsEstimate,
+      hasShippingMethod: cart.hasShippingMethod,
+      total,
+      currency: cart.currency,
+      email: cart.email,
+      hasShippingAddress: cart.hasShippingAddress,
+      remainingForFreeShipping: remainingForFreeShipping(cart.subtotal),
+      freeShippingProgress: freeShippingProgress(cart.subtotal),
+      isPending,
+      error,
       isOpen,
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
       addLine: (line, qty = 1) => {
-        addLineToStore(line, qty);
-        setIsOpen(true); // Open the drawer so the customer stays on the page.
+        // Open immediately rather than after the round trip: the drawer is how
+        // the customer knows the click registered.
+        setIsOpen(true);
+        run(() => addLineAction(line.variantId, qty));
       },
-      setQuantity: setQuantityInStore,
-      removeLine: removeLineFromStore,
-      clear: clearStore,
+      setQuantity: (variantId, qty) =>
+        run(() => setQuantityAction(variantId, qty)),
+      removeLine: (variantId) => run(() => removeLineAction(variantId)),
+      clear: () => run(() => clearCartAction()),
+      applyCart: (next) => {
+        setCart(next);
+        setError(null);
+      },
     };
-  }, [lines, isOpen]);
+  }, [cart, error, isOpen, isPending, run]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
