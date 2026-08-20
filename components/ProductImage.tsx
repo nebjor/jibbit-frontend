@@ -1,5 +1,5 @@
-import Image from "next/image";
 import type { ProductView } from "@/lib/types";
+import { MediaImage } from "./MediaImage";
 import { toMediaSrc } from "@/lib/media";
 import { brandLabel, kindLabel } from "@/lib/placeholder";
 import { getTenantContext } from "@/lib/tenant/context";
@@ -90,18 +90,22 @@ export async function ProductImage({
 
   return (
     <div className={cls}>
-      <Image
+      {/* MediaImage rendert das <Image> mit `fill` statt fester Masse: die
+          Rahmen sind über `aspect-ratio: 1/1` quadratisch, die Fotos sind es
+          nicht. Die echten Bildmasse kennt die Storefront ohnehin nicht —
+          Medusa liefert zu einem Produktbild nur die URL, keine Breite und
+          Höhe. Dazu kommen dort Lade- und Fehlerzustand; die Ladeanimation
+          gibt es NUR auf dem Hauptbild der Produktseite (hero) — ein Raster
+          aus dutzenden animierten Kacheln wäre unruhiger als stille Flächen.
+          Begründung und Schwelle: MediaImage.tsx. */}
+      <MediaImage
         src={url}
         alt={alt}
-        // `fill` statt fester Masse: die Rahmen sind über `aspect-ratio: 1/1`
-        // quadratisch, die Fotos sind es nicht. Die echten Bildmasse kennt die
-        // Storefront ohnehin nicht — Medusa liefert zu einem Produktbild nur
-        // die URL, keine Breite und Höhe.
-        fill
         sizes={SIZES[variant]}
-        className={styles.img}
+        imgClassName={styles.img}
         priority={priority}
         unoptimized={unoptimized}
+        showLoader={variant === "hero"}
       />
     </div>
   );
