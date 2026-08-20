@@ -27,9 +27,9 @@ export default function DatenschutzPage() {
       <p>
         Verantwortlich für die Bearbeitung von Personendaten auf {STORE.domain}{" "}
         ist Joris Neber,{" "}
-        <Platzhalter>Postanschrift eintragen</Platzhalter>. Für Fragen zum
+        Neber Import, Unterwegli 1, 8404 Winterthur. Für Fragen zum
         Datenschutz erreichst du uns unter{" "}
-        <a href="mailto:demo@example.com">demo@example.com</a>.
+        <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>.
       </p>
 
       <h2>2. Welches Recht gilt</h2>
@@ -89,23 +89,22 @@ export default function DatenschutzPage() {
       <ul>
         <li>
           <strong>Zahlungsdienstleister:</strong>{" "}
-          <Platzhalter>
-            Zahlungsdienstleister eintragen, sobald der Anbieter feststeht —
-            vorgesehen sind TWINT und Kauf auf Rechnung
-          </Platzhalter>{" "}
+          Payrexx AG, Thun — wickelt die Zahlung ab und erhält dafür Betrag,
+            Bestellnummer und die für die gewählte Zahlungsart nötigen Angaben.
+            Ein Wechsel des Anbieters ist geplant; diese Seite wird dann
+            angepasst{" "}
           — für die Abwicklung der Zahlung. Bei Kauf auf Rechnung kann der
           Rechnungsanbieter eine Bonitätsprüfung durchführen.
         </li>
         <li>
           <strong>Logistikpartner:</strong>{" "}
-          <Platzhalter>Versanddienstleister eintragen</Platzhalter> — für die
+          Die Schweizerische Post — für die
           Zustellung erhält er Name und Lieferadresse.
         </li>
         <li>
           <strong>Hosting und IT:</strong>{" "}
-          <Platzhalter>
-            Hosting-Anbieter von Shop und Backend eintragen, mit Serverstandort
-          </Platzhalter>{" "}
+          Infomaniak Network SA, Genf — Shop und Warenwirtschaft laufen auf
+                einem Server in der Schweiz{" "}
           — für den technischen Betrieb.
         </li>
       </ul>
@@ -116,10 +115,9 @@ export default function DatenschutzPage() {
         Zielstaat nach Einschätzung des Bundesrates einen angemessenen
         Datenschutz gewährleistet oder geeignete Garantien wie
         Standardvertragsklauseln bestehen (Art. 16 f. DSG).{" "}
-        <Platzhalter>
-          Nach Festlegung von Hosting und Diensten konkretisieren: welche Daten
-          in welche Länder gehen
-        </Platzhalter>
+        Derzeit findet keine Bekanntgabe ins Ausland statt: Hosting
+            (Infomaniak, Genf) und Zahlungsabwicklung (Payrexx, Thun) liegen
+            beide in der Schweiz
       </p>
 
       <h2>7. Cookies und Analyse</h2>
@@ -129,12 +127,8 @@ export default function DatenschutzPage() {
         Einwilligung.
       </p>
       <p>
-        <Platzhalter>
-          Falls Analyse- oder Marketing-Dienste eingesetzt werden (z. B.
-          PostHog, Plausible, Meta-Pixel): hier konkret auflisten, sonst diesen
-          Absatz durch &laquo;Weitere Cookies oder Trackingdienste setzen wir
-          nicht ein.&raquo; ersetzen
-        </Platzhalter>
+        Weitere Cookies oder Trackingdienste setzen wir nicht ein. Es laufen
+          weder Analyse- noch Marketing-Werkzeuge, weder eigene noch fremde.
       </p>
 
       <h2>8. Aufbewahrungsdauer</h2>
@@ -169,7 +163,7 @@ export default function DatenschutzPage() {
       </ul>
       <p>
         Melde dich dafür unter{" "}
-        <a href="mailto:demo@example.com">demo@example.com</a>. Die Auskunft ist in
+        <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>. Die Auskunft ist in
         der Regel kostenlos. Zuständige Aufsichtsbehörde ist der Eidgenössische
         Datenschutz- und Öffentlichkeitsbeauftragte (EDÖB).
       </p>

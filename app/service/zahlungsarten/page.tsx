@@ -48,7 +48,8 @@ export default function ZahlungsartenPage() {
       <h2>Währung und Mehrwertsteuer</h2>
       <p>
         Alle Preise sind in Schweizer Franken (CHF) angegeben und verstehen sich
-        inklusive der gesetzlichen Mehrwertsteuer. Versandkosten weisen wir vor
+        Endpreise. Wir sind nicht mehrwertsteuerpflichtig, daher wird keine
+        Mehrwertsteuer erhoben und keine ausgewiesen. Versandkosten weisen wir vor
         Abschluss der Bestellung separat aus.
       </p>
 
