@@ -194,6 +194,35 @@ lib/
 
 ---
 
+## Cart and checkout
+
+The cart is a Medusa cart. The browser holds only its id, in an httpOnly cookie
+(`lib/cart/cookie.ts`), and every mutation is a Server Action — the publishable
+key and backend URL come from the per-request TenantConfig and must never reach
+the browser bundle.
+
+Two rules that are easy to break and expensive when broken:
+
+**1. Never add to a line that already exists.** `POST /store/carts/:id/line-items`
+for a variant already in the cart merges the lines but keeps the price Medusa
+calculated for the quantity in THAT request — the delta. Measured on a real
+backend with a 1/10/24 quantity break: adding 20 and then 4 more produced
+24 x CHF 2.50 = CHF 60.00 for a basket worth CHF 33.60. `lib/cart/plan.ts`
+turns every such add into an absolute-quantity `updateLineItem`, and
+`lib/cart/plan.test.ts` pins it.
+
+**2. Never compute a cart price in the storefront.** `lib/pricing.ts` serves the
+product page, where there is no cart to ask. The moment a cart exists, the
+displayed subtotal is Medusa's `item_total` — the gross, tax-inclusive figure —
+and line totals are Medusa's `items[].total`. Do not use `item_subtotal`: it is
+the NET value (CHF 33.60 gross appears there as CHF 31.08).
+
+The one number the storefront does estimate is shipping BEFORE a delivery method
+is on the cart, because Medusa reports 0 until then. It is labelled
+"(geschätzt)" and uses the same rule as the backend's `swiss-shipping` module;
+`SHIPPING` in `lib/config.ts` must be kept in sync with `fixedPrice` /
+`freeShippingThreshold` in the backend's `medusa-config.ts`.
+
 ## Status: what is real, what is stubbed
 
 **Real**
@@ -201,6 +230,11 @@ lib/
 - All 18 products with actual jibbit names, prices and "was" prices
 - Shipping rules (CHF 9.00 flat, free from CHF 100.00) and the free-shipping
   progress meter in the cart
+- The cart is a **real Medusa cart**. The id lives in an httpOnly cookie, every
+  mutation goes through a Server Action (`app/actions/cart.ts`), and every price
+  shown comes from Medusa — see "Cart and checkout" below.
+- The checkout: address, delivery method, summary, order. Guest orders, no
+  account needed.
 - All page content and copy, in de-CH
 - Design tokens, full responsive layout, Product + FAQPage JSON-LD
 
@@ -208,18 +242,25 @@ lib/
 
 - `<Logo>` (`components/Logo.tsx`) renders a text placeholder. Drop the real
   graffiti-tag SVG in and replace the `<span>` — nothing else changes.
-- Product imagery is **partly real**: 8 of the 25 catalogue products have
+- Product imagery is **partly real**: 9 of the 25 catalogue products have
   photos, uploaded to Medusa by `backend/src/scripts/import-product-images.ts`.
   They are served same-origin through `app/media/[...path]/route.ts` — see
   `lib/media.ts` for why they cannot be loaded from the backend URL directly.
   The remaining products get a generated tile built from brand name and product
   kind (`lib/placeholder.ts`); it is a deliberate design, not an error state,
   so the grid stays coherent whatever the photo coverage is.
-- The cart is **local only** (React Context + `localStorage`). Mutations are
-  isolated in `components/CartProvider.tsx` for swapping to
-  `sdk.store.cart.*` later.
-- **Checkout does not exist.** The "Zur Kasse" button is deliberately disabled
-  pending the Payrexx / TWINT / Powerpay integration.
+- The cart is a **real Medusa cart**. The cart id lives in an httpOnly cookie
+  and every mutation goes through a server action (`app/actions/cart.ts`), so
+  the publishable key never reaches the browser. Adding to an existing line is
+  always an absolute-quantity update — see `lib/cart/plan.ts` for the Medusa
+  pricing bug that makes this mandatory.
+- **Checkout runs end to end**, guest-only by design.
+- **Payment is not live.** The last step still uses Medusa's
+  `pp_system_default` provider, which authorises WITHOUT MOVING MONEY. Payrexx
+  (TWINT, Powerpay, cards) plugs into `lib/checkout/payment.ts`, the only file
+  that talks to a payment provider. It must be swapped before going live.
+- Customer accounts exist: registration, login, password reset and an account
+  area under `/konto`. Ordering without an account stays possible.
 - Legal pages contain visibly marked `[[PLATZHALTER: …]]` fields — company
   name, address, UID, e-mail, return-policy terms. These were **not** invented.
   Fill them in and have the texts reviewed before going live.

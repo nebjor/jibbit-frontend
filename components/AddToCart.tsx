@@ -28,7 +28,11 @@ const MAX_QUANTITY = 999;
  * not in a default nobody chose.
  */
 export function AddToCart({ product }: { product: ProductView }) {
-  const { addLine } = useCart();
+  // `isPending` is new: adding to the cart is a network round trip now, so the
+  // CTA has to stop accepting clicks until it lands. Everything else about this
+  // component — including the shape of the object handed to `addLine` — is
+  // unchanged; the cart layer reads `variantId` and ignores the rest.
+  const { addLine, isPending } = useCart();
   const multi = product.variants.length > 1;
 
   const [variantId, setVariantId] = useState<string | null>(
@@ -156,7 +160,7 @@ export function AddToCart({ product }: { product: ProductView }) {
         <button
           type="button"
           className={styles.cta}
-          disabled={!canAdd}
+          disabled={!canAdd || isPending}
           onClick={() => {
             if (!selected) return;
             addLine(
@@ -176,7 +180,11 @@ export function AddToCart({ product }: { product: ProductView }) {
             );
           }}
         >
-          {canAdd ? "In den Warenkorb" : "Ausverkauft"}
+          {!canAdd
+            ? "Ausverkauft"
+            : isPending
+              ? "Wird hinzugefügt …"
+              : "In den Warenkorb"}
         </button>
       </div>
     </div>

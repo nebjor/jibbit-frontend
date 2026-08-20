@@ -71,6 +71,20 @@ async function getRegionId(tenant: TenantConfig, sdk: Medusa): Promise<string | 
   return promise;
 }
 
+/**
+ * The current tenant's region id — the same per-tenant cached lookup the
+ * product functions use.
+ *
+ * Exported for the cart layer (`lib/cart/server.ts`): creating a Medusa cart
+ * needs a region, and a SECOND region cache keyed by nothing would reintroduce
+ * exactly the cross-tenant leak this module's header warns about. One cache,
+ * one place.
+ */
+export async function getCurrentRegionId(): Promise<string | undefined> {
+  const tenant = await getTenantContext();
+  return getRegionId(tenant, getSdkForTenant(tenant));
+}
+
 // ---------------------------------------------------------------------------
 // Categories
 // ---------------------------------------------------------------------------
