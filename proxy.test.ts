@@ -14,7 +14,7 @@ vi.mock("./lib/tenant/config-cache", () => ({
 
 // Imported after the mocks so proxy.ts picks up the mocked modules.
 const { resolveTenantConfig } = await import("./lib/tenant/config-cache");
-const { proxy } = await import("./proxy");
+const { proxy, config } = await import("./proxy");
 
 function makeConfig(id: string, host: string): TenantConfig {
   return {
@@ -78,5 +78,42 @@ describe("proxy (tenant resolution)", () => {
     const forwarded = res.headers.get(`x-middleware-request-${TENANT_CONFIG_HEADER}`);
     expect(forwarded).not.toBe(spoofed);
     expect(decodeTenantHeader(forwarded as string)).toEqual(tenantA);
+  });
+});
+
+/**
+ * Der Matcher ist die eigentliche Sicherheitsgrenze — die Tests oben rufen
+ * `proxy()` direkt auf und sagen deshalb NICHTS darüber aus, welche Pfade dort
+ * überhaupt ankommen. Ein zu weit gefasster Ausschluss würde ganze Seiten an
+ * der Tenant-Auflösung vorbeischleusen, ohne dass ein Test rot wird.
+ */
+describe("proxy (matcher)", () => {
+  const matcher = new RegExp(`^${config.matcher[0]}$`);
+
+  it("lässt Seiten, sitemap und robots durch die Auflösung laufen", () => {
+    for (const path of [
+      "/",
+      "/shop",
+      "/products/raw-classic-rolls-slim",
+      "/sitemap.xml",
+      "/robots.txt",
+      "/mediathek", // NICHT vom media/-Ausschluss erfasst
+    ]) {
+      expect(matcher.test(path), path).toBe(true);
+    }
+  });
+
+  it("nimmt genau die Pfade aus, die keinen Tenant-Header vertragen", () => {
+    for (const path of [
+      "/_next/static/chunks/main.js",
+      "/_next/image",
+      "/favicon.ico",
+      "/healthz",
+      // Der Bildoptimizer ruft diesen Pfad ohne jeden Header auf und würde
+      // hier sonst 404 kassieren — siehe app/media/[...path]/route.ts.
+      "/media/test.jibbit.ch/1755-foo.webp",
+    ]) {
+      expect(matcher.test(path), path).toBe(false);
+    }
   });
 });
