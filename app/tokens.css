@@ -64,6 +64,13 @@
   /* ---- Motion ---------------------------------------------------------- */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --dur: 140ms;
+  /* Wartezeit, bevor ein Ladeindikator ÜBERHAUPT erscheint. Unter ~100 ms
+     nimmt niemand eine Lücke wahr, bis einige hundert ms bleibt man im Fluss
+     (Nielsen: 0.1 s / 1 s) — ein Indikator, der bei einem Cache-Treffer für
+     zwei Frames aufblitzt, macht die Seite gefühlt langsamer. 400 ms trennt
+     die schnellen Pfade (Prefetch, Mock-Fallback, warmer Cache: deutlich
+     darunter) von echtem Warten auf Backend oder Bildproxy (meist darüber). */
+  --loader-delay: 400ms;
 
   /* ---- Elevation (Kiosk is flat — lines, not shadows) ------------------ */
   --shadow-sticky: 0 -1px 0 var(--c-line);

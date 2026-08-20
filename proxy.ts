@@ -88,6 +88,12 @@ export const config = {
     // meldet das als „The requested resource isn't a valid image". Deshalb
     // löst app/media/[...path]/route.ts seinen Tenant aus dem PFAD auf und
     // braucht diesen Header gar nicht.
-    "/((?!_next/static|_next/image|favicon.ico|healthz|media/).*)",
+    //
+    // `loader/` sind die Pixel-Art-Assets aus public/ (Lade-Sprite und
+    // Fehler-Stub, siehe components/PixelJoint.tsx). Sie sind für alle
+    // Tenants dieselben Bytes — eine Tenant-Auflösung hätte hier nichts zu
+    // entscheiden, und ihr „unbekannter Host -> 404" würde ausgerechnet auf
+    // der Fehlerseite auch noch das Fehlerbild wegnehmen.
+    "/((?!_next/static|_next/image|favicon.ico|healthz|media/|loader/).*)",
   ],
 };
