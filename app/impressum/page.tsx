@@ -12,22 +12,28 @@ export default function ImpressumPage() {
   return (
     <Prose
       title="Impressum"
-      intro={`Angaben zum Betreiber von ${STORE.domain} gemäss Art. 3 Abs. 1 lit. s UWG.`}
+      intro={`Angaben zum Betreiber von ${STORE.domain} gemäss Art. 3 Abs. 1 lit. s UWG (Anbieterkennzeichnung im elektronischen Geschäftsverkehr).`}
+      updated="Entwurf vom 21. August 2026 — offene Angaben sind markiert"
     >
       <p>
         <strong>
-          Hinweis für den Betreiber: alle rot markierten Felder müssen vor dem
-          Livegang durch die echten Firmenangaben ersetzt werden. Es wurden
-          bewusst keine Daten erfunden.
+          Hinweis für den Betreiber: alle markierten Felder vor dem Livegang
+          durch die echten Angaben ersetzen. Es wurden bewusst keine Daten
+          erfunden — eine erkennbare Lücke ist besser als eine falsche Adresse.
         </strong>
       </p>
 
       <h2>Verantwortlich für diese Website</h2>
       <dl>
         <div>
-          <dt>Firma / Betreiber</dt>
+          <dt>Betreiber</dt>
           <dd>
-            <Platzhalter>Firmenname bzw. Name des Inhabers</Platzhalter>
+            Joris Neber
+            <br />
+            <Platzhalter>
+              Rechtsform und genaue Firmenbezeichnung gemäss Handelsregister,
+              falls eingetragen — z. B. Einzelunternehmen oder GmbH
+            </Platzhalter>
           </dd>
         </div>
         <div>
@@ -43,36 +49,60 @@ export default function ImpressumPage() {
         <div>
           <dt>E-Mail</dt>
           <dd>
-            <Platzhalter>Kontakt-E-Mail-Adresse</Platzhalter>
+            <a href="mailto:demo@example.com">demo@example.com</a>
           </dd>
         </div>
         <div>
           <dt>Telefon</dt>
           <dd>
-            <Platzhalter>Telefonnummer (optional)</Platzhalter>
+            <Platzhalter>
+              Telefonnummer, falls telefonischer Kontakt angeboten wird — sonst
+              diese Zeile streichen
+            </Platzhalter>
           </dd>
         </div>
         <div>
           <dt>Handelsregister / UID</dt>
           <dd>
-            <Platzhalter>UID-Nummer, z.B. CHE-123.456.789</Platzhalter>
+            <Platzhalter>
+              UID (CHE-XXX.XXX.XXX), falls im Handelsregister eingetragen —
+              sonst diese Zeile streichen
+            </Platzhalter>
           </dd>
         </div>
         <div>
-          <dt>Mehrwertsteuernummer</dt>
+          <dt>Mehrwertsteuer</dt>
           <dd>
-            <Platzhalter>MWST-Nummer, falls MWST-pflichtig</Platzhalter>
+            <Platzhalter>
+              MWST-Nummer, falls mehrwertsteuerpflichtig — sonst diese Zeile
+              streichen
+            </Platzhalter>
           </dd>
         </div>
       </dl>
 
+      <h2>Sortiment — bewusst ohne Tabak und Nikotin</h2>
+      <p>
+        {STORE.domain} verkauft Raucherzubehör: Zigarettenpapier, Filter und
+        Tips, Grinder, Aschenbecher, Hülsen und Aufbewahrung. Wir führen bewusst
+        keinen Tabak, keine nikotinhaltigen Produkte und keine Produkte mit CBD
+        oder THC.
+      </p>
+
+      <h2>Abgabe nur an Erwachsene</h2>
+      <p>
+        Unsere Artikel geben wir nur an Personen ab 18 Jahren ab. Mit einer
+        Bestellung bestätigst du, dieses Alter erreicht zu haben.
+      </p>
+
       <h2>Haftungsausschluss</h2>
       <p>
         Die Inhalte dieser Website werden mit Sorgfalt erstellt. Für Richtigkeit,
-        Vollständigkeit und Aktualität der Angaben – insbesondere zu
-        Produkteigenschaften, Verfügbarkeiten und Preisen – wird keine Gewähr
+        Vollständigkeit und Aktualität der Angaben — insbesondere zu
+        Produkteigenschaften, Verfügbarkeiten und Preisen — wird keine Gewähr
         übernommen. Der Betreiber haftet nicht für Schäden, die aus dem Zugriff
-        auf oder der Nutzung dieser Website entstehen.
+        auf oder der Nutzung dieser Website entstehen, soweit gesetzlich
+        zulässig.
       </p>
 
       <h2>Externe Links</h2>
@@ -86,17 +116,10 @@ export default function ImpressumPage() {
       <p>
         Texte, Bilder und Gestaltung dieser Website sind urheberrechtlich
         geschützt. Eine Verwendung ausserhalb der Grenzen des Urheberrechts
-        bedarf der vorherigen schriftlichen Zustimmung des Betreibers.
-        Marken- und Produktnamen der geführten Hersteller (u.a. RAW, Elements,
-        PURIZE, OCB, Smoking, Greengo, Zig Zag) sind Eigentum der jeweiligen
+        bedarf der vorherigen schriftlichen Zustimmung des Betreibers. Marken-
+        und Produktnamen der geführten Hersteller (u. a. RAW, Elements, PURIZE,
+        OCB, Smoking, Greengo, Zig Zag) sind Eigentum der jeweiligen
         Rechteinhaber.
-      </p>
-
-      <h2>Altersbeschränkung</h2>
-      <p>
-        Die in diesem Shop angebotenen Artikel richten sich ausschliesslich an
-        Personen ab 18 Jahren. Mit einer Bestellung bestätigst du, dieses Alter
-        erreicht zu haben.
       </p>
     </Prose>
   );
