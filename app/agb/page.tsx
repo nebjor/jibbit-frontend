@@ -14,99 +14,129 @@ export default function AgbPage() {
     <Prose
       title="Allgemeine Geschäftsbedingungen"
       intro={`Diese AGB regeln alle Bestellungen über ${STORE.domain}. Bitte lies sie durch, bevor du bestellst.`}
-      updated="Entwurf – vor Livegang juristisch prüfen lassen"
+      updated="Entwurf vom 21. August 2026 — vor Livegang juristisch prüfen lassen"
     >
       <p>
         <strong>
-          Hinweis für den Betreiber: dieser Text ist eine inhaltlich vollständige
-          Vorlage, aber keine Rechtsberatung. Vor dem Livegang durch eine
-          juristische Fachperson prüfen lassen und die markierten Felder füllen.
+          Hinweis für den Betreiber: dieser Text ist eine inhaltlich
+          vollständige Vorlage, aber keine Rechtsberatung. Vor dem Livegang
+          durch eine juristische Fachperson prüfen lassen und die markierten
+          Felder füllen.
         </strong>
       </p>
 
       <h2>1. Geltungsbereich</h2>
       <p>
-        Diese Allgemeinen Geschäftsbedingungen gelten für sämtliche Bestellungen,
-        die über den Onlineshop {STORE.domain} getätigt werden. Betreiberin ist{" "}
-        <Platzhalter>Firmenname</Platzhalter> (nachfolgend &laquo;wir&raquo;).
-        Abweichende Bedingungen der Kundin oder des Kunden gelten nur, wenn wir
-        ihnen ausdrücklich schriftlich zustimmen.
+        Diese Allgemeinen Geschäftsbedingungen gelten für sämtliche
+        Bestellungen, die über den Onlineshop {STORE.domain} getätigt werden.
+        Betreiber ist Joris Neber,{" "}
+        <Platzhalter>
+          Rechtsform bzw. Firma und Postanschrift eintragen
+        </Platzhalter>{" "}
+        (nachfolgend &laquo;wir&raquo;). Abweichende Bedingungen der Kundin
+        oder des Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich
+        zustimmen.
       </p>
 
-      <h2>2. Vertragsschluss</h2>
+      <h2>2. Sortiment</h2>
       <p>
-        Die Darstellung der Produkte im Shop stellt kein bindendes Angebot dar,
-        sondern eine Einladung zur Bestellung. Mit dem Absenden der Bestellung
-        gibst du ein verbindliches Angebot ab. Der Vertrag kommt zustande, sobald
-        wir die Bestellung per E-Mail bestätigen oder die Ware versenden.
-      </p>
-      <p>
-        Wir behalten uns vor, Bestellungen ohne Angabe von Gründen abzulehnen,
-        etwa bei Nichtverfügbarkeit, offensichtlichen Preisfehlern oder
-        begründeten Zweifeln an der Altersangabe.
+        Wir verkaufen Raucherzubehör: Zigarettenpapier, Filter und Tips,
+        Grinder, Aschenbecher, Hülsen und Aufbewahrung. Wir führen bewusst
+        keinen Tabak, keine nikotinhaltigen Produkte und keine Produkte mit
+        CBD oder THC.
       </p>
 
       <h2>3. Mindestalter</h2>
       <p>
-        Unsere Artikel werden ausschliesslich an Personen ab {MIN_AGE} Jahren
-        abgegeben. Mit der Bestellung bestätigst du, dass du dieses Alter
-        erreicht hast. Bei berechtigten Zweifeln können wir einen Altersnachweis
-        verlangen oder die Bestellung stornieren.
+        Unsere Artikel geben wir ausschliesslich an Personen ab {MIN_AGE}{" "}
+        Jahren ab. Mit der Bestellung bestätigst du, dass du dieses Alter
+        erreicht hast. Bei berechtigten Zweifeln können wir einen
+        Altersnachweis verlangen oder die Bestellung stornieren.
       </p>
 
-      <h2>4. Preise</h2>
+      <h2>4. Bestellablauf und Vertragsschluss</h2>
       <p>
-        Alle Preise verstehen sich in Schweizer Franken (CHF) und inklusive der
-        gesetzlichen Mehrwertsteuer. Massgeblich ist der Preis, der zum Zeitpunkt
-        der Bestellung im Shop angezeigt wird. Versandkosten werden im Warenkorb
-        und vor Abschluss der Bestellung separat ausgewiesen.
+        Die Darstellung der Produkte im Shop ist kein bindendes Angebot,
+        sondern eine Einladung zur Bestellung. Vor dem Absenden siehst du eine
+        Übersicht deiner Bestellung mit allen Positionen, Preisen und
+        Versandkosten und kannst deine Eingaben dort prüfen und korrigieren.
+      </p>
+      <p>
+        Mit dem Absenden der Bestellung gibst du ein verbindliches Angebot ab.
+        Den Eingang deiner Bestellung bestätigen wir dir unverzüglich per
+        E-Mail; diese Eingangsbestätigung ist noch keine Annahme. Der Vertrag
+        kommt zustande, sobald wir die Bestellung ausdrücklich bestätigen oder
+        die Ware versenden.
+      </p>
+      <p>
+        Wir können Bestellungen ohne Angabe von Gründen ablehnen, etwa bei
+        Nichtverfügbarkeit, offensichtlichen Preisfehlern oder begründeten
+        Zweifeln an der Altersangabe.
       </p>
 
-      <h2>5. Versand und Lieferung</h2>
+      <h2>5. Preise</h2>
       <p>
-        Wir versenden innerhalb der Schweiz. Die Versandkosten betragen pauschal{" "}
-        {formatPrice(SHIPPING.flatRate)}. Ab einem Bestellwert von{" "}
+        Alle Preise verstehen sich in Schweizer Franken (CHF) und inklusive
+        der gesetzlichen Mehrwertsteuer. Massgeblich ist der Preis, der zum
+        Zeitpunkt der Bestellung im Shop angezeigt wird. Versandkosten werden
+        im Warenkorb und vor Abschluss der Bestellung separat ausgewiesen.
+      </p>
+
+      <h2>6. Versand und Lieferung</h2>
+      <p>
+        Wir liefern an Adressen in der Schweiz und versenden ab Lager in der
+        Schweiz. Die Versandkosten betragen pauschal{" "}
+        {formatPrice(SHIPPING.flatRate)}; ab einem Bestellwert von{" "}
         {formatPrice(SHIPPING.freeThreshold)} liefern wir versandkostenfrei.
       </p>
       <p>
-        Angegebene Lieferfristen sind Richtwerte und nicht verbindlich zugesagt.
-        Verzögerungen durch die Post oder durch Lieferengpässe begründen keinen
+        Wir versenden in der Regel innerhalb von 1–3 Werktagen nach
+        Bestelleingang. Angegebene Lieferfristen sind Richtwerte und nicht
+        verbindlich zugesagt; Verzögerungen beim Transport begründen keinen
         Schadenersatzanspruch. Details unter{" "}
         <Link href="/service/versand">Versand &amp; Lieferung</Link>.
       </p>
 
-      <h2>6. Zahlung</h2>
+      <h2>7. Zahlung</h2>
       <p>
-        Wir akzeptieren TWINT und Powerpay (Kauf auf Rechnung). Die
-        Zahlungsabwicklung erfolgt über unseren Zahlungsdienstleister Payrexx.
-        Bei Zahlung auf Rechnung gelten zusätzlich die Bedingungen des
+        Es gelten die im Bestellprozess angezeigten Zahlungsarten; vorgesehen
+        sind TWINT und Kauf auf Rechnung. Die Zahlungsabwicklung erfolgt über
+        einen externen Zahlungsdienstleister:{" "}
+        <Platzhalter>
+          Zahlungsdienstleister eintragen, sobald der Anbieter feststeht
+        </Platzhalter>
+        . Beim Kauf auf Rechnung gelten zusätzlich die Bedingungen des
         Rechnungsanbieters, insbesondere zur Bonitätsprüfung.
       </p>
 
-      <h2>7. Eigentumsvorbehalt</h2>
+      <h2>8. Eigentumsvorbehalt</h2>
       <p>
         Die gelieferte Ware bleibt bis zur vollständigen Bezahlung unser
         Eigentum.
       </p>
 
-      <h2>8. Rückgabe</h2>
+      <h2>9. Rückgabe</h2>
       <p>
         Das schweizerische Recht kennt für Bestellungen im Onlinehandel kein
         gesetzliches Widerrufsrecht. Wir gewähren dir freiwillig ein
-        vertragliches Rückgaberecht. Die Bedingungen dazu findest du unter{" "}
-        <Link href="/widerrufsrecht">Widerrufsrecht</Link> und{" "}
+        vertragliches Rückgaberecht von 14 Tagen ab Erhalt der Ware. Die
+        Bedingungen dazu findest du unter{" "}
+        <Link href="/widerrufsrecht">Widerrufsrecht</Link>, den praktischen
+        Ablauf unter{" "}
         <Link href="/service/rueckgabe">Rückgabe &amp; Umtausch</Link>.
       </p>
 
-      <h2>9. Gewährleistung</h2>
+      <h2>10. Gewährleistung</h2>
       <p>
         Es gelten die gesetzlichen Bestimmungen zur Sachgewährleistung nach
-        Schweizer Obligationenrecht. Offensichtliche Mängel sind uns unverzüglich
-        nach Erhalt der Ware zu melden. Bei berechtigten Mängelrügen ersetzen wir
-        die Ware oder erstatten den Kaufpreis.
+        Schweizer Obligationenrecht (Art. 197 ff. OR); die Ansprüche verjähren
+        zwei Jahre nach Ablieferung der Ware. Bitte melde uns Mängel möglichst
+        bald nach der Entdeckung. Bei berechtigten Mängelrügen ersetzen wir
+        die Ware oder erstatten den Kaufpreis; die Rückversandkosten gehen in
+        diesem Fall auf uns.
       </p>
 
-      <h2>10. Haftung</h2>
+      <h2>11. Haftung</h2>
       <p>
         Unsere Haftung beschränkt sich auf Vorsatz und grobe Fahrlässigkeit,
         soweit gesetzlich zulässig. Eine Haftung für indirekte Schäden oder
@@ -114,24 +144,25 @@ export default function AgbPage() {
         bleibt in jedem Fall vorbehalten.
       </p>
 
-      <h2>11. Datenschutz</h2>
+      <h2>12. Datenschutz</h2>
       <p>
         Wie wir mit deinen Daten umgehen, steht in unserer{" "}
         <Link href="/datenschutz">Datenschutzerklärung</Link>.
       </p>
 
-      <h2>12. Änderungen dieser AGB</h2>
+      <h2>13. Änderungen dieser AGB</h2>
       <p>
-        Wir können diese AGB jederzeit ändern. Massgebend ist die Fassung, die
-        zum Zeitpunkt deiner Bestellung im Shop veröffentlicht war.
+        Wir können diese AGB jederzeit ändern. Für deine Bestellung ist die
+        Fassung massgebend, die zum Zeitpunkt der Bestellung im Shop
+        veröffentlicht war.
       </p>
 
-      <h2>13. Anwendbares Recht und Gerichtsstand</h2>
+      <h2>14. Anwendbares Recht und Gerichtsstand</h2>
       <p>
         Es gilt ausschliesslich schweizerisches Recht unter Ausschluss des
-        UN-Kaufrechts (CISG). Gerichtsstand ist{" "}
-        <Platzhalter>Sitz der Betreiberin</Platzhalter>, soweit nicht zwingende
-        gesetzliche Bestimmungen einen anderen Gerichtsstand vorschreiben.
+        UN-Kaufrechts (CISG). Gerichtsstand ist Winterthur, soweit nicht
+        zwingende gesetzliche Bestimmungen einen anderen Gerichtsstand
+        vorschreiben.
       </p>
     </Prose>
   );

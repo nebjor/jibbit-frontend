@@ -14,6 +14,7 @@ export default function VersandPage() {
     <Prose
       title="Versand & Lieferung"
       intro={`Pauschal ${formatPrice(SHIPPING.flatRate)} innerhalb der Schweiz — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Keine versteckten Zuschläge an der Kasse.`}
+      updated="Entwurf vom 21. August 2026"
     >
       <h2>Versandkosten</h2>
       <ul>
@@ -27,51 +28,46 @@ export default function VersandPage() {
         </li>
       </ul>
       <p>
-        Die Pauschale gilt pro Bestellung, unabhängig von Anzahl und Gewicht der
-        Artikel. Im Warenkorb siehst du jederzeit, wie viel dir noch bis zum
-        Gratisversand fehlt.
+        Die Pauschale gilt pro Bestellung, unabhängig von Anzahl und Gewicht
+        der Artikel. Im Warenkorb siehst du jederzeit, wie viel dir noch bis
+        zum Gratisversand fehlt.
       </p>
 
       <h2>Versandgebiet</h2>
       <p>
-        Wir versenden innerhalb der Schweiz und aus der Schweiz — es fallen also
-        keine Zollgebühren und keine Wartezeiten an der Grenze an.
-      </p>
-      <p>
-        <Platzhalter>
-          Betreiber festlegen: Liefern wir nach Liechtenstein? Ins Ausland?
-        </Platzhalter>
+        Wir liefern derzeit an Adressen in der Schweiz. Versendet wird ab
+        unserem Lager in der Schweiz — es fallen also keine Zollgebühren und
+        keine Wartezeiten an der Grenze an.
       </p>
 
       <h2>Lieferfrist</h2>
       <p>
-        Bestellungen, die an einem Werktag bis{" "}
-        <Platzhalter>Bestellschluss, z.B. 14:00 Uhr</Platzhalter> eingehen,
-        verpacken wir in der Regel am selben Tag. Danach dauert die Zustellung
-        üblicherweise{" "}
-        <Platzhalter>Anzahl Werktage</Platzhalter> Werktage.
+        Wir versenden in der Regel innerhalb von 1–3 Werktagen nach
+        Bestelleingang. Beim Kauf auf Rechnung kann sich der Versand bis zur
+        Bestätigung der Zahlungsart leicht verzögern.
       </p>
       <p>
         Angegebene Fristen sind Richtwerte. In Spitzenzeiten oder bei
-        Verzögerungen bei der Post kann es länger dauern — wir melden uns, wenn
-        etwas Grösseres dazwischenkommt.
+        Verzögerungen beim Transport kann es länger dauern — wir melden uns,
+        wenn etwas Grösseres dazwischenkommt.
       </p>
 
       <h2>Versandart</h2>
       <p>
         Wir versenden mit{" "}
-        <Platzhalter>Versanddienstleister und Produkt, z.B. Post A/B</Platzhalter>
-        . Die Sendungen sind neutral verpackt — von aussen ist nicht ersichtlich,
-        was drin ist.
+        <Platzhalter>
+          Versanddienstleister und Produkt eintragen, z. B. Post Economy /
+          Priority
+        </Platzhalter>
+        . Die Sendungen sind neutral verpackt — von aussen ist nicht
+        ersichtlich, was drin ist.
       </p>
 
       <h2>Sendungsverfolgung</h2>
       <p>
-        Sobald dein Paket unterwegs ist, bekommst du eine E-Mail mit der
-        Sendungsnummer.{" "}
-        <Platzhalter>
-          Betreiber bestätigen: wird Tracking angeboten?
-        </Platzhalter>
+        Sofern die gewählte Versandart eine Sendungsverfolgung bietet,
+        erhältst du die Sendungsnummer per E-Mail, sobald dein Paket unterwegs
+        ist.
       </p>
 
       <h2>Etwas stimmt nicht?</h2>

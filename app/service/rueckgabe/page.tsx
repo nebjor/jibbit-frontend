@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Prose, Platzhalter } from "@/components/Prose";
+import { Prose } from "@/components/Prose";
 
 export const metadata: Metadata = {
   title: "Rückgabe & Umtausch",
@@ -13,13 +13,11 @@ export default function RueckgabePage() {
     <Prose
       title="Rückgabe & Umtausch"
       intro="Falsch bestellt oder doch nicht das Richtige? Hier steht, wie du zurückgibst. Die rechtliche Grundlage dazu findest du unter Widerrufsrecht."
+      updated="Entwurf vom 21. August 2026"
     >
       <h2>In Kürze</h2>
       <ul>
-        <li>
-          Rückgabe innerhalb von{" "}
-          <Platzhalter>Anzahl Tage</Platzhalter> Tagen nach Erhalt
-        </li>
+        <li>Rückgabe innerhalb von 14 Tagen nach Erhalt</li>
         <li>Ware ungeöffnet, unbenutzt, in der Originalverpackung</li>
         <li>Vorher kurz melden — nicht einfach zurückschicken</li>
         <li>Defekte oder falsch gelieferte Ware: immer auf unsere Kosten</li>
@@ -37,32 +35,34 @@ export default function RueckgabePage() {
           Rücksendeadresse und allem Weiteren.
         </li>
         <li>
-          <strong>Verpacken und senden.</strong> Am besten in der
-          Originalverpackung, gut gepolstert. Leg einen Zettel mit der
-          Bestellnummer bei.
+          <strong>Verpacken und senden.</strong> Innerhalb von 14 Tagen nach
+          unserer Bestätigung, am besten in der Originalverpackung, gut
+          gepolstert. Leg einen Zettel mit der Bestellnummer bei.
         </li>
         <li>
           <strong>Erstattung.</strong> Sobald die Ware bei uns ist und geprüft
-          wurde, erstatten wir den Betrag über deine ursprüngliche Zahlungsart.
+          wurde, erstatten wir den Betrag innerhalb von 14 Tagen über deine
+          ursprüngliche Zahlungsart.
         </li>
       </ol>
 
       <h2>Was wir nicht zurücknehmen können</h2>
       <p>
-        Aus hygienischen Gründen und wegen der Art der Produkte sind ausgeschlossen:
+        Aus hygienischen Gründen und wegen der Art der Produkte sind
+        ausgeschlossen:
       </p>
       <ul>
         <li>geöffnete oder angebrauchte Papers und Filter</li>
         <li>
-          angebrochene Displays und Boxen, aus denen bereits Einheiten entnommen
-          wurden
+          angebrochene Displays und Boxen, aus denen bereits Einheiten
+          entnommen wurden
         </li>
         <li>Gutscheine</li>
         <li>Artikel, die eigens für dich bestellt wurden</li>
       </ul>
       <p>
-        Das gilt nicht für Mängel: ist etwas kaputt oder falsch geliefert, nehmen
-        wir es selbstverständlich zurück.
+        Das gilt nicht für Mängel: ist etwas kaputt oder falsch geliefert,
+        nehmen wir es selbstverständlich zurück.
       </p>
 
       <h2>Umtausch</h2>
@@ -82,8 +82,8 @@ export default function RueckgabePage() {
 
       <h2>Kosten des Rückversands</h2>
       <p>
-        Bei einer Rückgabe ohne Mangel trägt die Rückversandkosten{" "}
-        <Platzhalter>Betreiber festlegen: Kundin/Kunde oder wir</Platzhalter>.
+        Bei einer Rückgabe ohne Mangel trägst du die Kosten des Rückversands
+        selbst. Unfrei gesendete Pakete können wir nicht annehmen.
       </p>
 
       <h2>Rechtliches</h2>
