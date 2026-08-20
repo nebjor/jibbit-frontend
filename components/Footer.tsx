@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
-import { getCategories } from "@/lib/data";
 import { STORE, SHIPPING, PAYMENT_METHODS, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import styles from "./Footer.module.css";
@@ -10,13 +9,17 @@ import styles from "./Footer.module.css";
  *
  * Column structure adapted from how established Swiss headshops (e.g.
  * stayhighswiss.ch) group their footer: a Kundenservice block (Kontakt,
- * Versand & Lieferung, Zahlungsarten, Rückgabe, FAQ), a shop/category block,
- * and a legal block (Impressum, AGB, Datenschutz, Widerrufsrecht). All copy is
- * jibbit's own — nothing is lifted verbatim.
+ * Versand & Lieferung, Zahlungsarten, Rückgabe, FAQ) and a legal block
+ * (Impressum, AGB, Datenschutz, Widerrufsrecht). All copy is jibbit's own —
+ * nothing is lifted verbatim.
+ *
+ * Bewusst KEINE Kategorieliste mehr: die stand als vierte Kopie derselben
+ * Links im HTML (Header-Desktop, Header-Mobil, Shop-Filter, Footer). Die
+ * Kategorienavigation gibt es genau einmal — im Header (`CategoryNav`);
+ * für Crawler deckt die Sitemap die Kategorie-URLs ab. Der Footer macht,
+ * was nur er kann: Service und Rechtliches.
  */
-export async function Footer() {
-  const categories = await getCategories();
-
+export function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={`page ${styles.grid}`}>
@@ -28,20 +31,6 @@ export async function Footer() {
             {formatPrice(SHIPPING.freeThreshold)}
           </p>
         </div>
-
-        <nav className={styles.col} aria-label="Shop">
-          <h2 className={styles.colTitle}>Shop</h2>
-          <ul>
-            <li>
-              <Link href="/shop">Alle Produkte</Link>
-            </li>
-            {categories.map((c) => (
-              <li key={c.id}>
-                <Link href={`/shop?kategorie=${c.handle}`}>{c.name}</Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
 
         <nav className={styles.col} aria-label="Kundenservice">
           <h2 className={styles.colTitle}>Kundenservice</h2>

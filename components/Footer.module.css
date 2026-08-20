@@ -100,7 +100,9 @@
 
 @media (min-width: 1000px) {
   .grid {
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    /* Drei Spalten seit dem Wegfall der Kategorieliste (Duplikat der
+       Header-Navigation): Marke, Kundenservice, Rechtliches. */
+    grid-template-columns: 2fr 1fr 1fr;
     gap: var(--s-7);
   }
 }

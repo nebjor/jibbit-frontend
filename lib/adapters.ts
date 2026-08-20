@@ -27,8 +27,6 @@ import { MOCK_CATEGORIES } from "./mock-catalog";
 /** variant id -> its quantity breaks, as returned by /store/price-tiers. */
 export type TiersByVariant = Record<string, PriceTier[]>;
 
-const KNOWN_CATEGORIES: CategoryHandle[] = ["papers", "filter", "zubehoer"];
-
 const PACK_TYPES: PackType[] = ["single", "display", "box"];
 
 /**
@@ -55,11 +53,19 @@ function toPackaging(metadata: Record<string, unknown> | null | undefined): {
   };
 }
 
+/**
+ * Handle normalisieren, NICHT auf eine bekannte Liste einkürzen.
+ *
+ * Die frühere Fassung hat jedes unbekannte Handle auf "zubehoer" gezwungen.
+ * Folge im Shop: mehrere Backend-Kategorien behielten ihre Namen, zeigten
+ * aber alle auf `?kategorie=zubehoer` — und bei gewählter Kategorie waren
+ * alle diese Reiter gleichzeitig „aktiv". Unbekannte Handles laufen deshalb
+ * unverändert durch; nur Produkte GANZ OHNE Kategorie landen im
+ * Auffangkorb "zubehoer", damit sie im Mock-Filter auffindbar bleiben.
+ */
 function toCategoryHandle(raw: string | null | undefined): CategoryHandle {
-  const h = (raw ?? "").toLowerCase().replace("zubehör", "zubehoer");
-  return (KNOWN_CATEGORIES as string[]).includes(h)
-    ? (h as CategoryHandle)
-    : "zubehoer";
+  const h = (raw ?? "").trim().toLowerCase().replace("zubehör", "zubehoer");
+  return h || "zubehoer";
 }
 
 function toVariantView(

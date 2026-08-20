@@ -54,8 +54,13 @@ const KINDS: [RegExp, string][] = [
   [/filter|\btips?\b/i, "Filter"],
 ];
 
-/** Rückfall, wenn der Name nichts hergibt. */
-const CATEGORY_LABELS: Record<CategoryHandle, string> = {
+/**
+ * Rückfall, wenn der Name nichts hergibt. `CategoryHandle` ist ein offener
+ * String (Kategorien kommen aus dem Admin), deshalb deckt die Tabelle nur
+ * die Stammkategorien ab — alles andere macht `kindLabel` aus dem Handle
+ * selbst lesbar.
+ */
+const CATEGORY_LABELS: Record<string, string> = {
   papers: "Papers",
   filter: "Filter",
   zubehoer: "Zubehör",
@@ -83,5 +88,16 @@ export function brandLabel(title: string, brand?: string): string {
 /** Warenart für die Platzhalterkachel, z.B. „Aktivkohlefilter". */
 export function kindLabel(title: string, categoryHandle: CategoryHandle): string {
   const match = KINDS.find(([pattern]) => pattern.test(title));
-  return match ? match[1] : CATEGORY_LABELS[categoryHandle];
+  if (match) return match[1];
+  // Unbekannte Kategorie: Handle lesbar machen ("filter-tips" -> "Filter Tips")
+  // statt `undefined` auf die Kachel zu schreiben. Wortweise statt per \b\w,
+  // weil \w keine Umlaute kennt ("kräutermischungen" -> "Kräutermischungen").
+  return (
+    CATEGORY_LABELS[categoryHandle] ??
+    categoryHandle
+      .replace(/-+/g, " ")
+      .split(" ")
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+      .join(" ")
+  );
 }

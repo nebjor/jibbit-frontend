@@ -78,7 +78,9 @@ export default async function HomePage() {
           {categories.map((c) => (
             <Link
               key={c.id}
-              href={`/shop?kategorie=${c.handle}`}
+              /* Handles kommen aus dem Admin und können Sonderzeichen tragen
+                 ("filter-&-tips"): unkodiert zerreisst das `&` den Query. */
+              href={`/shop?kategorie=${encodeURIComponent(c.handle)}`}
               className={styles.cat}
             >
               <h3 className={styles.catName}>{c.name}</h3>

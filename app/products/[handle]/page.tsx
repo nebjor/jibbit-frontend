@@ -95,7 +95,8 @@ export default async function ProductPage({
         <span aria-hidden="true">/</span>
         {category && (
           <>
-            <Link href={`/shop?kategorie=${category.handle}`}>
+            {/* Kodiert: Handles können `&` oder Umlaute enthalten. */}
+            <Link href={`/shop?kategorie=${encodeURIComponent(category.handle)}`}>
               {category.name}
             </Link>
             <span aria-hidden="true">/</span>
