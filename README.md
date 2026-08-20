@@ -242,15 +242,25 @@ is on the cart, because Medusa reports 0 until then. It is labelled
 
 - `<Logo>` (`components/Logo.tsx`) renders a text placeholder. Drop the real
   graffiti-tag SVG in and replace the `<span>` — nothing else changes.
-- Product imagery: no photos exist, so `ProductImage` renders a placeholder
-  tile. Real URLs flow through automatically once Medusa serves them.
-- **Payment.** The checkout runs end to end, but the last step still uses
-  Medusa's `pp_system_default` provider, which authorises WITHOUT MOVING MONEY.
-  Payrexx (TWINT, Powerpay, cards) plugs into `lib/checkout/payment.ts`, which
-  is the only file that talks to a payment provider and whose return type
-  already admits a redirect flow. It must be swapped before going live.
-- Customer accounts and login do not exist. The checkout is guest-only by
-  design and assumes no customer record.
+- Product imagery is **partly real**: 9 of the 25 catalogue products have
+  photos, uploaded to Medusa by `backend/src/scripts/import-product-images.ts`.
+  They are served same-origin through `app/media/[...path]/route.ts` — see
+  `lib/media.ts` for why they cannot be loaded from the backend URL directly.
+  The remaining products get a generated tile built from brand name and product
+  kind (`lib/placeholder.ts`); it is a deliberate design, not an error state,
+  so the grid stays coherent whatever the photo coverage is.
+- The cart is a **real Medusa cart**. The cart id lives in an httpOnly cookie
+  and every mutation goes through a server action (`app/actions/cart.ts`), so
+  the publishable key never reaches the browser. Adding to an existing line is
+  always an absolute-quantity update — see `lib/cart/plan.ts` for the Medusa
+  pricing bug that makes this mandatory.
+- **Checkout runs end to end**, guest-only by design.
+- **Payment is not live.** The last step still uses Medusa's
+  `pp_system_default` provider, which authorises WITHOUT MOVING MONEY. Payrexx
+  (TWINT, Powerpay, cards) plugs into `lib/checkout/payment.ts`, the only file
+  that talks to a payment provider. It must be swapped before going live.
+- Customer accounts exist: registration, login, password reset and an account
+  area under `/konto`. Ordering without an account stays possible.
 - Legal pages contain visibly marked `[[PLATZHALTER: …]]` fields — company
   name, address, UID, e-mail, return-policy terms. These were **not** invented.
   Fill them in and have the texts reviewed before going live.

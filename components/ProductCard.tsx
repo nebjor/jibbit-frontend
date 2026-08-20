@@ -21,7 +21,8 @@ export function ProductCard({
         <ProductImage
           src={product.images[0]}
           alt={product.title}
-          brand={product.brand}
+          product={product}
+          variant="card"
           priority={priority}
         />
         <div className={styles.body}>

@@ -13,6 +13,7 @@ import { AddToCart } from "@/components/AddToCart";
 import { SHIPPING, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { getTenantContext } from "@/lib/tenant/context";
+import { toMediaSrc } from "@/lib/media";
 import styles from "./product.module.css";
 
 /**
@@ -62,6 +63,14 @@ export default async function ProductPage({
     "@type": "Product",
     name: product.title,
     description: product.description,
+    // Absolut und über die eigene Domain: die Bild-URL aus Medusa zeigt auf
+    // die Backend-Adresse des Tenants, die von aussen in der Regel gar nicht
+    // erreichbar ist (im Compose `http://medusa:9000`). Siehe lib/media.ts.
+    image: product.images
+      .map((url) => toMediaSrc(url, tenant.host).src)
+      .map((src) =>
+        src.startsWith("/") ? `https://${tenant.theme.domain}${src}` : src,
+      ),
     brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
     offers: {
       "@type": "Offer",
@@ -100,7 +109,8 @@ export default async function ProductPage({
           <ProductImage
             src={product.images[0]}
             alt={product.title}
-            brand={product.brand}
+            product={product}
+            variant="hero"
             priority
           />
           {product.images.length > 1 && (
@@ -110,7 +120,8 @@ export default async function ProductPage({
                   key={src}
                   src={src}
                   alt={`${product.title} — Ansicht ${i + 2}`}
-                  brand={product.brand}
+                  product={product}
+                  variant="thumb"
                 />
               ))}
             </div>
