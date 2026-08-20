@@ -6,7 +6,15 @@
  * only the adapter changes — no component does.
  */
 
-export type CategoryHandle = "papers" | "filter" | "zubehoer";
+/**
+ * Kategorie-Handle, wie es vom Backend kommt (normalisiert in
+ * `lib/adapters.ts`). Bewusst ein offener String und keine Union: Kategorien
+ * pflegt der Betreiber im Admin, und jede neue Kategorie muss ohne
+ * Code-Änderung sauber durch Navigation, Filter und Sitemap laufen. Die
+ * frühere harte Union liess alle unbekannten Handles auf "zubehoer"
+ * kollabieren — drei Kategorien, ein Link, drei „aktive" Reiter.
+ */
+export type CategoryHandle = string;
 
 export interface CategoryView {
   id: string;

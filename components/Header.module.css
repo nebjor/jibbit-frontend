@@ -2,12 +2,23 @@
   background: var(--c-ink);
   color: var(--c-ground);
   font-size: 12px;
-  padding: var(--s-2) 0;
+  padding: var(--s-1) 0;
   text-align: center;
 }
 
 .promo strong {
   font-weight: 700;
+}
+
+/* Mobil nur das Kernversprechen — eine Zeile, kein Umbruch. */
+.promoExtra {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .promoExtra {
+    display: inline;
+  }
 }
 
 .header {
@@ -18,11 +29,25 @@
   border-bottom: var(--border-w) solid var(--c-line);
 }
 
+/* Kopfleiste als Grid: die Kategorienav (Grid-Area `nav`, gestylt in
+   CategoryNav.module.css) ist EIN DOM-Element und wandert nur per
+   Grid-Area — mobil in die zweite Zeile, ab 900px zwischen Logo und
+   Aktionen. `search` ist der reservierte Platz für die Suchleiste aus dem
+   parallelen Branch; solange die Spalte leer ist, kollabiert sie auf 0. */
 .bar {
-  display: flex;
+  display: grid;
+  grid-template-areas:
+    "brand search actions"
+    "nav nav nav";
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-4);
+  column-gap: var(--s-4);
+}
+
+.brand {
+  grid-area: brand;
+  display: inline-flex;
+  align-items: center;
   min-height: var(--header-h);
 }
 
@@ -32,67 +57,16 @@
 
 /* Kontolink und Warenkorb rücken zusammen an den rechten Rand. */
 .actions {
+  grid-area: actions;
   display: flex;
   align-items: center;
+  justify-self: end;
   gap: var(--s-1);
 }
 
-.nav {
-  display: none;
-  gap: var(--s-5);
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-}
-
-.nav a {
-  padding: var(--s-2) 0;
-  border-bottom: 2px solid transparent;
-}
-
-.nav a:hover {
-  border-bottom-color: var(--c-ink);
-  text-decoration: none;
-}
-
-/* ---- mobile category strip -------------------------------------------- */
-.mobileNav {
-  border-top: var(--border-w) solid var(--c-line);
-  overflow: hidden;
-}
-
-.mobileScroll {
-  display: flex;
-  gap: var(--s-4);
-  overflow-x: auto;
-  padding: var(--s-2) var(--page-pad);
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.mobileScroll::-webkit-scrollbar {
-  display: none;
-}
-
-.mobileScroll a {
-  white-space: nowrap;
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-}
-
 @media (min-width: 900px) {
-  .nav {
-    display: flex;
-  }
-  .mobileNav {
-    display: none;
+  .bar {
+    grid-template-areas: "brand nav search actions";
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
   }
 }
