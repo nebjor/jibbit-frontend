@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import { CartButton } from "./CartButton";
 import { AccountLink } from "./AccountLink";
 import { CategoryNav } from "./CategoryNav";
+import { SearchBar } from "./search/SearchBar";
 import { getCategories } from "@/lib/data";
 import { SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
@@ -66,6 +67,11 @@ export async function Header() {
           <Suspense fallback={null}>
             <CategoryNav categories={categories} />
           </Suspense>
+
+          {/* Instant search — self-contained (own CSS module), deliberately a
+              single element here to keep merges with the navigation rework
+              cheap. Sizing lives in SearchBox.module.css, not Header.css. */}
+          <SearchBar />
 
           <div className={styles.actions}>
             <AccountLink />

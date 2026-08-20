@@ -1,0 +1,127 @@
+/* Search results page. Mirrors shop.module.css so both listings feel like
+   one system. Tokens only. */
+
+.wrap {
+  padding-block: var(--s-6) var(--s-8);
+}
+
+.head {
+  max-width: 60ch;
+  margin-bottom: var(--s-5);
+}
+
+.title {
+  font-size: clamp(28px, 7vw, 48px);
+  margin: var(--s-2) 0;
+  overflow-wrap: anywhere;
+}
+
+.form {
+  display: flex;
+  gap: var(--s-2);
+  max-width: 560px;
+  margin-bottom: var(--s-4);
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 var(--s-3);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.input:hover,
+.input:focus {
+  border-color: var(--c-ink);
+}
+
+.submit {
+  min-height: 48px;
+  padding: 0 var(--s-5);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  background: var(--c-ink);
+  color: var(--c-ground);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.hint {
+  padding-block: var(--s-4);
+  color: var(--c-muted);
+  max-width: 46ch;
+}
+
+.count {
+  padding-block: var(--s-4);
+  font-size: 13px;
+  color: var(--c-muted);
+  border-top: var(--border-w) solid var(--c-line);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+}
+
+.empty {
+  padding: var(--s-8) 0;
+  max-width: 46ch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-items: flex-start;
+}
+
+.emptyTitle {
+  font-size: 28px;
+}
+
+.empty p {
+  color: var(--c-muted);
+}
+
+.emptyCta {
+  margin-top: var(--s-2);
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s-5);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-weight: 700;
+}
+
+.emptyCta:hover {
+  background: var(--c-ink);
+  color: var(--c-ground);
+  text-decoration: none;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-4);
+  }
+}
+
+@media (min-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
