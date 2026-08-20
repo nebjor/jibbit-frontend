@@ -72,6 +72,9 @@
 @media (min-width: 768px) {
   :root {
     --page-pad: var(--s-5);
-    --header-h: 72px;
+    /* 64 statt 72: die Kopfleiste trägt seit dem Nav-Umbau nur noch eine
+       Zeile (Logo · Kategorien · Aktionen) und braucht die Reserve nicht —
+       auf einem 768px-Notebook zählt jede Zeile über den Produkten. */
+    --header-h: 64px;
   }
 }
