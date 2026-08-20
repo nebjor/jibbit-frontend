@@ -1,0 +1,52 @@
+/* Füllt den .frame aus ProductImage.module.css vollständig aus — der Rahmen
+   reserviert die Masse (aspect-ratio), hier wird nur geschichtet. */
+.media {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* ─── Warten ─────────────────────────────────────────────────────────
+   Liegt ÜBER dem eintreffenden Bild und verschwindet mit onLoad. Bewusst ohne
+   deckenden Hintergrund: fiele die Hydration aus, stünde sonst eine deckende
+   Fläche für immer vor einem längst geladenen Bild. */
+.wait {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Erst ab --loader-delay sichtbar (Begründung in MediaImage.tsx). Die
+     opacity-Rampe ist von der Sprite-Animation getrennt: sie liegt auf diesem
+     Wrapper, die Bildschaltung auf dem Kind — so kann reduced-motion die
+     Bildschaltung anhalten, ohne das Erscheinen zu verhindern. */
+  opacity: 0;
+  animation: reveal 180ms var(--ease) var(--loader-delay) forwards;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ─── Fehler ────────────────────────────────────────────────────────── */
+.broken {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+}
+
+.brokenText {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--c-muted);
+  text-align: center;
+}
