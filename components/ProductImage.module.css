@@ -9,33 +9,81 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--s-2);
   overflow: hidden;
+  /* Bezugsgroesse fuer die cqw-Einheiten unten: die Platzhalterschrift muss
+     sich nach der KACHEL richten, nicht nach dem Fenster. Dieselbe Kachel
+     erscheint als 150-px-Vorschau und als 620-px-Hauptbild; mit vw-Einheiten
+     waere die Schrift in der Vorschau riesig und im Hauptbild winzig. */
+  container-type: inline-size;
 }
 
+/* `fill` positioniert das Bild absolut ueber die ganze Kachel. `contain`
+   statt `cover`: Produktfotos sind Freisteller in wechselndem Seitenverhaeltnis
+   (381x600 bis 600x204) — beschnitten faellt bei den flachen die Haelfte des
+   Produkts weg. Der verbleibende Rand traegt die Flaechenfarbe der Kachel. */
 .img {
-  width: 100%;
-  height: 100%;
   object-fit: contain;
 }
 
-.mark {
-  font-family: var(--font-display);
-  font-size: clamp(32px, 12vw, 64px);
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--c-ink);
-  opacity: 0.14;
-  letter-spacing: -0.03em;
-  line-height: 1;
+/* ─── Platzhalter fuer Produkte ohne Foto ─────────────────────────────
+   Ruhig gehalten und ohne jeden Hinweis auf ein fehlendes Bild: die Kachel
+   soll wie eine Gestaltungsentscheidung aussehen, nicht wie eine Luecke.
+   Alle Farben kommen aus app/tokens.css, ein Farbwechsel der Colorway zieht
+   also mit. */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4cqw;
+  padding: 8cqw;
+  text-align: center;
+  /* Sehr feines Diagonalraster als Textur — --c-line auf --c-surface, also
+     ein Kontrast von rund 1.15:1. Es soll die Kachel von einem Foto mit
+     weissem Hintergrund unterscheidbar machen, mehr nicht.
+     Fester Abstand in Pixeln, NICHT in cqw: eine mitwachsende Teilung ergaebe
+     auf der 150-px-Vorschau Linien von unter einem halben Pixel, die je nach
+     Geraet flimmern. */
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 9px,
+    var(--c-line) 9px 10px
+  );
 }
 
-.note {
-  position: absolute;
-  bottom: var(--s-2);
-  right: var(--s-2);
-  font-size: 10px;
-  letter-spacing: var(--tracking-label);
+.brand {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 15cqw, 64px);
+  font-weight: 700;
+  line-height: 0.95;
   text-transform: uppercase;
+  letter-spacing: var(--tracking-display);
+  color: var(--c-ink);
+  /* Gedaempft, damit die Kachel neben einem echten Foto nicht lauter ist als
+     dieses. Der Kontrast zum Text darunter bleibt trotzdem deutlich. */
+  opacity: 0.62;
+  /* Die Textur soll nicht durch die Buchstaben laufen. */
+  background: var(--c-surface);
+  padding-inline: 2cqw;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.rule {
+  width: 14cqw;
+  height: 1px;
+  background: var(--c-line);
+}
+
+.kind {
+  font-family: var(--font-body);
+  font-size: clamp(8px, 3.6cqw, 12px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
   color: var(--c-muted);
+  background: var(--c-surface);
+  padding-inline: 2cqw;
 }

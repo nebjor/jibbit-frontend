@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { TENANT_CONFIG_HEADER } from "@/lib/tenant/constants";
-import { resolveTenantConfig } from "@/lib/tenant/config-cache";
 import { encodeTenantHeader } from "@/lib/tenant/header-codec";
-import { resolveLocalFallbackTenant } from "@/lib/tenant/local-fallback";
-import { resolveStaticTenant } from "@/lib/tenant/static-tenants";
+import { resolveTenantForHost } from "@/lib/tenant/resolve-tenant";
 import { classifyHost } from "@/lib/tenant/resolve-host";
 
 /**
@@ -32,13 +30,11 @@ import { classifyHost } from "@/lib/tenant/resolve-host";
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const rawHost = request.headers.get("host") ?? "";
 
-  const local = resolveLocalFallbackTenant();
-  const tenant =
-    local ??
-    resolveStaticTenant(rawHost) ??
-    (await resolveTenantConfig(rawHost, {
-      waitUntil: (p) => event.waitUntil(p),
-    }));
+  // Die Kette selbst steht in lib/tenant/resolve-tenant.ts — sie wird auch vom
+  // Bildproxy gebraucht und darf zwischen beiden nicht auseinanderlaufen.
+  const tenant = await resolveTenantForHost(rawHost, {
+    waitUntil: (p) => event.waitUntil(p),
+  });
 
   if (!tenant) {
     // Observability only — BASE_DOMAIN never changes *how* a host is looked
@@ -81,6 +77,17 @@ export const config = {
     // 127.0.0.1, which is in no tenant table and would 404 forever, marking a
     // healthy container unhealthy. It serves no tenant content — see
     // app/healthz/route.ts.
-    "/((?!_next/static|_next/image|favicon.ico|healthz).*)",
+    //
+    // `media` muss ebenfalls draussen bleiben, und das ist keine Bequemlichkeit:
+    // Wenn `next/image` einen RELATIVEN Pfad optimiert, ruft es den Handler
+    // nicht über HTTP auf, sondern mit einem synthetischen Request —
+    // `createRequestResponseMocks({ url, method, socket })`, siehe
+    // next/dist/server/image-optimizer.js. Der trägt ÜBERHAUPT KEINE Header,
+    // also auch keinen Host. Diese Funktion sähe `host: ""`, fände keinen
+    // Tenant und würde jedes Produktbild mit 404 beantworten; der Optimizer
+    // meldet das als „The requested resource isn't a valid image". Deshalb
+    // löst app/media/[...path]/route.ts seinen Tenant aus dem PFAD auf und
+    // braucht diesen Header gar nicht.
+    "/((?!_next/static|_next/image|favicon.ico|healthz|media/).*)",
   ],
 };
