@@ -16,10 +16,17 @@ export const SHIPPING = {
   freeThreshold: 100.0,
 } as const;
 
-/** Payment methods offered (via Payrexx). Content-level only for now. */
+/**
+ * Payment methods offered, via zahls.ch (a white-label of the Payrexx
+ * platform — the backend's Payrexx module talks to it, see
+ * backend/src/modules/payrexx). Content-level: what the shop PROMISES.
+ * No invoice purchase — zahls.ch has no Powerpay; Rechnungs-/Ratenkauf
+ * would be Klarna and needs the "Pay Plus" plan.
+ */
 export const PAYMENT_METHODS = [
   { id: "twint", label: "TWINT" },
-  { id: "powerpay", label: "Powerpay (Rechnung)" },
+  { id: "card", label: "Kreditkarte (Visa/Mastercard)" },
+  { id: "postfinance", label: "PostFinance" },
 ] as const;
 
 /**

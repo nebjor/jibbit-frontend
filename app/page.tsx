@@ -54,11 +54,11 @@ export default async function HomePage() {
           </li>
           <li>
             <h2 className={styles.trustTitle}>
-              {PAYMENT_METHODS.map((p) => p.label.split(" ")[0]).join(" & ")}
+              {PAYMENT_METHODS.map((p) => p.label.split(" ")[0]).join(" · ")}
             </h2>
             <p>
-              Zahl per TWINT oder auf Rechnung mit Powerpay. Abgewickelt über
-              Payrexx.
+              Zahl per TWINT, Kreditkarte oder PostFinance. Abgewickelt über
+              den Schweizer Zahlungsdienstleister zahls.ch.
             </p>
           </li>
           <li>
