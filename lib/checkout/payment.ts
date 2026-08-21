@@ -1,36 +1,32 @@
 /**
- * ⚠️ SEAM FOR THE PAYMENT STRAND. ⚠️
- *
- * Payrexx (TWINT, Powerpay, cards) is being built in a separate strand. This
- * file is the ONLY place the checkout talks to a payment provider, and it is
- * shaped so that strand fills in a branch instead of restructuring the
- * checkout — the same contract `components/CartProvider.tsx` used to carry for
- * the backend itself.
+ * PAYMENT SEAM — the ONLY place the checkout talks to a payment provider.
  *
  * ══ THE CONTRACT ══════════════════════════════════════════════════════════
- * `preparePayment(cart)` returns a `PaymentHandoff`, and the return type
- * ALREADY admits both worlds:
+ * `preparePayment(cart)` returns a `PaymentHandoff`:
  *
  *   { kind: "inline" }              the order can be completed right here
  *   { kind: "redirect", url }       the browser must go to the PSP first
  *
- * `app/actions/checkout.ts` branches on `kind`. A redirect flow therefore needs
- * no change outside this file: return `{ kind: "redirect", url }` and the
- * checkout will send the customer there instead of completing.
+ * `app/actions/checkout.ts` branches on `kind`; the UI handles both.
  *
- * ══ WHAT THE PAYMENT STRAND HAS TO DO ═════════════════════════════════════
- *  1. Put `pp_payrexx_payrexx` first in `PROVIDER_PREFERENCE` (or drop
- *     `pp_system_default`, which must never reach production — it authorises
- *     without taking money).
- *  2. Pass whatever Payrexx needs through `data` in `initiatePaymentSession`
- *     (success/failure/cancel URLs, the enabled PSP ids).
- *  3. Read the gateway link out of the created session and return it as
- *     `{ kind: "redirect", url }`.
- *  4. Add a return route that the PSP sends the customer back to, which calls
- *     `completeCheckout()` from `app/actions/checkout.ts`. Completion is
- *     deliberately NOT done here: the webhook/redirect handling is the payment
- *     strand's, the order creation is the checkout's, and mixing them is how
- *     double-charges happen.
+ * ══ THE REDIRECT PROVIDER: zahls.ch via the Payrexx module ════════════════
+ * The backend registers `pp_payrexx_payrexx` (backend/src/modules/payrexx).
+ * The shop's account is at zahls.ch — a white-label of the Payrexx platform,
+ * same REST API under `api.zahls.ch`; the backend only needs
+ * `PAYREXX_API_BASE_URL` to switch hosts. `initiatePaymentSession` makes the
+ * backend create a gateway there and put the hosted-payment-page URL into the
+ * session's `data.link`; we send the browser to it. After paying, the
+ * customer lands on `/checkout/success?payment_session_id=…`, which confirms
+ * the payment server-side (lib/checkout/return.ts) — never trusting the
+ * browser's word for it.
+ *
+ * ══ WHY `pp_system_default` IS STILL AROUND ═══════════════════════════════
+ * Medusa's built-in provider marks a payment as authorised WITHOUT MOVING
+ * MONEY. It is the fallback for environments where the PSP is not configured
+ * (local dev, CI) — the region seed registers both. It MUST be removed from
+ * the region before go-live (docs/payrexx-go-live.md §7 in the backend repo);
+ * until then a session-init failure falls back to it loudly rather than
+ * killing the checkout.
  *
  * ══ WHAT MUST NOT MOVE ════════════════════════════════════════════════════
  * The storefront never sends an amount. Medusa derives it from the cart; a
@@ -57,15 +53,17 @@ export type PaymentHandoff =
 
 export class PaymentSetupError extends Error {}
 
+/** The Payrexx/zahls.ch provider as registered by the backend. */
+export const PAYREXX_PROVIDER_ID = "pp_payrexx_payrexx";
+
 /**
  * First match wins.
  *
- * `pp_system_default` is a Medusa built-in that marks a payment as authorised
- * WITHOUT MOVING MONEY. It is here so the checkout is complete and testable
- * before Payrexx lands, and it is exactly what the payment strand removes.
- * The backend seed registers both providers on the Swiss region.
+ * The real PSP comes first. `pp_system_default` stays as the LAST resort for
+ * environments without PSP credentials — see the header comment; it must be
+ * gone from the region before go-live.
  */
-const PROVIDER_PREFERENCE = ["pp_system_default", "pp_payrexx_payrexx"];
+const PROVIDER_PREFERENCE = [PAYREXX_PROVIDER_ID, "pp_system_default"];
 
 export function choosePaymentProvider(
   available: readonly { id: string }[],
@@ -74,6 +72,31 @@ export function choosePaymentProvider(
     if (available.some((p) => p.id === preferred)) return preferred;
   }
   return available[0]?.id;
+}
+
+/**
+ * Turns an initiated payment session into a handoff. Pure, so it is testable.
+ *
+ * For the redirect provider the gateway URL sits in `session.data.link`
+ * (put there by the backend's `initiatePayment()`). A redirect provider
+ * WITHOUT a link is a hard error: completing inline would create an order
+ * nobody paid for.
+ */
+export function handoffFromSession(
+  providerId: string,
+  session: { provider_id?: string | null; data?: Record<string, unknown> | null } | undefined,
+): PaymentHandoff {
+  if (providerId !== PAYREXX_PROVIDER_ID) {
+    return { kind: "inline", providerId };
+  }
+
+  const link = session?.data?.link;
+  if (typeof link !== "string" || !link) {
+    throw new PaymentSetupError(
+      "Die Weiterleitung zur Bezahlseite konnte nicht erstellt werden. Bitte nochmals versuchen.",
+    );
+  }
+  return { kind: "redirect", providerId, url: link };
 }
 
 /**
@@ -92,19 +115,46 @@ export async function preparePayment(
       limit: 20,
     });
 
-  const providerId = choosePaymentProvider(providers ?? []);
+  const available = providers ?? [];
+  const providerId = choosePaymentProvider(available);
   if (!providerId) {
     throw new PaymentSetupError(
       "Für diese Region ist keine Zahlungsart hinterlegt.",
     );
   }
 
-  await sdk.store.payment.initiatePaymentSession(cart, {
-    provider_id: providerId,
-  });
+  try {
+    const session = await initiateSession(sdk, cart, providerId);
+    return handoffFromSession(providerId, session);
+  } catch (error) {
+    // The PSP session could not be created (typically: credentials missing in
+    // this environment). Fall back to the built-in provider IF the region
+    // still offers it — loudly, because in production this line must never
+    // appear once `pp_system_default` is removed from the region.
+    const fallback = available.find(
+      (p) => p.id === "pp_system_default" && p.id !== providerId,
+    );
+    if (!fallback) throw error;
 
-  // ⚠️ PAYMENT STRAND: this is the branch point. For a redirect provider,
-  // read the gateway URL out of the session returned above and return
-  // `{ kind: "redirect", providerId, url }` instead.
-  return { kind: "inline", providerId };
+    console.error(
+      `[checkout] payment session with ${providerId} failed — falling back to ` +
+        `pp_system_default (authorises WITHOUT moving money): ${String(error)}`,
+    );
+    await initiateSession(sdk, cart, fallback.id);
+    return { kind: "inline", providerId: fallback.id };
+  }
+}
+
+async function initiateSession(
+  sdk: Medusa,
+  cart: HttpTypes.StoreCart,
+  providerId: string,
+): Promise<HttpTypes.StorePaymentSession | undefined> {
+  const { payment_collection } = await sdk.store.payment.initiatePaymentSession(
+    cart,
+    { provider_id: providerId },
+  );
+  return (payment_collection?.payment_sessions ?? []).find(
+    (s) => s.provider_id === providerId,
+  );
 }
