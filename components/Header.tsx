@@ -47,7 +47,7 @@ export async function Header() {
           </strong>
           <span className={styles.promoExtra}>
             {" "}
-            &middot; Versand aus der Schweiz &middot; TWINT &amp; Powerpay
+            &middot; Versand aus der Schweiz &middot; TWINT &amp; Kreditkarte
           </span>
         </p>
       </div>
