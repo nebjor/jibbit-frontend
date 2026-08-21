@@ -1,18 +1,97 @@
 /* Instant-search combobox. Reads ONLY tokens.css custom properties.
-   Kiosk direction: flat, lines instead of shadows, accent only on price. */
+   Kiosk direction: flat, lines instead of shadows, accent only on price.
+
+   TWO PRESENTATIONS, ONE DOM (see SearchBox.tsx):
+   - < 900px: `.trigger` (44px magnifier) in the header; `.shell` is a
+     full-screen layer when open (`data-open`), else display:none. The
+     layer's height is --search-vh — kept in sync with visualViewport by
+     the component, so the on-screen keyboard never covers the list.
+   - ≥ 900px: `.trigger` hidden; `.shell` is the inline wide field with the
+     absolute dropdown `.panel`. */
 
 .root {
-  position: relative;
-  flex: 1 1 auto;
+  grid-area: search;
   min-width: 0;
-  max-width: 420px;
+  /* Mobile: only the magnifier is visible — park it at the row's end,
+     next to account and cart. */
+  justify-self: end;
 }
 
-@media (min-width: 900px) {
-  .root {
-    max-width: 340px;
-    margin-left: auto;
-  }
+/* ---- Mobile trigger --------------------------------------------------- */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; /* Touch-Ziel */
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--c-ink);
+  cursor: pointer;
+}
+
+.triggerIcon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---- Shell: hidden / full-screen layer / inline field ------------------ */
+
+.shell {
+  display: none;
+}
+
+.shell[data-open] {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Visual-viewport height while the component tracks it (keyboard up ->
+     layer ends above the keyboard); dvh as no-API fallback; vh as
+     last-resort fallback for browsers without dvh. */
+  height: 100vh;
+  height: 100dvh;
+  height: var(--search-vh, 100dvh);
+  z-index: 100;
+  background: var(--c-surface);
+}
+
+.shellBar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--page-pad);
+  border-bottom: var(--border-w) solid var(--c-line);
+  flex: 0 0 auto;
+}
+
+.form {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cancel {
+  flex: 0 0 auto;
+  min-height: 44px; /* Touch-Ziel */
+  padding: 0 var(--s-2);
+  border: 0;
+  background: none;
+  color: var(--c-ink);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
 
 .input {
@@ -23,7 +102,9 @@
   border-radius: var(--radius);
   background: var(--c-surface);
   color: var(--c-ink);
-  font-size: 15px;
+  /* 16px, nicht kleiner: unter 16px zoomt iOS Safari beim Fokus in das
+     Feld hinein und die Trefferliste liegt danach halb ausserhalb. */
+  font-size: 16px;
   transition: border-color var(--dur) var(--ease);
   appearance: none;
   -webkit-appearance: none;
@@ -38,20 +119,17 @@
   border-color: var(--c-ink);
 }
 
-/* The dropdown overlays the page; it never pushes content down, so the
-   layout cannot jump while typing. */
+/* ---- Panel ------------------------------------------------------------- */
+
+/* In the layer: a normal flex child that takes the remaining height and
+   scrolls — its bottom edge is the layer's bottom edge, which tracks the
+   keyboard. Never absolute here. */
 .panel {
-  position: absolute;
-  top: calc(100% + var(--s-1));
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background: var(--c-surface);
-  border: var(--border-w) solid var(--c-ink);
-  border-radius: var(--radius);
-  max-height: min(420px, 65vh);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background: var(--c-surface);
 }
 
 .list {
@@ -61,11 +139,13 @@
 }
 
 .option {
-  display: flex;
-  align-items: baseline;
-  gap: var(--s-3);
-  min-height: 48px;
-  padding: var(--s-2) var(--s-3);
+  display: grid;
+  /* Title column shrinks and wraps; price keeps its intrinsic width. */
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--s-3);
+  min-height: 48px; /* Touch-Ziel, >44px */
+  padding: var(--s-2) var(--page-pad);
   border-bottom: var(--border-w) solid var(--c-line);
   cursor: pointer;
 }
@@ -76,10 +156,10 @@
 }
 
 .optionText {
-  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .optionBrand {
@@ -91,18 +171,26 @@
   color: var(--c-muted);
 }
 
+/* The distinguishing part of a name lives at its END ("… Rolls Slim" vs
+   "… kurz") — so titles WRAP up to two lines instead of being cut with an
+   ellipsis. Only a pathological overlong name is clamped. */
 .optionTitle {
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .optionPrice {
-  flex: 0 0 auto;
   font-size: 14px;
   font-weight: 700;
   color: var(--c-accent);
+  /* Align with the first title line, not the row centre. */
+  padding-top: 15px;
 }
 
 .showAll {
@@ -135,4 +223,61 @@
 .emptyHint {
   color: var(--c-muted);
   font-size: 13px;
+}
+
+/* ---- ≥ 900px: inline wide field with dropdown panel -------------------- */
+
+@media (min-width: 900px) {
+  .root {
+    justify-self: stretch;
+  }
+
+  .trigger {
+    display: none;
+  }
+
+  .shell,
+  .shell[data-open] {
+    display: block;
+    position: relative;
+    height: auto;
+    z-index: auto;
+    /* The operator's ask: the field at roughly 60–70% of the screen.
+       840px is ~61% of 1366 and ~66% of 1280; the vw clamp keeps the
+       share on smaller desktop windows. */
+    width: 100%;
+    max-width: min(70vw, 840px);
+    margin-inline: auto;
+  }
+
+  .shellBar {
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .cancel {
+    display: none;
+  }
+
+  .input {
+    font-size: 15px;
+  }
+
+  /* Classic dropdown: overlays the page, never pushes content down, so the
+     layout cannot jump while typing. */
+  .panel {
+    position: absolute;
+    top: calc(100% + var(--s-1));
+    left: 0;
+    right: 0;
+    z-index: 50;
+    flex: none;
+    border: var(--border-w) solid var(--c-ink);
+    border-radius: var(--radius);
+    max-height: min(480px, 70vh);
+  }
+
+  .option {
+    padding-inline: var(--s-3);
+  }
 }

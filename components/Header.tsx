@@ -14,17 +14,22 @@ import styles from "./Header.module.css";
  * Site-Header. Kategorien kommen aus der Datenschicht (Backend zuerst,
  * Mock-Fallback) — nie hartkodiert.
  *
+ * Aufbau auf ALLEN Breiten (Grid-Areas in Header.module.css):
+ *
+ *   Logo · Suche · Konto/Warenkorb
+ *   Kategorien (eigene Zeile, scrollt bei Überlauf waagrecht)
+ *
  * Es gibt genau EINE Kategorienavigation (`CategoryNav`), nicht mehr je eine
  * für Desktop, Mobile und die Shop-Seite: dieselben Links standen viermal im
- * HTML und füllten übereinander den halben Bildschirm. Das eine Element wird
- * per Grid-Area umpositioniert — mobil als eigene scrollende Zeile, ab 900px
- * in der Kopfleiste. Kein Hamburger: die Kategorien sind immer einen Tap
- * entfernt, der Warenkorb immer sichtbar.
+ * HTML und füllten übereinander den halben Bildschirm. Kein Hamburger: die
+ * Kategorien sind immer einen Tap entfernt, der Warenkorb immer sichtbar.
  *
- * SUCHLEISTE (kommt aus einem parallelen Branch): ihr Platz ist die
- * Grid-Area `search` in `Header.module.css` — in der Kopfleiste zwischen
- * `CategoryNav` und `.actions` (Desktop) bzw. als eigene Spalte neben dem
- * Logo (mobil). Die Spalte ist vorbereitet und kollabiert leer auf 0.
+ * Die Suche belegt mobil nur ein 44px-Lupensymbol (öffnet eine
+ * bildschirmfüllende Suchschicht) und ab 900px das breite Inline-Feld —
+ * beides in SearchBox.tsx/.module.css, der Header reserviert nur die
+ * Grid-Area `search`. Die DOM-Reihenfolge unten (Logo, Suche, Aktionen,
+ * Kategorien) entspricht der visuellen Ordnung, damit die Tab-Reihenfolge
+ * nicht springt.
  */
 export async function Header() {
   const categories = await getCategories();
@@ -57,6 +62,16 @@ export async function Header() {
             <Logo size="md" />
           </Link>
 
+          {/* Instant search — self-contained (own CSS module), deliberately a
+              single element here. Sizing lives in SearchBox.module.css, not
+              Header.css. */}
+          <SearchBar />
+
+          <div className={styles.actions}>
+            <AccountLink />
+            <CartButton />
+          </div>
+
           {/*
            * Suspense wegen useSearchParams in der Client-Komponente: bei
            * dynamischem Rendern (alle Routen hier lesen Cookies) löst sie
@@ -67,16 +82,6 @@ export async function Header() {
           <Suspense fallback={null}>
             <CategoryNav categories={categories} />
           </Suspense>
-
-          {/* Instant search — self-contained (own CSS module), deliberately a
-              single element here to keep merges with the navigation rework
-              cheap. Sizing lives in SearchBox.module.css, not Header.css. */}
-          <SearchBar />
-
-          <div className={styles.actions}>
-            <AccountLink />
-            <CartButton />
-          </div>
         </div>
       </header>
     </>
