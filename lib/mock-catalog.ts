@@ -191,8 +191,52 @@ const SEEDS: Seed[] = [
     price: 1.79,
     compareAt: 2.0,
   },
+  // Die vier weiteren OCB-Artikel aus dem echten Import (Namen und
+  // Basispreise aus catalog.json des Katalog-Branches). Sie sind zugleich
+  // der harte Testfall der Suche: fünf Namen mit gemeinsamem Präfix
+  // "OCB …", die sich erst am ZeilenENDE unterscheiden.
+  {
+    handle: "ocb-premium-kss-papers-mit-filter",
+    title: "OCB Premium KSS Papers mit Filter",
+    brand: "OCB",
+    subtitle: "King Size Slim, Tips integriert",
+    description:
+      "OCB Premium King Size Slim mit perforierten Filter-Tips im selben Heft. Ein Kauf, alles dabei.",
+    category: "papers",
+    price: 1.95,
+  },
+  {
+    handle: "ocb-premium-rolls-slim",
+    title: "OCB Premium Rolls Slim",
+    brand: "OCB",
+    subtitle: "Endlospapier, Slim-Breite",
+    description:
+      "OCB Premium als Endlosrolle in Slim-Breite. Du reisst ab, was du brauchst — kein vorgegebenes Format.",
+    category: "papers",
+    price: 1.95,
+  },
+  {
+    handle: "ocb-bio-slim-organic-hemp-rolls",
+    title: "OCB Bio Slim Organic Hemp Rolls",
+    brand: "OCB",
+    subtitle: "Bio-Hanf, Endlosrolle",
+    description:
+      "Endlosrolle aus ungebleichtem Bio-Hanfpapier. Die Öko-Variante der Premium Rolls, gleiche Slim-Breite.",
+    category: "papers",
+    price: 1.6,
+  },
 
   // ---- Filter ------------------------------------------------------------
+  {
+    handle: "ocb-slim-filter-bio-120-tips",
+    title: "OCB Slim Filter Bio (120 Tips)",
+    brand: "OCB",
+    subtitle: "120 Tips, ungebleicht",
+    description:
+      "Vorgeschnittene Filter-Tips aus ungebleichtem Papier, 120 Stück im Heft. Passen zu jedem Slim-Format.",
+    category: "filter",
+    price: 1.8,
+  },
   {
     handle: "dubi-aktivkohlefilter-7mm",
     title: "dubi Aktivkohlefilter ø7mm",
