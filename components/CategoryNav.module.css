@@ -1,8 +1,13 @@
-/* Kategorieleiste: ein Element für alle Breiten.
-   Mobil eine eigene, waagrecht scrollende Zeile unter der Kopfleiste;
-   ab 900px sitzt sie in der Kopfleiste selbst (Grid-Area `nav` in
-   Header.module.css). Bricht nie um — bei vielen Kategorien scrollt sie
-   mit Scroll-Snap statt in die Höhe zu wachsen. */
+/* Kategorieleiste: ein Element für alle Breiten, IMMER die eigene zweite
+   Zeile des Headers (Grid-Area `nav` in Header.module.css). Sie teilt sich
+   ihre Zeile mit niemandem — insbesondere nicht mehr mit dem Suchfeld, das
+   sie vorher ab 900px rechts abgeschnitten hat.
+
+   Bricht nie um — bei mehr Einträgen als Platz scrollt sie waagrecht mit
+   Scroll-Snap (Scrollbalken versteckt) statt in die Höhe zu wachsen. Auf
+   Desktop-Breiten passen sechs Kategorien ohne Scrollen; auf dem Telefon
+   sind alle Einträge per Wisch erreichbar, keiner ist unerreichbar
+   abgeschnitten (der linke Rand bleibt bündig, kein `justify: center`). */
 
 .nav {
   grid-area: nav;
@@ -14,8 +19,8 @@
   scroll-snap-type: x proximity;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  /* Mobil randlos scrollen: das Seitenpadding der Kopfleiste aufheben,
-     damit Einträge bis an die Bildschirmkante laufen können. */
+  /* Randlos scrollen: das Seitenpadding der Kopfleiste aufheben, damit
+     Einträge bis an die Bildschirmkante laufen können. */
   margin-inline: calc(-1 * var(--page-pad));
   padding-inline: var(--page-pad);
   border-top: var(--border-w) solid var(--c-line);
@@ -50,16 +55,13 @@
 
 @media (min-width: 900px) {
   .nav {
-    margin-inline: 0;
-    padding-inline: 0;
-    border-top: 0;
     gap: var(--s-5);
-    /* Kein `center`: bei überlaufendem Flex-Container wäre der linke Rand
-       sonst unerreichbar abgeschnitten. Links ausgerichtet neben dem Logo. */
   }
 
   .nav a {
-    font-size: 15px;
-    min-height: var(--header-h);
+    font-size: 14px;
+    /* 44px wie mobil: die Nav-Zeile ist neue Höhe im Desktop-Header —
+       jedes Pixel hier schiebt die Produkte nach unten. */
+    min-height: 44px;
   }
 }
