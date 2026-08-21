@@ -29,11 +29,20 @@
   border-bottom: var(--border-w) solid var(--c-line);
 }
 
-/* Kopfleiste als Grid: die Kategorienav (Grid-Area `nav`, gestylt in
-   CategoryNav.module.css) ist EIN DOM-Element und wandert nur per
-   Grid-Area — mobil in die zweite Zeile, ab 900px zwischen Logo und
-   Aktionen. `search` ist der reservierte Platz für die Suchleiste aus dem
-   parallelen Branch; solange die Spalte leer ist, kollabiert sie auf 0. */
+/* Kopfleiste als Grid, auf ALLEN Breiten zweizeilig:
+
+     brand   search   actions
+     nav     nav      nav
+
+   Die Kategorienav (Grid-Area `nav`, gestylt in CategoryNav.module.css) ist
+   EIN DOM-Element und hat ihre eigene Zeile — sie konkurriert nirgends mehr
+   mit dem Suchfeld um Platz. Vorher teilten sich Nav und Suche ab 900px eine
+   Zeile: mit sechs Kategorien UND einem brauchbar breiten Feld geht sich das
+   auf 1366px schlicht nicht aus, eines von beiden wird abgeschnitten.
+
+   `search` trägt mobil nur das 44px-Lupensymbol (die Suche selbst ist eine
+   bildschirmfüllende Schicht, siehe SearchBox.module.css) und ab 900px das
+   breite Inline-Feld, mittig in der Leiste. */
 .bar {
   display: grid;
   grid-template-areas:
@@ -62,11 +71,4 @@
   align-items: center;
   justify-self: end;
   gap: var(--s-1);
-}
-
-@media (min-width: 900px) {
-  .bar {
-    grid-template-areas: "brand nav search actions";
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-  }
 }
