@@ -42,7 +42,7 @@ export default async function HomePage() {
               Gratisversand ab {formatPrice(SHIPPING.freeThreshold)}
             </h2>
             <p>
-              Darunter pauschal {formatPrice(SHIPPING.flatRate)}. Keine
+              Darunter ab {formatPrice(SHIPPING.letterRate)}. Keine
               Überraschungen an der Kasse.
             </p>
           </li>
@@ -57,7 +57,7 @@ export default async function HomePage() {
               {PAYMENT_METHODS.map((p) => p.label.split(" ")[0]).join(" & ")}
             </h2>
             <p>
-              Zahl per TWINT oder auf Rechnung mit Powerpay. Abgewickelt über
+              Zahl per TWINT, Kreditkarte oder PostFinance. Abgewickelt über
               Payrexx.
             </p>
           </li>

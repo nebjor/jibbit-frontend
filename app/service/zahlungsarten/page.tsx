@@ -5,14 +5,14 @@ import { Prose } from "@/components/Prose";
 export const metadata: Metadata = {
   title: "Zahlungsarten",
   description:
-    "Bezahlen mit TWINT oder Powerpay (Kauf auf Rechnung). Abgewickelt über Payrexx.",
+    "Bezahlen mit TWINT, Kreditkarte oder PostFinance. Abgewickelt über einen Schweizer Zahlungsdienstleister.",
 };
 
 export default function ZahlungsartenPage() {
   return (
     <Prose
       title="Zahlungsarten"
-      intro="Zwei Wege, beide unkompliziert: TWINT direkt vom Handy, oder Powerpay auf Rechnung. Abgewickelt über den Schweizer Zahlungsdienstleister Payrexx."
+      intro="TWINT direkt vom Handy, Kreditkarte oder PostFinance. Abgewickelt über einen Schweizer Zahlungsdienstleister."
     >
       <h2>TWINT</h2>
       <p>
@@ -26,21 +26,22 @@ export default function ZahlungsartenPage() {
         Verarbeitung — das ist auch der schnellste Weg zum Versand.
       </p>
 
-      <h2>Powerpay — Kauf auf Rechnung</h2>
+      <h2>Kreditkarte</h2>
       <p>
-        Du bestellst jetzt und bezahlst später. Powerpay übernimmt die
-        Rechnungsstellung; du erhältst die Rechnung separat und bezahlst
-        innerhalb der dort angegebenen Frist.
+        Visa und Mastercard. Du gibst die Kartendaten auf der gesicherten Seite
+        des Zahlungsdienstleisters ein, nicht bei uns.
       </p>
+
+      <h2>PostFinance</h2>
       <p>
-        Für den Kauf auf Rechnung führt Powerpay eine Bonitätsprüfung durch. Wird
-        die Zahlungsart abgelehnt, kannst du die Bestellung einfach mit TWINT
-        abschliessen. Es gelten zusätzlich die Bedingungen von Powerpay.
+        Bezahlung mit PostFinance Card oder PostFinance E-Finance, direkt über
+        dein Postkonto.
       </p>
 
       <h2>Sicherheit</h2>
       <p>
-        Die gesamte Zahlungsabwicklung läuft über Payrexx. Wir sehen und
+        Die gesamte Zahlungsabwicklung läuft über unseren
+        Zahlungsdienstleister. Wir sehen und
         speichern keine vollständigen Zahlungsdaten — diese werden ausschliesslich
         verschlüsselt zwischen dir und dem Zahlungsdienstleister übertragen.
       </p>
