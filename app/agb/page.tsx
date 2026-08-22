@@ -83,9 +83,11 @@ export default function AgbPage() {
       <h2>6. Versand und Lieferung</h2>
       <p>
         Wir liefern an Adressen in der Schweiz und versenden ab Lager in der
-        Schweiz. Die Versandkosten betragen pauschal{" "}
-        {formatPrice(SHIPPING.flatRate)}; ab einem Bestellwert von{" "}
-        {formatPrice(SHIPPING.freeThreshold)} liefern wir versandkostenfrei.
+        Schweiz. Eine Kleinsendung im Briefformat kostet{" "}
+        {formatPrice(SHIPPING.letterRate)}, ein Paket — etwa eine ganze Box
+        oder ein Display — {formatPrice(SHIPPING.parcelRate)}. Ab einem
+        Bestellwert von {formatPrice(SHIPPING.freeThreshold)} liefern wir
+        versandkostenfrei.
       </p>
       <p>
         Wir versenden in der Regel innerhalb von 1–3 Werktagen nach
@@ -114,12 +116,19 @@ export default function AgbPage() {
       <h2>9. Rückgabe</h2>
       <p>
         Das schweizerische Recht kennt für Bestellungen im Onlinehandel kein
-        gesetzliches Widerrufsrecht. Wir gewähren dir freiwillig ein
-        vertragliches Rückgaberecht von 14 Tagen ab Erhalt der Ware. Die
-        Bedingungen dazu findest du unter{" "}
-        <Link href="/widerrufsrecht">Widerrufsrecht</Link>, den praktischen
-        Ablauf unter{" "}
-        <Link href="/service/rueckgabe">Rückgabe &amp; Umtausch</Link>.
+        gesetzliches Widerrufsrecht. Wir gewähren auch kein freiwilliges
+        Rückgabe- oder Umtauschrecht bei blossem Sinneswandel.
+      </p>
+      <p>
+        Der Grund: Unsere Artikel sind im Shop mit Bild, Marke, Format und Menge
+        genau beschrieben. Du siehst vor der Bestellung, was du bekommst, und
+        nichts davon muss anprobiert oder ausprobiert werden.
+      </p>
+      <p>
+        Davon unberührt bleiben deine gesetzlichen Rechte bei Mängeln,
+        beschädigter Ware und Falschlieferungen. Diese Fälle regelt Ziffer 10,
+        und dort tragen wir die Kosten. Den praktischen Ablauf findest du unter{" "}
+        <Link href="/service/rueckgabe">Rückgabe &amp; Reklamation</Link>.
       </p>
 
       <h2>10. Gewährleistung</h2>

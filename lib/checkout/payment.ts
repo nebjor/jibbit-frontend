@@ -1,7 +1,8 @@
 /**
  * ⚠️ SEAM FOR THE PAYMENT STRAND. ⚠️
  *
- * Payrexx (TWINT, Powerpay, cards) is being built in a separate strand. This
+ * The payment provider (TWINT, cards, PostFinance) is being built in a
+ * separate strand. This
  * file is the ONLY place the checkout talks to a payment provider, and it is
  * shaped so that strand fills in a branch instead of restructuring the
  * checkout — the same contract `components/CartProvider.tsx` used to carry for

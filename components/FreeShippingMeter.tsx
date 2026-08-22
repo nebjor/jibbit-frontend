@@ -51,7 +51,7 @@ export function FreeShippingMeter() {
       </div>
       {!reached && (
         <p className={styles.hint}>
-          Versand {formatPrice(SHIPPING.flatRate)} · gratis ab{" "}
+          Versand ab {formatPrice(SHIPPING.letterRate)} · gratis ab{" "}
           {formatPrice(SHIPPING.freeThreshold)}
         </p>
       )}
