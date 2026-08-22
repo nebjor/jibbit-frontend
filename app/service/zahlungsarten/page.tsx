@@ -32,6 +32,8 @@ export default function ZahlungsartenPage() {
         Auch Apple&nbsp;Pay, Google&nbsp;Pay und Samsung&nbsp;Pay stehen auf
         der Bezahlseite zur Verfügung, wenn dein Gerät sie unterstützt.
       </p>
+
+      <h2>PostFinance</h2>
       <p>
         Kauf auf Rechnung bieten wir derzeit nicht an. Sobald sich das ändert,
         steht es hier zuerst.

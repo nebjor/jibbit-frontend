@@ -42,7 +42,7 @@ export default async function HomePage() {
               Gratisversand ab {formatPrice(SHIPPING.freeThreshold)}
             </h2>
             <p>
-              Darunter pauschal {formatPrice(SHIPPING.flatRate)}. Keine
+              Darunter ab {formatPrice(SHIPPING.letterRate)}. Keine
               Überraschungen an der Kasse.
             </p>
           </li>

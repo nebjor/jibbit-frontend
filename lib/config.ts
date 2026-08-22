@@ -8,12 +8,22 @@ export const STORE = {
   currency: "CHF",
 } as const;
 
-/** Shipping rules. Used by the cart's free-shipping progress indicator. */
+/**
+ * Shipping rules. Used by the cart's free-shipping progress indicator and by
+ * every piece of shipping copy in the shop.
+ *
+ * Muss mit den Optionen des swiss-shipping Providers im Backend
+ * uebereinstimmen (medusa-config.ts: letterPrice / parcelPrice /
+ * freeShippingThreshold) — hier stehen sie nur zur Anzeige, gerechnet wird
+ * serverseitig. Brief oder Paket entscheidet dort das Variantengewicht.
+ */
 export const SHIPPING = {
-  /** Flat rate in CHF. */
-  flatRate: 9.0,
+  /** Kleinsendung im Briefformat, in CHF. */
+  letterRate: 3.75,
+  /** Paket — z. B. eine ganze Box oder ein Display, in CHF. */
+  parcelRate: 9.0,
   /** Order total (CHF) from which shipping is free. */
-  freeThreshold: 100.0,
+  freeThreshold: 69.0,
 } as const;
 
 /**

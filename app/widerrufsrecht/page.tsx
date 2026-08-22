@@ -5,15 +5,15 @@ import { STORE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Widerrufsrecht",
-  description: `Freiwilliges vertragliches Rückgaberecht bei ${STORE.domain} — 14 Tage, ohne Angabe von Gründen.`,
+  description: `Widerrufs- und Rückgaberecht bei ${STORE.domain}: In der Schweiz besteht für Onlinebestellungen kein gesetzliches Widerrufsrecht.`,
 };
 
 export default function WiderrufsrechtPage() {
   return (
     <Prose
       title="Widerrufsrecht"
-      intro="Kurz gesagt: Ein gesetzliches Widerrufsrecht für Online-Bestellungen gibt es in der Schweiz nicht. Wir gewähren dir trotzdem eines — freiwillig und vertraglich, 14 Tage lang."
-      updated="Entwurf vom 21. August 2026 — vor Livegang juristisch prüfen lassen"
+      intro="Kurz gesagt: Ein gesetzliches Widerrufsrecht für Online-Bestellungen gibt es in der Schweiz nicht, und wir gewähren auch kein freiwilliges. Bei Mängeln und Falschlieferungen stehen wir dagegen vollumfänglich gerade."
+      updated="Stand: 22. August 2026"
     >
       <h2>1. Die Rechtslage in der Schweiz</h2>
       <p>
@@ -24,85 +24,60 @@ export default function WiderrufsrechtPage() {
         nicht für den Kauf in einem Onlineshop. Ein Kaufvertrag ist hier
         grundsätzlich verbindlich, sobald er zustande gekommen ist.
       </p>
+
+      <h2>2. Kein freiwilliges Rückgaberecht</h2>
       <p>
-        Wir finden das kundenunfreundlich. Darum gewähren wir dir freiwillig
-        ein vertragliches Rückgaberecht. Es ist eine Zusage von uns, keine
-        gesetzliche Pflicht — und es gilt im Umfang, wie er auf dieser Seite
-        beschrieben ist.
+        Manche Schweizer Shops gewähren darüber hinaus ein vertragliches
+        Rückgaberecht. Wir tun das nicht, und wir sagen das lieber deutlich,
+        als es im Kleingedruckten zu verstecken.
+      </p>
+      <p>
+        Der Grund liegt in der Art der Ware. Jeder Artikel ist im Shop mit
+        Bild, Marke, Format und Stückzahl genau beschrieben. Du siehst vor der
+        Bestellung, was du bekommst, und nichts davon muss anprobiert oder
+        ausprobiert werden. Eine Rücknahmeorganisation kostet Geld, das am Ende
+        auf die Preise geschlagen wird — und günstige Preise sind der Grund,
+        warum du hier bestellst.
+      </p>
+      <p>
+        Bitte prüfe deine Bestellung deshalb vor dem Absenden. Im Warenkorb
+        siehst du Artikel, Menge und Gesamtpreis, und bis zum letzten Schritt
+        kannst du alles ändern.
       </p>
 
-      <h2>2. Unser freiwilliges Rückgaberecht</h2>
+      <h2>3. Mängel, Transportschäden und Falschlieferungen</h2>
       <p>
-        Du kannst deine Bestellung innerhalb von <strong>14 Tagen</strong> nach
-        Erhalt der Ware ohne Angabe von Gründen zurückgeben. Massgebend ist das
-        Datum, an dem du oder eine von dir bezeichnete Person die Ware in
-        Empfang genommen hat.
+        Davon unberührt bleibt die gesetzliche Sachgewährleistung nach Schweizer
+        Obligationenrecht (Art. 197 ff. OR). Sie beträgt zwei Jahre ab
+        Ablieferung der Ware und lässt sich nicht wegbedingen.
       </p>
-
-      <h2>3. So gibst du zurück</h2>
-      <ol>
-        <li>
-          Melde dich vor dem Rückversand über unsere{" "}
-          <Link href="/service/kontakt">Kontaktseite</Link> oder per E-Mail an{" "}
-          <a href="mailto:demo@example.com">demo@example.com</a> — mit deiner
-          Bestellnummer.
-        </li>
-        <li>
-          Wir bestätigen dir die Rücksendung und nennen dir die
-          Rücksendeadresse.
-        </li>
-        <li>
-          Schicke die Ware innerhalb von 14 Tagen nach unserer Bestätigung
-          zurück.
-        </li>
-      </ol>
       <p>
-        Die Kosten des Rückversands trägst du, ausser die Rückgabe geht auf
-        einen Fehler von uns zurück (siehe Ziffer 6). Unfrei gesendete Pakete
+        Ist ein Artikel defekt, beschädigt angekommen oder falsch geliefert,
+        melde dich über unsere{" "}
+        <Link href="/service/kontakt">Kontaktseite</Link> — mit Bestellnummer,
+        betroffenem Artikel und nach Möglichkeit einem Foto. Wir ersetzen die
+        Ware oder erstatten den Betrag, und die Rückversandkosten gehen in
+        diesen Fällen auf uns.
+      </p>
+      <p>
+        Melde einen Mangel möglichst rasch nach der Entdeckung. Sende bitte
+        nichts unfrei und nichts ohne vorherige Absprache zurück — solche Pakete
         können wir nicht annehmen.
       </p>
 
-      <h2>4. Zustand der Ware</h2>
+      <h2>4. Stornieren vor dem Versand</h2>
       <p>
-        Zurückgegebene Artikel müssen ungeöffnet, unbenutzt und in der
-        Originalverpackung sein. Aus hygienischen Gründen und wegen der Art der
-        Produkte können wir geöffnete Papers, Filter und angebrauchte Artikel
-        nicht zurücknehmen.
-      </p>
-      <p>Ausgenommen von der Rückgabe sind zudem:</p>
-      <ul>
-        <li>Gutscheine</li>
-        <li>Artikel, die eigens für dich bestellt oder angefertigt wurden</li>
-        <li>
-          bereits geöffnete Displays und Boxen, bei denen einzelne Einheiten
-          entnommen wurden
-        </li>
-      </ul>
-
-      <h2>5. Rückerstattung</h2>
-      <p>
-        Sobald die Ware bei uns eingetroffen und geprüft ist, erstatten wir dir
-        den Kaufpreis innerhalb von 14 Tagen. Die Rückerstattung erfolgt über
-        dieselbe Zahlungsart, die du für die Bestellung genutzt hast. Gibst du
-        die ganze Bestellung zurück, erstatten wir auch die bezahlten
-        Versandkosten; bei einer Teilrückgabe erstatten wir den Warenwert der
-        zurückgegebenen Artikel.
+        Hat deine Bestellung das Lager noch nicht verlassen, können wir sie in
+        der Regel noch ändern oder stornieren. Melde dich einfach so rasch wie
+        möglich.
       </p>
 
-      <h2>6. Mängel und Falschlieferungen</h2>
+      <h2>5. Weitere Informationen</h2>
       <p>
-        Ist ein Artikel defekt oder falsch geliefert, greift unabhängig von
-        diesem freiwilligen Rückgaberecht die gesetzliche Gewährleistung
-        (Art. 197 ff. OR). Melde dich in dem Fall einfach bei uns — wir
-        ersetzen die Ware oder erstatten den Betrag, und die Rückversandkosten
-        gehen auf uns.
-      </p>
-
-      <h2>7. Weitere Informationen</h2>
-      <p>
-        Praktische Hinweise zum Ablauf findest du unter{" "}
-        <Link href="/service/rueckgabe">Rückgabe &amp; Umtausch</Link>. Die
-        vertragliche Grundlage steht in unseren <Link href="/agb">AGB</Link>.
+        Den praktischen Ablauf einer Reklamation findest du unter{" "}
+        <Link href="/service/rueckgabe">Rückgabe &amp; Reklamation</Link>. Die
+        vertragliche Grundlage steht in Ziffer 9 und 10 unserer{" "}
+        <Link href="/agb">AGB</Link>.
       </p>
     </Prose>
   );
