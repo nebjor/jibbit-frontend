@@ -5,18 +5,18 @@ import { Prose } from "@/components/Prose";
 export const metadata: Metadata = {
   title: "Zahlungsarten",
   description:
-    "Bezahlen mit TWINT oder Powerpay (Kauf auf Rechnung). Abgewickelt über Payrexx.",
+    "Bezahlen mit TWINT, Kreditkarte oder PostFinance. Abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch.",
 };
 
 export default function ZahlungsartenPage() {
   return (
     <Prose
       title="Zahlungsarten"
-      intro="Zwei Wege, beide unkompliziert: TWINT direkt vom Handy, oder Powerpay auf Rechnung. Abgewickelt über den Schweizer Zahlungsdienstleister Payrexx."
+      intro="TWINT direkt vom Handy, Kreditkarte oder PostFinance — abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch."
     >
       <h2>TWINT</h2>
       <p>
-        Die schnellste Variante. Du wirst nach der Bestellung zu TWINT
+        Die schnellste Variante. Du wirst nach der Bestellung zur Bezahlseite
         weitergeleitet beziehungsweise scannst den QR-Code mit deiner
         TWINT-App und bestätigst die Zahlung. Der Betrag wird direkt deinem
         hinterlegten Konto belastet.
@@ -26,21 +26,20 @@ export default function ZahlungsartenPage() {
         Verarbeitung — das ist auch der schnellste Weg zum Versand.
       </p>
 
-      <h2>Powerpay — Kauf auf Rechnung</h2>
+      <h2>Kreditkarte und PostFinance</h2>
       <p>
-        Du bestellst jetzt und bezahlst später. Powerpay übernimmt die
-        Rechnungsstellung; du erhältst die Rechnung separat und bezahlst
-        innerhalb der dort angegebenen Frist.
+        Visa und Mastercard sowie PostFinance Card / PostFinance E-Finance.
+        Auch Apple&nbsp;Pay, Google&nbsp;Pay und Samsung&nbsp;Pay stehen auf
+        der Bezahlseite zur Verfügung, wenn dein Gerät sie unterstützt.
       </p>
       <p>
-        Für den Kauf auf Rechnung führt Powerpay eine Bonitätsprüfung durch. Wird
-        die Zahlungsart abgelehnt, kannst du die Bestellung einfach mit TWINT
-        abschliessen. Es gelten zusätzlich die Bedingungen von Powerpay.
+        Kauf auf Rechnung bieten wir derzeit nicht an. Sobald sich das ändert,
+        steht es hier zuerst.
       </p>
 
       <h2>Sicherheit</h2>
       <p>
-        Die gesamte Zahlungsabwicklung läuft über Payrexx. Wir sehen und
+        Die gesamte Zahlungsabwicklung läuft über zahls.ch. Wir sehen und
         speichern keine vollständigen Zahlungsdaten — diese werden ausschliesslich
         verschlüsselt zwischen dir und dem Zahlungsdienstleister übertragen.
       </p>

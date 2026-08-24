@@ -17,7 +17,7 @@ const FAQS = [
   },
   {
     q: "Wie kann ich bezahlen?",
-    a: "Mit TWINT oder mit Powerpay auf Rechnung. Beides läuft über den Schweizer Zahlungsdienstleister Payrexx.",
+    a: "Mit TWINT, Kreditkarte (Visa/Mastercard) oder PostFinance. Die Zahlung läuft über den Schweizer Zahlungsdienstleister zahls.ch. Kauf auf Rechnung bieten wir derzeit nicht an.",
   },
   {
     q: "Ab welchem Alter kann ich bestellen?",

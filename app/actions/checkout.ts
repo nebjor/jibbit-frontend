@@ -20,6 +20,10 @@ import {
   type PlaceOrderResult,
   type SaveAddressResult,
 } from "@/lib/checkout/server";
+import {
+  confirmPaymentReturn,
+  type PaymentReturnResult,
+} from "@/lib/checkout/return";
 
 export async function saveAddressAction(
   email: string,
@@ -49,4 +53,16 @@ export async function placeOrderAction(): Promise<PlaceOrderResult> {
  */
 export async function completeCartAction(): Promise<PlaceOrderResult> {
   return completeCart();
+}
+
+/**
+ * Rückkehr von der zahls.ch/Payrexx-Bezahlseite: Zahlungsstand server-seitig
+ * beim Backend abgleichen und — wenn bezahlt — die Bestellung holen.
+ * Der Browser liefert nur die `payment_session_id` aus der Rückkehr-URL;
+ * jede Statusaussage kommt vom Backend (lib/checkout/return.ts).
+ */
+export async function confirmPaymentReturnAction(
+  paymentSessionId: string,
+): Promise<PaymentReturnResult> {
+  return confirmPaymentReturn(paymentSessionId);
 }
