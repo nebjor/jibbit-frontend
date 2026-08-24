@@ -27,7 +27,7 @@ export function Footer() {
           <Logo size="md" />
           <p className={styles.tagline}>{STORE.tagline}</p>
           <p className={styles.small}>
-            Versand ab {formatPrice(SHIPPING.flatRate)} &middot; gratis ab{" "}
+            Versand ab {formatPrice(SHIPPING.letterRate)} &middot; gratis ab{" "}
             {formatPrice(SHIPPING.freeThreshold)}
           </p>
         </div>

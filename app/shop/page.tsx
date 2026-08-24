@@ -7,7 +7,7 @@ import styles from "./shop.module.css";
 export const metadata: Metadata = {
   title: "Shop",
   description:
-    "Papers, Filter und Zubehör für die Schweiz. Faire Preise, Versand ab Lager, Gratisversand ab CHF 100.",
+    "Papers, Filter und Zubehör für die Schweiz. Faire Preise, Versand ab Lager, Gratisversand ab CHF 69.",
 };
 
 /**

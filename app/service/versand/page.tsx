@@ -13,17 +13,21 @@ export default function VersandPage() {
   return (
     <Prose
       title="Versand & Lieferung"
-      intro={`Pauschal ${formatPrice(SHIPPING.flatRate)} innerhalb der Schweiz — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Keine versteckten Zuschläge an der Kasse.`}
+      intro={`Kleinsendungen ${formatPrice(SHIPPING.letterRate)}, Pakete ${formatPrice(SHIPPING.parcelRate)} — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Keine versteckten Zuschläge an der Kasse.`}
       updated="Entwurf vom 21. August 2026"
     >
       <h2>Versandkosten</h2>
       <ul>
         <li>
-          Schweiz, Bestellwert unter {formatPrice(SHIPPING.freeThreshold)}:{" "}
-          <strong>{formatPrice(SHIPPING.flatRate)}</strong> pauschal
+          Kleinsendung im Briefformat:{" "}
+          <strong>{formatPrice(SHIPPING.letterRate)}</strong>
         </li>
         <li>
-          Schweiz, Bestellwert ab {formatPrice(SHIPPING.freeThreshold)}:{" "}
+          Paket, zum Beispiel eine ganze Box oder ein Display:{" "}
+          <strong>{formatPrice(SHIPPING.parcelRate)}</strong>
+        </li>
+        <li>
+          Bestellwert ab {formatPrice(SHIPPING.freeThreshold)}:{" "}
           <strong>gratis</strong>
         </li>
       </ul>
