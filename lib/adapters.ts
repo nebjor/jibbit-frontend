@@ -68,7 +68,9 @@ function toCategoryHandle(raw: string | null | undefined): CategoryHandle {
   return h || "zubehoer";
 }
 
-function toVariantView(
+/** Exportiert fuer die Regressionstests der Verfuegbarkeit
+ *  (lib/product-fields.test.ts) — sonst modulintern. */
+export function toVariantView(
   v: StoreProductVariant,
   tiers: PriceTier[] = [],
 ): ProductVariantView {
