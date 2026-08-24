@@ -3,17 +3,27 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { confirmPaymentReturnAction } from "@/app/actions/checkout";
+import {
+  completePendingOrderAction,
+  confirmPaymentReturnAction,
+} from "@/app/actions/checkout";
 import styles from "./checkout.module.css";
 
 /**
- * Rückkehr von der zahls.ch/Payrexx-Bezahlseite.
+ * Rückkehr von der zahls.ch-Bezahlseite — für beide Provider.
  *
- * Fragt den Zahlungsstand server-seitig ab (der Browser wird dabei nie nach
- * seiner Meinung gefragt) und pollt bei `pending`/`unknown` einige Male nach:
- * TWINT bestätigt oft erst Sekunden nach der Weiterleitung. Kommt in der Zeit
- * keine Bestätigung, ist das KEIN Misserfolg — der Webhook schliesst die
- * Bestellung unabhängig davon ab, der Kunde bekommt die Bestätigung per Mail.
+ * Mit `sessionId` (Payrexx-Modul, `?payment_session_id=…` in der URL):
+ * fragt den Zahlungsstand server-seitig über `/store/payrexx/return` ab.
+ *
+ * Ohne `sessionId` (offizielles zahls.ch-Plugin, statische Redirect-URLs):
+ * versucht server-seitig, den Cart abzuschliessen — Medusa autorisiert die
+ * Zahlung dabei frisch beim PSP; unbezahlt entsteht keine Bestellung.
+ *
+ * In beiden Fällen wird der Browser nie nach seiner Meinung gefragt, und bei
+ * `pending`/`unknown` wird einige Male nachgepollt: TWINT bestätigt oft erst
+ * Sekunden nach der Weiterleitung. Kommt in der Zeit keine Bestätigung, ist
+ * das KEIN Misserfolg — der Webhook schliesst die Bestellung unabhängig davon
+ * ab, der Kunde bekommt die Bestätigung per Mail.
  */
 
 const MAX_ATTEMPTS = 8;
@@ -24,9 +34,10 @@ type View =
   | { state: "paid" }
   | { state: "still-pending" }
   | { state: "canceled" }
+  | { state: "no-cart" }
   | { state: "error"; message: string };
 
-export function PaymentReturnStatus({ sessionId }: { sessionId: string }) {
+export function PaymentReturnStatus({ sessionId }: { sessionId?: string }) {
   const router = useRouter();
   const [view, setView] = useState<View>({ state: "checking" });
   const started = useRef(false);
@@ -41,7 +52,9 @@ export function PaymentReturnStatus({ sessionId }: { sessionId: string }) {
 
     (async () => {
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const result = await confirmPaymentReturnAction(sessionId);
+        const result = sessionId
+          ? await confirmPaymentReturnAction(sessionId)
+          : await completePendingOrderAction();
         if (cancelled) return;
 
         switch (result.kind) {
@@ -53,6 +66,9 @@ export function PaymentReturnStatus({ sessionId }: { sessionId: string }) {
             return;
           case "canceled":
             setView({ state: "canceled" });
+            return;
+          case "missing":
+            setView({ state: "no-cart" });
             return;
           case "error":
             setView({ state: "error", message: result.message });
@@ -114,6 +130,13 @@ export function PaymentReturnStatus({ sessionId }: { sessionId: string }) {
           melden uns per E-Mail — du musst nichts weiter tun und{" "}
           <strong>nicht erneut bezahlen</strong>.
         </p>
+        {!sessionId ? (
+          <p className={styles.confirmText}>
+            Falls du die Zahlung doch nicht abgeschlossen hast, ist dein
+            Warenkorb unverändert da — du kannst jederzeit{" "}
+            <Link href="/checkout">zur Kasse zurück</Link>.
+          </p>
+        ) : null}
         <Link href="/shop" className={styles.secondaryCta}>
           Zurück zum Shop
         </Link>
@@ -131,6 +154,22 @@ export function PaymentReturnStatus({ sessionId }: { sessionId: string }) {
         </p>
         <Link href="/checkout" className={styles.secondaryCta}>
           Zurück zur Kasse
+        </Link>
+      </div>
+    );
+  }
+
+  if (view.state === "no-cart") {
+    return (
+      <div className={styles.confirmation}>
+        <h1 className={styles.confirmTitle}>Keine offene Bestellung gefunden</h1>
+        <p className={styles.confirmText}>
+          In diesem Browser liegt kein offener Warenkorb. Falls du gerade
+          bezahlt hast, wird die Bestellung automatisch abgeschlossen — die
+          Bestätigung mit allen Details kommt per E-Mail.
+        </p>
+        <Link href="/shop" className={styles.secondaryCta}>
+          Zurück zum Shop
         </Link>
       </div>
     );

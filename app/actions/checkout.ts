@@ -21,8 +21,10 @@ import {
   type SaveAddressResult,
 } from "@/lib/checkout/server";
 import {
+  completePendingOrder,
   confirmPaymentReturn,
   type PaymentReturnResult,
+  type PendingOrderResult,
 } from "@/lib/checkout/return";
 
 export async function saveAddressAction(
@@ -65,4 +67,15 @@ export async function confirmPaymentReturnAction(
   paymentSessionId: string,
 ): Promise<PaymentReturnResult> {
   return confirmPaymentReturn(paymentSessionId);
+}
+
+/**
+ * Rückkehr vom zahls.ch-Plugin (pp_zahls_zahls): dessen Redirect-URLs sind
+ * statisch, der Browser bringt KEINE Zahlungsreferenz mit. Statt eines
+ * Status-Abgleichs versucht der Server, den Cart abzuschliessen — Medusa
+ * autorisiert dabei die Zahlung frisch beim PSP (lib/checkout/return.ts,
+ * `completePendingOrder`). Unbezahlt ⇒ keine Bestellung, Warenkorb bleibt.
+ */
+export async function completePendingOrderAction(): Promise<PendingOrderResult> {
+  return completePendingOrder();
 }
