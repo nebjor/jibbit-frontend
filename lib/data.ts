@@ -130,8 +130,29 @@ export async function getCategory(
 // Products
 // ---------------------------------------------------------------------------
 
-const PRODUCT_FIELDS =
-  "*variants.calculated_price,*images,*categories,*tags,+metadata";
+/**
+ * Feldliste fuer die Store-API.
+ *
+ * ⚠️ `inventory_quantity`, `manage_inventory` und `allow_backorder` MUESSEN
+ * hier ausdruecklich stehen. Medusa v2 liefert sie sonst nicht mit, und
+ * `toVariantView()` in lib/adapters.ts entscheidet genau daran, ob ein Artikel
+ * vorraetig ist:
+ *
+ *     inStock = manage_inventory === false
+ *            || allow_backorder === true
+ *            || (inventory_quantity ?? 0) > 0
+ *
+ * Fehlen die Felder, sind alle drei Bedingungen falsch beziehungsweise
+ * `undefined ?? 0`, und der Shop zeigt JEDEN Artikel als «ausverkauft» — auch
+ * wenn im Admin tausend Stueck liegen. Der Fehler ist still: keine Warnung,
+ * keine Fehlermeldung, nur ein Laden ohne Ware.
+ *
+ * `+` haengt ein Feld an die Standardauswahl an, `*` expandiert eine Relation.
+ */
+export const PRODUCT_FIELDS =
+  "*variants.calculated_price,*images,*categories,*tags,+metadata," +
+  "+variants.inventory_quantity,+variants.manage_inventory," +
+  "+variants.allow_backorder";
 
 export async function getProducts(opts?: {
   category?: CategoryHandle;
