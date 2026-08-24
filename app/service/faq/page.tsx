@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: "Was kostet der Versand?",
-    a: `Pauschal ${formatPrice(SHIPPING.flatRate)} innerhalb der Schweiz. Ab einem Bestellwert von ${formatPrice(SHIPPING.freeThreshold)} versenden wir gratis. Im Warenkorb siehst du laufend, wie viel dir noch bis zum Gratisversand fehlt.`,
+    a: `Kleinsendungen im Briefformat kosten ${formatPrice(SHIPPING.letterRate)}, Pakete ${formatPrice(SHIPPING.parcelRate)} — zum Beispiel eine ganze Box Papers. Ab einem Bestellwert von ${formatPrice(SHIPPING.freeThreshold)} versenden wir gratis. Im Warenkorb siehst du laufend, wie viel dir noch bis zum Gratisversand fehlt.`,
   },
   {
     q: "Wie kann ich bezahlen?",
@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Kann ich zurückgeben?",
-    a: "Ja. In der Schweiz gibt es zwar kein gesetzliches Widerrufsrecht für Online-Bestellungen, wir gewähren dir aber freiwillig ein vertragliches Rückgaberecht. Geöffnete Papers und Filter sind aus hygienischen Gründen ausgenommen.",
+    a: "Bei blossem Sinneswandel nicht — in der Schweiz gibt es für Onlinebestellungen kein gesetzliches Widerrufsrecht, und wir gewähren auch kein freiwilliges. Ist etwas defekt, beschädigt angekommen oder falsch geliefert, nehmen wir es dagegen immer zurück, und der Rückversand geht auf uns.",
   },
   {
     q: "Ihr habt eine Marke nicht, die ich suche. Und jetzt?",

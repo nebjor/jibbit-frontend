@@ -140,7 +140,7 @@ export default async function ProductPage({
 
           <ul className={styles.signals}>
             <li>
-              Versand pauschal {formatPrice(SHIPPING.flatRate)} — gratis ab{" "}
+              Versand ab {formatPrice(SHIPPING.letterRate)} — gratis ab{" "}
               {formatPrice(SHIPPING.freeThreshold)}
             </li>
             <li>Versand ab Lager in der Schweiz, kein Zoll</li>
