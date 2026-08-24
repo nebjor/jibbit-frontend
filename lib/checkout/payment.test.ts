@@ -1,24 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { choosePaymentProvider } from "./payment";
+import {
+  PAYREXX_PROVIDER_ID,
+  PaymentSetupError,
+  choosePaymentProvider,
+  handoffFromSession,
+} from "./payment";
 
 /**
- * The payment strand replaces the preference order in `payment.ts`. These tests
- * pin the CURRENT behaviour so that change is a deliberate, visible one rather
- * than something that quietly happens.
+ * The preference order decides who takes the customer's money. These tests pin
+ * it so a change is a deliberate, visible one rather than something that
+ * quietly happens.
  */
 describe("choosePaymentProvider", () => {
-  it("prefers the system provider while Payrexx is not wired up", () => {
+  it("prefers the real PSP (zahls.ch via the Payrexx module) over the system provider", () => {
     expect(
       choosePaymentProvider([
-        { id: "pp_payrexx_payrexx" },
         { id: "pp_system_default" },
+        { id: PAYREXX_PROVIDER_ID },
       ]),
-    ).toBe("pp_system_default");
+    ).toBe(PAYREXX_PROVIDER_ID);
   });
 
-  it("falls back to Payrexx when the system provider is not offered", () => {
-    expect(choosePaymentProvider([{ id: "pp_payrexx_payrexx" }])).toBe(
-      "pp_payrexx_payrexx",
+  it("falls back to the system provider when the PSP is not offered", () => {
+    expect(choosePaymentProvider([{ id: "pp_system_default" }])).toBe(
+      "pp_system_default",
     );
   });
 
@@ -30,5 +35,41 @@ describe("choosePaymentProvider", () => {
 
   it("returns undefined when the region has no payment provider at all", () => {
     expect(choosePaymentProvider([])).toBeUndefined();
+  });
+});
+
+describe("handoffFromSession", () => {
+  it("sends the customer to the gateway link for the PSP provider", () => {
+    expect(
+      handoffFromSession(PAYREXX_PROVIDER_ID, {
+        provider_id: PAYREXX_PROVIDER_ID,
+        data: { link: "https://jibbit.zahls.ch/?payment=abc" },
+      }),
+    ).toEqual({
+      kind: "redirect",
+      providerId: PAYREXX_PROVIDER_ID,
+      url: "https://jibbit.zahls.ch/?payment=abc",
+    });
+  });
+
+  it("refuses a PSP session without a link — inline completion would create an unpaid order", () => {
+    expect(() =>
+      handoffFromSession(PAYREXX_PROVIDER_ID, {
+        provider_id: PAYREXX_PROVIDER_ID,
+        data: {},
+      }),
+    ).toThrow(PaymentSetupError);
+    expect(() => handoffFromSession(PAYREXX_PROVIDER_ID, undefined)).toThrow(
+      PaymentSetupError,
+    );
+  });
+
+  it("completes inline for the system provider", () => {
+    expect(
+      handoffFromSession("pp_system_default", {
+        provider_id: "pp_system_default",
+        data: {},
+      }),
+    ).toEqual({ kind: "inline", providerId: "pp_system_default" });
   });
 });

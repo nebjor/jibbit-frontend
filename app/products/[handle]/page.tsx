@@ -144,7 +144,7 @@ export default async function ProductPage({
               {formatPrice(SHIPPING.freeThreshold)}
             </li>
             <li>Versand ab Lager in der Schweiz, kein Zoll</li>
-            <li>Bezahlung mit TWINT oder Powerpay (Rechnung)</li>
+            <li>Bezahlung mit TWINT, Kreditkarte oder PostFinance</li>
             <li>Abgabe nur an Personen ab {MIN_AGE} Jahren</li>
           </ul>
 
