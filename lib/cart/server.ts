@@ -55,10 +55,47 @@ function isNotFound(error: unknown): boolean {
   );
 }
 
+/**
+ * Fehler aus dem Medusa-SDK lesbar protokollieren.
+ *
+ * ⚠️ WARUM NICHT NUR `error.message`: Das JS-SDK wirft bei jedem
+ * Serverfehler einen Error, dessen `message` schlicht «An unknown error
+ * occurred.» lautet. Status und Ursache haengen als eigene Felder daran und
+ * gingen bisher verloren — im Log stand dreimal dieselbe nichtssagende Zeile,
+ * waehrend die eigentliche Auskunft danebenlag.
+ *
+ * Ausgegeben werden deshalb zusaetzlich `status` und alles, was das SDK an
+ * Serverantwort mitfuehrt. KEINE Kopfzeilen und kein Anfragerumpf: dort
+ * stecken Publishable Key und Adressdaten, und Containerlogs werden
+ * weitergereicht, archiviert und in Fehlerberichte kopiert.
+ */
 function logCartError(where: string, error: unknown) {
-  console.error(
-    `[cart] ${where}: ${error instanceof Error ? error.message : String(error)}`,
-  );
+  const parts: string[] = [
+    error instanceof Error ? error.message : String(error),
+  ];
+
+  const e = (error ?? {}) as Record<string, unknown>;
+
+  const status = e.status ?? e.statusCode;
+  if (status != null) parts.push(`status=${String(status)}`);
+
+  const type = e.type ?? e.code;
+  if (type != null) parts.push(`type=${String(type)}`);
+
+  // Das SDK legt die Serverantwort je nach Pfad unterschiedlich ab.
+  const body = e.response ?? e.body ?? e.data;
+  if (body != null) {
+    let rendered: string;
+    try {
+      rendered = typeof body === "string" ? body : JSON.stringify(body);
+    } catch {
+      rendered = String(body);
+    }
+    // Deckeln, damit ein HTML-Fehlerdokument das Log nicht flutet.
+    parts.push(`response=${rendered.slice(0, 500)}`);
+  }
+
+  console.error(`[cart] ${where}: ${parts.join(" | ")}`);
 }
 
 interface CartContext {
