@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PaymentReturnStatus } from "@/components/checkout/PaymentReturnStatus";
 
 export const metadata: Metadata = {
@@ -8,12 +7,20 @@ export const metadata: Metadata = {
 };
 
 /**
- * Landeplatz nach der Zahlung auf der zahls.ch/Payrexx-Seite.
+ * Landeplatz nach der Zahlung auf der zahls.ch-Bezahlseite — für beide
+ * Provider:
  *
- * Das Backend hängt `?payment_session_id=…` an die Rückkehr-URL
- * (backend/src/modules/payrexx, `initiatePayment()`). Der Status kommt danach
- * ausschliesslich aus einer server-seitigen Abfrage — wer diese Seite von
- * Hand aufruft, bekommt keine bezahlte Bestellung.
+ * - Payrexx-Modul (pp_payrexx_payrexx): hängt `?payment_session_id=…` an die
+ *   Rückkehr-URL (backend/src/modules/payrexx, `initiatePayment()`); der
+ *   Status wird server-seitig über `/store/payrexx/return` abgeglichen.
+ * - Offizielles zahls.ch-Plugin (pp_zahls_zahls): dessen Redirect-URLs sind
+ *   STATISCH — keine Query. Ohne `payment_session_id` versucht die Seite
+ *   deshalb server-seitig den Cart-Abschluss; Medusa autorisiert dabei die
+ *   Zahlung frisch beim PSP (lib/checkout/return.ts).
+ *
+ * In beiden Fällen kommt der Status ausschliesslich aus server-seitigen
+ * Abfragen — wer diese Seite von Hand aufruft, bekommt keine bezahlte
+ * Bestellung.
  */
 export default async function CheckoutSuccessPage({
   searchParams,
@@ -21,7 +28,6 @@ export default async function CheckoutSuccessPage({
   searchParams: Promise<{ payment_session_id?: string }>;
 }) {
   const { payment_session_id: sessionId } = await searchParams;
-  if (!sessionId) redirect("/checkout");
 
   return <PaymentReturnStatus sessionId={sessionId} />;
 }
