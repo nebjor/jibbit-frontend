@@ -46,15 +46,14 @@ import { EMPTY_CART } from "@/lib/cart/types";
 import { formatPrice } from "@/lib/format";
 import styles from "./checkout.module.css";
 
-type Step = "address" | "shipping" | "review";
+type Step = "address" | "shipping";
 
 const STEP_LABELS: Record<Step, string> = {
   address: "Adresse",
-  shipping: "Versand",
-  review: "Übersicht",
+  shipping: "Versand & Kauf",
 };
 
-const STEP_ORDER: Step[] = ["address", "shipping", "review"];
+const STEP_ORDER: Step[] = ["address", "shipping"];
 
 export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
   const cart = useCart();
@@ -345,15 +344,6 @@ export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
                 <h2 id="step-shipping" className={styles.cardTitle}>
                   2 · Versandart
                 </h2>
-                {step === "review" && (
-                  <button
-                    type="button"
-                    className={styles.changeBtn}
-                    onClick={() => setStep("shipping")}
-                  >
-                    Ändern
-                  </button>
-                )}
               </div>
 
               {options === null ? (
@@ -406,40 +396,26 @@ export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
               )}
 
               {step === "shipping" && (
-                <button
-                  type="button"
-                  className={styles.primaryCta}
-                  disabled={busy || !shippingComplete}
-                  onClick={() => setStep("review")}
-                >
-                  Weiter zur Übersicht
-                </button>
+                <>
+                  <p className={styles.muted}>
+                    Mit dem Klick auf &laquo;Jetzt kaufen&raquo; gibst du eine
+                    verbindliche Bestellung ab. Es gelten unsere{" "}
+                    <Link href="/agb">AGB</Link>; zur Rückgabe siehe{" "}
+                    <Link href="/widerrufsrecht">Widerrufsrecht</Link>.
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.primaryCta}
+                    disabled={busy || !shippingComplete || cart.count === 0}
+                    onClick={submitOrder}
+                  >
+                    {busy ? "Bestellung wird abgeschlossen …" : "Jetzt kaufen"}
+                  </button>
+                </>
               )}
             </section>
           )}
 
-          {/* ── Schritt 3 — Übersicht + Abschluss ─────────────────────── */}
-          {step === "review" && (
-            <section className={styles.card} aria-labelledby="step-review">
-              <h2 id="step-review" className={styles.cardTitle}>
-                3 · Bestellung prüfen
-              </h2>
-              <p className={styles.muted}>
-                Mit dem Klick auf &laquo;Jetzt kaufen&raquo; gibst du eine
-                verbindliche Bestellung ab. Es gelten unsere{" "}
-                <Link href="/agb">AGB</Link> und das{" "}
-                <Link href="/widerrufsrecht">Widerrufsrecht</Link>.
-              </p>
-              <button
-                type="button"
-                className={styles.primaryCta}
-                disabled={busy || cart.count === 0}
-                onClick={submitOrder}
-              >
-                {busy ? "Bestellung wird abgeschlossen …" : "Jetzt kaufen"}
-              </button>
-            </section>
-          )}
         </div>
 
         {/* ── Warenkorb-Übersicht ─────────────────────────────────────── */}
