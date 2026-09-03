@@ -16,9 +16,12 @@ export const metadata: Metadata = {
 /**
  * Order confirmation.
  *
- * Reachable without a login on purpose — this is a guest checkout, and the id
- * in the URL is the customer's only handle on their order. It is therefore also
- * `noindex, nofollow`, and never linked from anywhere public.
+ * Reachable without a login on purpose, even now that the checkout can require
+ * an account (`lib/checkout/account-requirement.ts`): the customer arrives here
+ * straight from the payment provider, possibly after the session expired, and
+ * with the switch off a guest's order id is their only handle on the order. The
+ * id in the URL is what protects the page — hence `noindex, nofollow`, and
+ * never linked from anywhere public.
  */
 export default async function OrderConfirmationPage({
   params,

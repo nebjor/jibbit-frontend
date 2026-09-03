@@ -55,14 +55,25 @@ const STEP_LABELS: Record<Step, string> = {
 
 const STEP_ORDER: Step[] = ["address", "shipping"];
 
-export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
+export function CheckoutFlow({
+  initialCart,
+  prefillEmail = null,
+  prefillAddress = null,
+}: {
+  initialCart: CartState;
+  /** Aus dem Kundenkonto, wenn angemeldet — siehe app/checkout/page.tsx. */
+  prefillEmail?: string | null;
+  prefillAddress?: CheckoutAddress | null;
+}) {
   const cart = useCart();
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("address");
-  const [email, setEmail] = useState(initialCart.email ?? "");
+  // Was der Cart schon trägt, gewinnt: eine halb ausgefüllte Kasse darf das
+  // Konto-Vorausfüllen nicht überschreiben.
+  const [email, setEmail] = useState(initialCart.email ?? prefillEmail ?? "");
   const [address, setAddress] = useState<CheckoutAddress>(
-    initialCart.address ?? EMPTY_ADDRESS,
+    initialCart.address ?? prefillAddress ?? EMPTY_ADDRESS,
   );
   const [errors, setErrors] = useState<AddressErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -249,7 +260,7 @@ export function CheckoutFlow({ initialCart }: { initialCart: CartState }) {
                     onChange={(e) => setEmail(e.target.value)}
                   />
                   <span className={styles.hint}>
-                    Nur für die Bestellbestätigung. Kein Konto nötig.
+                    Hierhin geht die Bestellbestätigung.
                   </span>
                   {errors.email && (
                     <span className={styles.fieldError}>{errors.email}</span>

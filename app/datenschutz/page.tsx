@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Prose, Platzhalter } from "@/components/Prose";
+import { requiresAccount } from "@/lib/checkout/account-requirement";
 import { STORE } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -49,12 +50,26 @@ export default function DatenschutzPage() {
         erfüllen.
       </p>
       <h3>Kundenkonto</h3>
-      <p>
-        Wenn du ein Konto eröffnest, speichern wir zusätzlich deine
-        Zugangsdaten (das Passwort nur in verschlüsselter Form) und deine
-        Bestellhistorie. Ein Konto ist freiwillig — bestellen kannst du auch
-        ohne. Du kannst die Löschung deines Kontos jederzeit verlangen.
-      </p>
+      {/* Ob ein Konto Pflicht ist, steuert lib/checkout/account-requirement.ts.
+          Dieser Absatz MUSS dem Schalter folgen — «freiwillig» zu behaupten,
+          während die Kasse ein Konto verlangt, wäre falsch. Die Seite rendert
+          dynamisch; der Text stellt also zusammen mit der Kasse um. */}
+      {requiresAccount() ? (
+        <p>
+          Für eine Bestellung brauchst du ein Kundenkonto. Wir speichern dann
+          zusätzlich deine Zugangsdaten (das Passwort nur in verschlüsselter
+          Form) und deine Bestellhistorie. Du kannst die Löschung deines Kontos
+          jederzeit verlangen, soweit keine gesetzliche Aufbewahrungspflicht
+          entgegensteht.
+        </p>
+      ) : (
+        <p>
+          Wenn du ein Konto eröffnest, speichern wir zusätzlich deine
+          Zugangsdaten (das Passwort nur in verschlüsselter Form) und deine
+          Bestellhistorie. Ein Konto ist freiwillig — bestellen kannst du auch
+          ohne. Du kannst die Löschung deines Kontos jederzeit verlangen.
+        </p>
+      )}
       <h3>Technische Daten</h3>
       <p>
         Beim Besuch der Website werden technisch notwendige Daten verarbeitet:
