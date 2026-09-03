@@ -7,9 +7,10 @@
  * the backend's own `validateAddress` middleware still runs on the address
  * routes it protects.
  *
- * GUEST CHECKOUT: an e-mail address is all Medusa needs to complete a cart. No
- * account, no login. Customer accounts are a separate strand and nothing here
- * may assume one exists.
+ * KONTO: an e-mail address is all Medusa needs to complete a cart. Whether the
+ * checkout PAGE requires a login is `lib/checkout/account-requirement.ts`'s
+ * decision — this validation layer works the same with or without a session
+ * and must not assume one exists.
  */
 
 import type { CheckoutAddress } from "@/lib/cart/types";

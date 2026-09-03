@@ -15,12 +15,16 @@ import styles from "./account.module.css"
  * kein Newsletter-Häkchen — Datensparsamkeit nach DSG Art. 6 heisst, gar nicht
  * erst zu fragen. Die Lieferadresse entsteht bei der ersten Bestellung.
  */
-export function RegisterForm() {
+export function RegisterForm({ next }: { next?: string }) {
   const [state, formAction] = useActionState(registrieren, IDLE_FORM_STATE)
 
   return (
     <form className={styles.form} action={formAction}>
       <FormMessage state={state} />
+
+      {/* Wohin nach der Registrierung — z. B. zurück in die Kasse. Die
+          Action nimmt nur relative Pfade an. */}
+      {next ? <input type="hidden" name="next" value={next} /> : null}
 
       <div className={`${styles.row} ${styles.row2}`}>
         <Field name="first_name" label="Vorname" autoComplete="given-name" />

@@ -22,6 +22,7 @@ import {
   RESET_LINK_ABGELAUFEN,
   RESET_LINK_FEHLT,
 } from "./messages"
+import { safeNextPath } from "./next-path"
 import { bearer, clearSession, readSessionToken, writeSessionToken } from "./session"
 import type { FormState } from "./types"
 
@@ -86,6 +87,12 @@ async function sdkOrNull(): Promise<Medusa | null> {
  *
  * Absichtlich kein zweites Senden des Passworts: Schritt 3 kommt mit dem
  * Token aus Schritt 1 aus.
+ *
+ * `next` funktioniert wie bei der Anmeldung: wer aus der Kasse kommt
+ * (`/konto/registrieren?next=/checkout`), landet nach dem Anlegen des Kontos
+ * direkt wieder dort und bestellt weiter — die Registrierung darf keine
+ * Sackgasse sein. Der Warenkorb hängt an seinem eigenen Cookie und bleibt
+ * dabei unangetastet.
  */
 export async function registrieren(
   _prev: FormState,
@@ -96,6 +103,8 @@ export async function registrieren(
   const passwordRepeat = String(formData.get("password_repeat") ?? "")
   const firstName = field(formData, "first_name")
   const lastName = field(formData, "last_name")
+  // Nur relative Ziele — dieselbe Prüfung wie bei `anmelden`, gleiche Gründe.
+  const next = safeNextPath(field(formData, "next"), "/konto")
 
   const fieldErrors: Record<string, string> = {}
   if (!EMAIL_RE.test(email)) fieldErrors.email = EMAIL_UNGUELTIG
@@ -143,7 +152,7 @@ export async function registrieren(
   await writeSessionToken(token)
   // Ausserhalb des try — `redirect` arbeitet mit einer geworfenen Ausnahme
   // und würde von einem umschliessenden catch verschluckt.
-  redirect("/konto")
+  redirect(next)
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -156,19 +165,10 @@ export async function anmelden(
 ): Promise<FormState> {
   const email = field(formData, "email").toLowerCase()
   const password = String(formData.get("password") ?? "")
-  // Wohin nach der Anmeldung. Nur relative Pfade — ein aus dem Formular
-  // übernommenes `https://…` wäre eine offene Weiterleitung, mit der sich
-  // Phishing-Links tarnen lassen, die auf der echten Shop-Domain beginnen.
-  //
-  // Der Rückschrägstrich muss mit: Browser normalisieren `/\boese.example`
-  // zu `//boese.example` und landen damit auf einem fremden Host, obwohl der
-  // Pfad mit einem einzelnen `/` beginnt. Eine Prüfung nur auf `//` geht
-  // genau daran vorbei.
-  const rawNext = field(formData, "next")
-  const next =
-    rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\")
-      ? rawNext
-      : "/konto"
+  // Wohin nach der Anmeldung. Nur relative Pfade — warum, steht bei
+  // `safeNextPath` (lib/auth/next-path.ts), inklusive des
+  // Rückschrägstrich-Falls, den eine Prüfung nur auf `//` übersieht.
+  const next = safeNextPath(field(formData, "next"), "/konto")
 
   if (!email || !password) {
     return { ok: false, message: ANMELDUNG_FEHLGESCHLAGEN }
