@@ -27,11 +27,10 @@ export const SHIPPING = {
 } as const;
 
 /**
- * Payment methods offered, via zahls.ch (a white-label of the Payrexx
- * platform — the backend's Payrexx module talks to it, see
- * backend/src/modules/payrexx). Content-level: what the shop PROMISES.
- * No invoice purchase — zahls.ch has no Powerpay; Rechnungs-/Ratenkauf
- * would be Klarna and needs the "Pay Plus" plan.
+ * Payment methods offered, via zahls.ch (official plugin
+ * @zahls/medusa-plugin in the backend). Content-level: what the shop
+ * PROMISES. No invoice purchase — zahls.ch has no Powerpay;
+ * Rechnungs-/Ratenkauf would be Klarna and needs the "Pay Plus" plan.
  */
 export const PAYMENT_METHODS = [
   { id: "twint", label: "TWINT" },

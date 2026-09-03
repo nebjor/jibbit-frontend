@@ -89,12 +89,9 @@ export default function DatenschutzPage() {
       <ul>
         <li>
           <strong>Zahlungsdienstleister:</strong>{" "}
-          Payrexx AG, Thun — wickelt die Zahlung ab und erhält dafür Betrag,
-            Bestellnummer und die für die gewählte Zahlungsart nötigen Angaben.
-            Ein Wechsel des Anbieters ist geplant; diese Seite wird dann
-            angepasst{" "}
-          — für die Abwicklung der Zahlung. Bei Kauf auf Rechnung kann der
-          Rechnungsanbieter eine Bonitätsprüfung durchführen.
+          zahls.ch, betrieben von der siebenberge gmbh — wickelt die Zahlung
+          ab und erhält dafür Betrag, Bestellnummer und die für die gewählte
+          Zahlungsart nötigen Angaben — für die Abwicklung der Zahlung.
         </li>
         <li>
           <strong>Logistikpartner:</strong>{" "}
@@ -116,8 +113,8 @@ export default function DatenschutzPage() {
         Datenschutz gewährleistet oder geeignete Garantien wie
         Standardvertragsklauseln bestehen (Art. 16 f. DSG).{" "}
         Derzeit findet keine Bekanntgabe ins Ausland statt: Hosting
-            (Infomaniak, Genf) und Zahlungsabwicklung (Payrexx, Thun) liegen
-            beide in der Schweiz
+            (Infomaniak, Genf) und Zahlungsabwicklung (zahls.ch, siebenberge
+            gmbh, Schweiz) liegen beide in der Schweiz
       </p>
 
       <h2>7. Cookies und Analyse</h2>
