@@ -63,7 +63,11 @@ export interface CartState {
   address: CheckoutAddress | null;
 }
 
-/** Delivery address. Guest checkout — no customer account is assumed. */
+/**
+ * Delivery address. Deliberately account-agnostic: whether the checkout
+ * REQUIRES a login is decided in `lib/checkout/account-requirement.ts`, and
+ * nothing in this shape depends on a customer record either way.
+ */
 export interface CheckoutAddress {
   firstName: string;
   lastName: string;

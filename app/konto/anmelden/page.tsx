@@ -3,7 +3,9 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { LoginForm } from "@/components/account/LoginForm"
 import { PASSWORT_GESETZT } from "@/lib/auth/messages"
+import { isSafeNextPath } from "@/lib/auth/next-path"
 import { readSessionToken } from "@/lib/auth/session"
+import { requiresAccount } from "@/lib/checkout/account-requirement"
 import styles from "../konto.module.css"
 
 export const metadata: Metadata = {
@@ -18,21 +20,28 @@ export default async function AnmeldenPage({
 }: {
   searchParams: Promise<{ next?: string; gesetzt?: string }>
 }) {
-  // Wer schon angemeldet ist, soll hier nicht landen.
-  if (await readSessionToken()) redirect("/konto")
-
   const params = await searchParams
   // Nur relative Ziele weiterreichen — die Action prüft es noch einmal, aber
   // ein absoluter Wert soll gar nicht erst im Formular stehen.
-  const next =
-    params.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : undefined
+  const next = isSafeNextPath(params.next) ? params.next : undefined
+
+  // Wer schon angemeldet ist, soll hier nicht landen — und wer mit einem Ziel
+  // kam (etwa aus der Kasse), direkt dort weitermachen statt im Kontobereich.
+  if (await readSessionToken()) redirect(next ?? "/konto")
+
+  // Aus der Kasse hergeschickt? Dann sag, warum — und dass nichts verloren geht.
+  const ausDerKasse = next?.startsWith("/checkout") === true
 
   return (
     <div className={`page ${styles.wrap} ${styles.narrow}`}>
       <div>
         <h1 className={styles.title}>Anmelden</h1>
         <p className={styles.lead}>
-          Bestellungen nachschauen, Adressen verwalten. Bestellen geht auch ohne Konto.
+          {ausDerKasse
+            ? "Zum Bestellen brauchst du ein Konto. Melde dich an — dein Warenkorb bleibt, wie er ist, und du kommst direkt zur Kasse zurück."
+            : requiresAccount()
+              ? "Bestellungen aufgeben und nachschauen, Adressen verwalten."
+              : "Bestellungen nachschauen, Adressen verwalten. Bestellen geht auch ohne Konto."}
         </p>
       </div>
 
@@ -45,7 +54,16 @@ export default async function AnmeldenPage({
       <LoginForm next={next} />
 
       <p className={styles.footNote}>
-        Noch kein Konto? <Link href="/konto/registrieren">Jetzt eines anlegen.</Link>
+        Noch kein Konto?{" "}
+        <Link
+          href={
+            next
+              ? `/konto/registrieren?next=${encodeURIComponent(next)}`
+              : "/konto/registrieren"
+          }
+        >
+          Jetzt eines anlegen.
+        </Link>
       </p>
     </div>
   )

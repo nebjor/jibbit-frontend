@@ -10,11 +10,10 @@ import styles from "../konto.module.css"
  * WARUM HIER UND NICHT IN `proxy.ts`
  * Der Proxy löst für JEDE Anfrage den Mandanten auf und ist ausdrücklich nicht
  * der Ort für Logik ("not intended for slow data fetching", siehe die
- * Kommentare dort). Vor allem aber: ein Matcher, der Konto-Routen absichert,
- * ist einen Tippfehler davon entfernt, auch `/checkout` zu erwischen — und
- * dann wäre eine Bestellung ohne Konto plötzlich unmöglich. Gastbestellungen
- * bleiben ausdrücklich möglich; die Absicherung endet deshalb an dieser
- * Route-Gruppe.
+ * Kommentare dort). Die Absicherung endet deshalb an dieser Route-Gruppe.
+ * Ob auch die KASSE eine Anmeldung verlangt, entscheidet nicht dieser Zaun,
+ * sondern der Schalter in `lib/checkout/account-requirement.ts` — geprüft in
+ * `app/checkout/page.tsx`, mit Rückweg über `?next=/checkout`.
  *
  * Der Layout-Check ist die Bequemlichkeit für den Menschen davor, nicht die
  * Sicherheitsgrenze. Die liegt in jeder einzelnen Server Action (jede prüft

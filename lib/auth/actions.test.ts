@@ -410,4 +410,127 @@ describe("registrieren", () => {
     expect(state.fieldErrors?.password_repeat).toBeTruthy()
     expect(spy).not.toHaveBeenCalled()
   })
+
+  it("führt mit `next` zurück in die Kasse — Registrierung ist keine Sackgasse", async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600
+    const withActor = `h.${Buffer.from(
+      JSON.stringify({ actor_id: "cus_neu", actor_type: "customer", exp }),
+    ).toString("base64url")}.s`
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: unknown) => {
+        const url = String(input)
+        if (url.includes("/register")) return json({ token: "registrierungs-token" })
+        if (url.includes("/store/customers")) return json({ customer: { id: "cus_neu" } })
+        if (url.includes("/auth/token/refresh")) return json({ token: withActor })
+        return json({}, 404)
+      }),
+    )
+
+    const err = await registrieren(
+      IDLE,
+      form({
+        email: "neu@example.ch",
+        password: "geheim123",
+        password_repeat: "geheim123",
+        next: "/checkout",
+      }),
+    ).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(RedirectSignal)
+    expect((err as RedirectSignal).to).toBe("/checkout")
+  })
+
+  it("nimmt auch bei der Registrierung nur relative Weiterleitungsziele an", async () => {
+    const exp = Math.floor(Date.now() / 1000) + 3600
+    const withActor = `h.${Buffer.from(
+      JSON.stringify({ actor_id: "cus_neu", actor_type: "customer", exp }),
+    ).toString("base64url")}.s`
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: unknown) => {
+        const url = String(input)
+        if (url.includes("/register")) return json({ token: "registrierungs-token" })
+        if (url.includes("/store/customers")) return json({ customer: { id: "cus_neu" } })
+        if (url.includes("/auth/token/refresh")) return json({ token: withActor })
+        return json({}, 404)
+      }),
+    )
+
+    for (const evil of ["https://boese.example", "//boese.example", "/\\boese.example"]) {
+      const err = await registrieren(
+        IDLE,
+        form({
+          email: "neu@example.ch",
+          password: "geheim123",
+          password_repeat: "geheim123",
+          next: evil,
+        }),
+      ).catch((e: unknown) => e)
+      expect(err).toBeInstanceOf(RedirectSignal)
+      expect((err as RedirectSignal).to).toBe("/konto")
+    }
+  })
+})
+
+describe("Kontopflicht — Warenkorb überlebt den Umweg über die Anmeldung", () => {
+  /**
+   * DER Fall, für den der Rückweg gebaut ist: volle Kasse, keine Sitzung,
+   * Umleitung zur Anmeldung, zurück zur Kasse. Der Warenkorb hängt am eigenen
+   * Cookie (`jibbit_cart_id`); Anmeldung und Registrierung dürfen es weder
+   * überschreiben noch löschen. Ein Kunde, der seinen vollen Warenkorb
+   * verliert, weil er sich anmelden musste, ist schlimmer als gar keine
+   * Kontopflicht.
+   */
+  function sessionToken(): string {
+    const exp = Math.floor(Date.now() / 1000) + 3600
+    return `h.${Buffer.from(
+      JSON.stringify({ actor_id: "cus_1", actor_type: "customer", exp }),
+    ).toString("base64url")}.s`
+  }
+
+  it("anmelden mit next=/checkout: zurück zur Kasse, Cart-Cookie unberührt", async () => {
+    cookieJar.set("jibbit_cart_id", "cart_voll_01")
+    const token = sessionToken()
+    vi.stubGlobal("fetch", vi.fn(async () => json({ token })))
+
+    const err = await anmelden(
+      IDLE,
+      form({ email: "kunde@example.ch", password: "geheim123", next: "/checkout" }),
+    ).catch((e: unknown) => e)
+
+    expect(err).toBeInstanceOf(RedirectSignal)
+    expect((err as RedirectSignal).to).toBe("/checkout")
+    // Sitzung gesetzt UND der Warenkorb noch da — beides, nicht eines von beiden.
+    expect(cookieJar.get("jb_session")).toBe(token)
+    expect(cookieJar.get("jibbit_cart_id")).toBe("cart_voll_01")
+  })
+
+  it("registrieren mit next=/checkout: Konto in einem Zug, Cart-Cookie unberührt", async () => {
+    cookieJar.set("jibbit_cart_id", "cart_voll_02")
+    const token = sessionToken()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: unknown) => {
+        const url = String(input)
+        if (url.includes("/register")) return json({ token: "registrierungs-token" })
+        if (url.includes("/store/customers")) return json({ customer: { id: "cus_1" } })
+        if (url.includes("/auth/token/refresh")) return json({ token })
+        return json({}, 404)
+      }),
+    )
+
+    const err = await registrieren(
+      IDLE,
+      form({
+        email: "neu@example.ch",
+        password: "geheim123",
+        password_repeat: "geheim123",
+        next: "/checkout",
+      }),
+    ).catch((e: unknown) => e)
+
+    expect((err as RedirectSignal).to).toBe("/checkout")
+    expect(cookieJar.get("jb_session")).toBe(token)
+    expect(cookieJar.get("jibbit_cart_id")).toBe("cart_voll_02")
+  })
 })
