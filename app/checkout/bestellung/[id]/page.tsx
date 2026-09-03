@@ -38,8 +38,15 @@ export default async function OrderConfirmationPage({
       <h1 className={styles.confirmTitle}>Danke — das ist bestellt.</h1>
       <p className={styles.confirmText}>
         Wir haben deine Bestellung erhalten. Eine Bestätigung geht an{" "}
-        <strong>{order.email}</strong>. Sobald das Paket unterwegs ist, meldet
-        sich die Post bei dir.
+        <strong>{order.email}</strong>.{" "}
+        {order.address?.phone ? (
+          <>
+            Sobald dein Paket unterwegs ist, melden wir uns per WhatsApp unter{" "}
+            <strong>{order.address.phone}</strong>.
+          </>
+        ) : (
+          <>Sobald dein Paket unterwegs ist, melden wir uns per E-Mail.</>
+        )}
       </p>
 
       <section className={styles.card}>
