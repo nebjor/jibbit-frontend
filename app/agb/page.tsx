@@ -99,12 +99,10 @@ export default function AgbPage() {
 
       <h2>7. Zahlung</h2>
       <p>
-        Es gelten die im Bestellprozess angezeigten Zahlungsarten; vorgesehen
-        sind TWINT und Kauf auf Rechnung. Die Zahlungsabwicklung erfolgt über
-        einen externen Zahlungsdienstleister:{" "}
-        Payrexx AG, Thun
-        . Beim Kauf auf Rechnung gelten zusätzlich die Bedingungen des
-        Rechnungsanbieters, insbesondere zur Bonitätsprüfung.
+        Es gelten die im Bestellprozess angezeigten Zahlungsarten; angeboten
+        werden TWINT, Kreditkarte und PostFinance. Die Zahlungsabwicklung
+        erfolgt über einen externen Zahlungsdienstleister:{" "}
+        zahls.ch, betrieben von der siebenberge gmbh.
       </p>
 
       <h2>8. Eigentumsvorbehalt</h2>
