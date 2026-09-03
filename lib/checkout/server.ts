@@ -9,8 +9,13 @@
  *   3. payment                     -> lib/checkout/payment.ts   (SEAM)
  *   4. place order                 -> POST /store/carts/:id/complete
  *
- * GUEST CHECKOUT: step 1 sets `email` on the cart and nothing else. No customer
- * record, no login. Accounts are a separate strand and nothing here assumes one.
+ * KONTO: Ob die Kasse eine Anmeldung VERLANGT, entscheidet allein
+ * `lib/checkout/account-requirement.ts` — geprüft wird das in
+ * `app/checkout/page.tsx`, nicht hier. Die Schritte selbst funktionieren mit
+ * und ohne Sitzung: Schritt 1 setzt `email` auf den Cart, und WENN eine
+ * Sitzung da ist, ordnet er den Cart zusätzlich dem Konto zu und sichert die
+ * Adresse im Adressbuch (lib/checkout/customer.ts). So bleibt eine
+ * Gastbestellung technisch möglich, sobald der Schalter umgelegt wird.
  */
 
 import "server-only";
@@ -29,12 +34,14 @@ import {
 } from "@/lib/cart/server";
 import { EMPTY_CART, type CartActionResult, type ShippingOptionView } from "@/lib/cart/types";
 import type { CheckoutAddress } from "@/lib/cart/types";
+import { readSessionToken } from "@/lib/auth/session";
 import {
   hasErrors,
   normalizeAddress,
   validateAddress,
   type AddressErrors,
 } from "./address";
+import { attachCartToCustomer, saveAddressToAccount } from "./customer";
 import { PaymentSetupError, preparePayment } from "./payment";
 
 const NO_CART =
@@ -89,6 +96,15 @@ export async function saveContactAndAddress(
   const live = await loadCart();
   if (!live) return { ok: false, message: NO_CART, errors: {} };
 
+  // Angemeldet? Dann gehört der Cart dem Konto — VOR dem Adress-Update, damit
+  // auch eine Bestellung, die gleich danach abbricht und später abgeschlossen
+  // wird, schon zugeordnet ist. Beides ist Komfort und hält die Kasse nie an
+  // (siehe lib/checkout/customer.ts).
+  const sessionToken = await readSessionToken();
+  if (sessionToken) {
+    await attachCartToCustomer(live.sdk, live.cart, sessionToken);
+  }
+
   const medusaAddress = {
     first_name: normalized.firstName,
     last_name: normalized.lastName,
@@ -114,6 +130,13 @@ export async function saveContactAndAddress(
       },
       { fields: CART_FIELDS },
     );
+
+    // Die Adresse ins Adressbuch, damit die nächste Bestellung sie kennt —
+    // der eigentliche Zweck der Kontopflicht. Fehler dort bleiben dort.
+    if (sessionToken) {
+      await saveAddressToAccount(live.sdk, sessionToken, normalized);
+    }
+
     return { ok: true, cart: toCartState(cart) };
   } catch (error) {
     logCartError("checkout:address", error);

@@ -41,7 +41,8 @@ import { EMPTY_CART, type CartActionResult, type CartState } from "./types";
  * defaults, and without it the drawer would have to multiply `unit_price` by
  * `quantity` itself, which can drift a rappen from `item_total`.
  */
-const CART_FIELDS = "+items.total,+items.original_total,*payment_collection";
+const CART_FIELDS =
+  "+items.total,+items.original_total,*payment_collection,+customer_id";
 
 const NETWORK_ERROR =
   "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.";
