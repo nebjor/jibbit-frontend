@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { HttpTypes } from "@medusajs/types";
 import type Medusa from "@medusajs/js-sdk";
 import {
-  PAYREXX_PROVIDER_ID,
   SYSTEM_DEFAULT_PROVIDER_ID,
   ZAHLS_PROVIDER_ID,
   PaymentSetupError,
@@ -18,34 +17,13 @@ import {
  * quietly happens.
  */
 describe("choosePaymentProvider", () => {
-  it("prefers the running Payrexx module over the new zahls.ch plugin", () => {
-    // The module is the E2E-proven solution that is live today. The plugin
-    // takes over only once the operator removes the module from the region.
-    expect(
-      choosePaymentProvider([
-        { id: SYSTEM_DEFAULT_PROVIDER_ID },
-        { id: ZAHLS_PROVIDER_ID },
-        { id: PAYREXX_PROVIDER_ID },
-      ]),
-    ).toBe(PAYREXX_PROVIDER_ID);
-  });
-
-  it("moves to the zahls.ch plugin the moment the Payrexx module leaves the region", () => {
+  it("prefers the real PSP (zahls.ch plugin) over the system provider", () => {
     expect(
       choosePaymentProvider([
         { id: SYSTEM_DEFAULT_PROVIDER_ID },
         { id: ZAHLS_PROVIDER_ID },
       ]),
     ).toBe(ZAHLS_PROVIDER_ID);
-  });
-
-  it("prefers the real PSP (zahls.ch via the Payrexx module) over the system provider", () => {
-    expect(
-      choosePaymentProvider([
-        { id: SYSTEM_DEFAULT_PROVIDER_ID },
-        { id: PAYREXX_PROVIDER_ID },
-      ]),
-    ).toBe(PAYREXX_PROVIDER_ID);
   });
 
   it("falls back to the system provider when no PSP is offered", () => {
@@ -108,19 +86,6 @@ describe("systemDefaultAllowed", () => {
 });
 
 describe("handoffFromSession", () => {
-  it("sends the customer to the gateway link for the Payrexx module", () => {
-    expect(
-      handoffFromSession(PAYREXX_PROVIDER_ID, {
-        provider_id: PAYREXX_PROVIDER_ID,
-        data: { link: "https://jibbit.zahls.ch/?payment=abc" },
-      }),
-    ).toEqual({
-      kind: "redirect",
-      providerId: PAYREXX_PROVIDER_ID,
-      url: "https://jibbit.zahls.ch/?payment=abc",
-    });
-  });
-
   it("sends the customer to the gateway link for the zahls.ch plugin", () => {
     // The plugin's `initiatePayment()` stores the gateway as
     // { id, hash, link, referenceId, status, amount, currency } — the hosted
@@ -147,7 +112,7 @@ describe("handoffFromSession", () => {
   });
 
   it("refuses a PSP session without a link — inline completion would create an unpaid order", () => {
-    for (const providerId of [PAYREXX_PROVIDER_ID, ZAHLS_PROVIDER_ID]) {
+    for (const providerId of [ZAHLS_PROVIDER_ID]) {
       expect(() =>
         handoffFromSession(providerId, {
           provider_id: providerId,
@@ -228,7 +193,7 @@ describe("preparePayment", () => {
     try {
       const sdk = fakeSdk({
         providers: [
-          { id: PAYREXX_PROVIDER_ID },
+          { id: ZAHLS_PROVIDER_ID },
           { id: SYSTEM_DEFAULT_PROVIDER_ID },
         ],
         initiate: async (providerId) => {

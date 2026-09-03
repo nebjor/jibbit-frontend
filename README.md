@@ -255,10 +255,13 @@ is on the cart, because Medusa reports 0 until then. It is labelled
   always an absolute-quantity update — see `lib/cart/plan.ts` for the Medusa
   pricing bug that makes this mandatory.
 - **Checkout runs end to end**, guest-only by design.
-- **Payment is not live.** The last step still uses Medusa's
-  `pp_system_default` provider, which authorises WITHOUT MOVING MONEY. Payrexx
-  (TWINT, Powerpay, cards) plugs into `lib/checkout/payment.ts`, the only file
-  that talks to a payment provider. It must be swapped before going live.
+- **Payment runs via zahls.ch** (official plugin `@zahls/medusa-plugin` in
+  the backend, provider `pp_zahls_zahls`, TWINT/cards/PostFinance) —
+  hosted redirect, wired through `lib/checkout/payment.ts`, the only file
+  that talks to a payment provider. Without zahls.ch credentials (dev/CI),
+  Medusa's `pp_system_default` provider takes over; it authorises WITHOUT
+  MOVING MONEY and is therefore blocked in production builds
+  (`systemDefaultAllowed()` in `lib/checkout/payment.ts`).
 - Customer accounts exist: registration, login, password reset and an account
   area under `/konto`. Ordering without an account stays possible.
 - Legal pages contain visibly marked `[[PLATZHALTER: …]]` fields — company

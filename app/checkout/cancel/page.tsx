@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Landeplatz, wenn der Kunde die Zahlung auf der zahls.ch/Payrexx-Seite
+ * Landeplatz, wenn der Kunde die Zahlung auf der zahls.ch-Bezahlseite
  * abbricht. Kein Fehler, nichts belastet, Warenkorb unverändert.
  */
 export default function CheckoutCancelPage() {

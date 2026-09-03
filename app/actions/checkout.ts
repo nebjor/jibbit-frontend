@@ -3,10 +3,9 @@
 /**
  * Checkout steps, as Server Actions. Thin wrappers over `lib/checkout/*`.
  *
- * ⚠️ `placeOrderAction` can answer with `{ kind: "redirect" }`. That branch is
- * dead today (the system payment provider settles inline) and exists so the
- * Payrexx strand does not have to touch the checkout UI — see
- * lib/checkout/payment.ts.
+ * ⚠️ `placeOrderAction` can answer with `{ kind: "redirect" }` — the zahls.ch
+ * plugin hands the customer to its hosted payment page; only the dev/CI
+ * system provider settles inline. See lib/checkout/payment.ts.
  */
 
 import type { CheckoutAddress, ShippingOptionView } from "@/lib/cart/types";
@@ -22,8 +21,6 @@ import {
 } from "@/lib/checkout/server";
 import {
   completePendingOrder,
-  confirmPaymentReturn,
-  type PaymentReturnResult,
   type PendingOrderResult,
 } from "@/lib/checkout/return";
 
@@ -58,23 +55,12 @@ export async function completeCartAction(): Promise<PlaceOrderResult> {
 }
 
 /**
- * Rückkehr von der zahls.ch/Payrexx-Bezahlseite: Zahlungsstand server-seitig
- * beim Backend abgleichen und — wenn bezahlt — die Bestellung holen.
- * Der Browser liefert nur die `payment_session_id` aus der Rückkehr-URL;
- * jede Statusaussage kommt vom Backend (lib/checkout/return.ts).
- */
-export async function confirmPaymentReturnAction(
-  paymentSessionId: string,
-): Promise<PaymentReturnResult> {
-  return confirmPaymentReturn(paymentSessionId);
-}
-
-/**
- * Rückkehr vom zahls.ch-Plugin (pp_zahls_zahls): dessen Redirect-URLs sind
- * statisch, der Browser bringt KEINE Zahlungsreferenz mit. Statt eines
- * Status-Abgleichs versucht der Server, den Cart abzuschliessen — Medusa
- * autorisiert dabei die Zahlung frisch beim PSP (lib/checkout/return.ts,
- * `completePendingOrder`). Unbezahlt ⇒ keine Bestellung, Warenkorb bleibt.
+ * Rückkehr von der zahls.ch-Bezahlseite (pp_zahls_zahls): die Redirect-URLs
+ * des Plugins sind statisch, der Browser bringt KEINE Zahlungsreferenz mit.
+ * Statt eines Status-Abgleichs versucht der Server, den Cart abzuschliessen —
+ * Medusa autorisiert dabei die Zahlung frisch beim PSP
+ * (lib/checkout/return.ts, `completePendingOrder`). Unbezahlt ⇒ keine
+ * Bestellung, Warenkorb bleibt.
  */
 export async function completePendingOrderAction(): Promise<PendingOrderResult> {
   return completePendingOrder();

@@ -9,34 +9,26 @@
  *
  * `app/actions/checkout.ts` branches on `kind`; the UI handles both.
  *
- * ══ TWO REDIRECT PROVIDERS, ONE ACCOUNT ═══════════════════════════════════
- * Both talk to the shop's zahls.ch account (a white-label of the Payrexx
- * platform) and both are hosted-redirect: the backend creates a gateway and
- * puts the hosted-payment-page URL into the session's `data.link`; we send
- * the browser there.
+ * ══ ONE REDIRECT PROVIDER ═════════════════════════════════════════════════
+ * The shop's only PSP is zahls.ch via the official plugin — hosted-redirect:
+ * the backend creates a gateway and puts the hosted-payment-page URL into
+ * the session's `data.link`; we send the browser there.
  *
- *   pp_payrexx_payrexx  the in-house module (backend/src/modules/payrexx).
- *                       The solution running today. Appends
- *                       `?payment_session_id=…` to its return URLs, so
- *                       /checkout/success can verify the payment via
- *                       `POST /store/payrexx/return` (lib/checkout/return.ts).
- *
- *   pp_zahls_zahls      the official plugin (@zahls/medusa-plugin), newly
- *                       registered in parallel. Verified against the plugin
- *                       source (.medusa/server/src/providers/zahls/service.js):
+ *   pp_zahls_zahls      the official plugin (@zahls/medusa-plugin).
+ *                       Verified against the plugin source
+ *                       (.medusa/server/src/providers/zahls/service.js):
  *                       `initiatePayment()` stores the gateway as
  *                       `data: { id, hash, link, referenceId, status, amount,
- *                       currency }` — the checkout URL is `data.link`, same
- *                       field as the Payrexx module. Its return URLs are
- *                       STATIC (no query), so the way back cannot rely on a
- *                       session id — see lib/checkout/return.ts,
- *                       `completePendingOrder()`.
+ *                       currency }` — the checkout URL is `data.link`.
+ *                       Its return URLs are STATIC (no query), so the way
+ *                       back cannot rely on a session id — see
+ *                       lib/checkout/return.ts, `completePendingOrder()`.
  *
  * ══ WHY `pp_system_default` IS STILL AROUND ═══════════════════════════════
  * Medusa's built-in provider marks a payment as authorised WITHOUT MOVING
  * MONEY. It is the fallback for environments where no PSP is configured
  * (local dev, CI) — the region seed registers it. It must be removed from
- * the region before go-live (docs/payrexx-go-live.md §7 in the backend repo).
+ * the region before go-live (docs/zahls-plugin.md in the backend repo).
  * Belt and braces: a production build (`NODE_ENV=production`) refuses to
  * select or fall back to it unless `CHECKOUT_ALLOW_SYSTEM_PROVIDER=true` is
  * set explicitly — so even a forgotten region entry cannot silently produce
@@ -67,40 +59,29 @@ export type PaymentHandoff =
 
 export class PaymentSetupError extends Error {}
 
-/** The in-house Payrexx module (talking to zahls.ch), as registered by the backend. */
-export const PAYREXX_PROVIDER_ID = "pp_payrexx_payrexx";
-
-/** The official zahls.ch plugin (@zahls/medusa-plugin), registered in parallel. */
+/** The official zahls.ch plugin (@zahls/medusa-plugin) — the shop's only PSP. */
 export const ZAHLS_PROVIDER_ID = "pp_zahls_zahls";
 
 /** Medusa's built-in provider — authorises WITHOUT moving money. Dev/CI only. */
 export const SYSTEM_DEFAULT_PROVIDER_ID = "pp_system_default";
 
 /**
- * Providers that hand the customer to a hosted payment page. Both put the
- * page's URL into `session.data.link` (verified in both backends' sources).
+ * Providers that hand the customer to a hosted payment page. The page's URL
+ * sits in `session.data.link` (verified in the plugin source).
  */
 const REDIRECT_PROVIDER_IDS: ReadonlySet<string> = new Set([
-  PAYREXX_PROVIDER_ID,
   ZAHLS_PROVIDER_ID,
 ]);
 
 /**
  * First match wins. The order is a deliberate decision:
  *
- *   1. Payrexx module — the E2E-proven solution that is live today. As long
- *      as the operator keeps it on the region, it keeps taking the money;
- *      the plugin's flow cannot regress a working checkout.
- *   2. zahls.ch plugin — ranked above the system provider so that the moment
- *      the operator removes `pp_payrexx_payrexx` from the region (step 2 of
- *      the switch-over in docs/zahls-plugin.md, backend repo), the storefront
- *      moves to the plugin on its own — no code change, no window in which
- *      the no-money system provider would take over.
- *   3. `pp_system_default` — LAST resort for dev/CI, blocked in production
+ *   1. zahls.ch plugin — the shop's real PSP; it always outranks the
+ *      no-money system provider.
+ *   2. `pp_system_default` — LAST resort for dev/CI, blocked in production
  *      builds (see `systemDefaultAllowed`).
  */
 const PROVIDER_PREFERENCE = [
-  PAYREXX_PROVIDER_ID,
   ZAHLS_PROVIDER_ID,
   SYSTEM_DEFAULT_PROVIDER_ID,
 ];
