@@ -1,0 +1,18 @@
+/* Sieht aus wie die übrigen Footer-Links (Footer.module.css `.col a`),
+   ist aber ein Button — er navigiert nicht, er öffnet den Dialog. */
+.link {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--c-muted);
+  display: inline-block;
+  padding: var(--s-1) 0;
+  min-height: 32px;
+  text-align: left;
+}
+
+.link:hover {
+  color: var(--c-ink);
+  text-decoration: underline;
+}

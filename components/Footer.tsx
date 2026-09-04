@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { CookieSettingsLink } from "./consent/CookieSettingsLink";
 import { STORE, SHIPPING, PAYMENT_METHODS, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import styles from "./Footer.module.css";
@@ -67,6 +68,12 @@ export function Footer() {
             </li>
             <li>
               <Link href="/widerrufsrecht">Widerrufsrecht</Link>
+            </li>
+            {/* Widerruf der Cookie-Einwilligung: muss so leicht sein wie das
+                Erteilen (DSG-Transparenz / DSGVO Art. 7 Abs. 3) — deshalb
+                dauerhaft hier, einen Klick entfernt, auf jeder Seite. */}
+            <li>
+              <CookieSettingsLink />
             </li>
           </ul>
         </nav>

@@ -1,0 +1,87 @@
+/* Vollständig DECKENDE Fläche (kein durchscheinender Scrim): der Besucher
+   darf den Shop vor der Antwort gar nicht erst sehen — auch nicht
+   angedeutet. Wirkt als pures CSS schon vor der Hydration. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300; /* über allem, auch über dem CartDrawer (100) */
+  background: var(--c-ground);
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  padding: var(--s-6) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.title {
+  font-size: 28px;
+}
+
+.text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--c-ink);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+/* Beide Knöpfe gleich gross und daumentauglich (>=48px). Das «Ja» ist der
+   eine primäre CTA dieser Ansicht und darf den Akzent tragen. */
+.confirm,
+.decline {
+  min-height: 48px;
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.confirm {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  border: var(--border-w) solid var(--c-accent);
+}
+
+.decline {
+  background: var(--c-surface);
+  color: var(--c-ink);
+  border: var(--border-w) solid var(--c-ink);
+}
+
+.reset {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: var(--s-2) 0;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--c-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reset:hover {
+  color: var(--c-ink);
+}

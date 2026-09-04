@@ -1,0 +1,128 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 290; /* unter der Altersabfrage (300) — sie koexistieren nie */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Leichter Scrim: die Seite bleibt sichtbar (es ist ein Hinweis, keine
+   Sperre), aber nicht bedienbar, solange die Frage offen ist. Klick darauf
+   schliesst ohne Entscheidung. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.35);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Mobil: Bottom-Sheet über die volle Breite, Knöpfe im Daumenbereich,
+   Safe-Area des iOS-Home-Indikators respektiert. Desktop: schmale Karte
+   am unteren Rand. */
+.sheet {
+  position: relative;
+  width: 100%;
+  max-height: calc(100dvh - var(--s-6));
+  overflow-y: auto;
+  background: var(--c-surface);
+  border-top: var(--border-w) solid var(--c-line);
+  padding: var(--s-4);
+  padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+@media (min-width: 640px) {
+  .sheet {
+    max-width: 560px;
+    border: var(--border-w) solid var(--c-line);
+    border-radius: var(--radius);
+    margin: 0 var(--s-4) var(--s-5);
+    padding: var(--s-5);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.title {
+  font-size: 20px;
+}
+
+.close {
+  background: none;
+  border: 0;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--c-ink);
+  margin: calc(-1 * var(--s-2));
+  margin-left: 0;
+}
+
+.text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--c-ink);
+}
+
+.more {
+  text-decoration: underline;
+  color: var(--c-muted);
+}
+
+.more:hover {
+  color: var(--c-ink);
+}
+
+.current {
+  font-size: 13px;
+  color: var(--c-muted);
+  border-left: 2px solid var(--c-line);
+  padding-left: var(--s-3);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-3);
+  margin-top: var(--s-1);
+}
+
+@media (min-width: 480px) {
+  .actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* EIN Stil für beide Wahlmöglichkeiten — bewusst kein Akzent auf
+   «Alle akzeptieren»: Ablehnen muss gleich leicht und gleich sichtbar
+   sein wie Annehmen. */
+.choice {
+  min-height: 48px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.choice:hover {
+  background: var(--c-ground);
+}
