@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useCart } from "./CartProvider";
+import { trackAddToCart } from "@/lib/analytics/client";
 import { Price } from "./Price";
 import { PriceTable } from "./PriceTable";
 import { formatAmount, formatPrice } from "@/lib/format";
@@ -163,6 +164,9 @@ export function AddToCart({ product }: { product: ProductView }) {
           disabled={!canAdd || isPending}
           onClick={() => {
             if (!selected) return;
+            // Analyse: Katalogdaten und Menge — keine Personendaten. Stilles
+            // No-op ohne Einwilligung oder ohne PostHog-Schlüssel.
+            trackAddToCart(product, selected, quantity, unitPrice);
             addLine(
               {
                 variantId: selected.id,
