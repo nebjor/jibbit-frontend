@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CheckoutFlow } from "@/components/checkout/CheckoutFlow";
+import { TrackCheckoutStarted } from "@/components/analytics/TrackCheckoutStarted";
 import { getAddresses, getCurrentCustomer } from "@/lib/auth/customer";
 import { readSessionToken } from "@/lib/auth/session";
 import { readCartState } from "@/lib/cart/server";
@@ -58,10 +59,21 @@ export default async function CheckoutPage() {
   }
 
   return (
-    <CheckoutFlow
-      initialCart={cart}
-      prefillEmail={prefillEmail}
-      prefillAddress={prefillAddress}
-    />
+    <>
+      {/* «Kasse begonnen» — nur Zahlen und Produkt-Handles, BEWUSST weder
+          cart.email noch cart.address: Personendaten haben in einem
+          Analyse-Ereignis nichts verloren (lib/analytics/events.ts). */}
+      <TrackCheckoutStarted
+        itemCount={cart.count}
+        goodsValue={cart.subtotal}
+        currency={cart.currency}
+        products={cart.lines.map((l) => l.productHandle)}
+      />
+      <CheckoutFlow
+        initialCart={cart}
+        prefillEmail={prefillEmail}
+        prefillAddress={prefillAddress}
+      />
+    </>
   );
 }

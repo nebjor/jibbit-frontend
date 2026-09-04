@@ -10,6 +10,7 @@ import {
 import { ProductImage } from "@/components/ProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { AddToCart } from "@/components/AddToCart";
+import { TrackProductView } from "@/components/analytics/TrackProductView";
 import { SHIPPING, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { getTenantContext } from "@/lib/tenant/context";
@@ -89,6 +90,9 @@ export default async function ProductPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {/* «Produkt angesehen» — öffentliche Katalogdaten, keine Personendaten. */}
+      <TrackProductView product={product} />
 
       <nav className={styles.crumbs} aria-label="Brotkrümelnavigation">
         <Link href="/shop">Shop</Link>

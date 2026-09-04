@@ -5,10 +5,12 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ConsentGate } from "@/components/consent/ConsentGate";
+import { AnalyticsGate } from "@/components/analytics/AnalyticsGate";
 import { STORE } from "@/lib/config";
 import { getTenantContext } from "@/lib/tenant/context";
 import { readCartState } from "@/lib/cart/server";
 import { readConsentCookies } from "@/lib/consent/server";
+import { getAnalyticsRuntimeConfig } from "@/lib/analytics/server";
 
 /**
  * MULTI-TENANT: metadataBase, title and OG siteName come from the resolved
@@ -76,6 +78,12 @@ export default async function RootLayout({
     readConsentCookies(),
   ]);
 
+  // PostHog: Schlüssel/Host zur LAUFZEIT aus der Umgebung gelesen und als
+  // Props zum Client gereicht — bewusst kein NEXT_PUBLIC_ (Begründung:
+  // lib/analytics/server.ts). GELADEN wird trotzdem erst nach erteilter
+  // Einwilligung; das entscheidet lib/analytics/gate.ts, nicht dieses Layout.
+  const analytics = getAnalyticsRuntimeConfig();
+
   return (
     <html lang="de-CH">
       <body>
@@ -88,6 +96,10 @@ export default async function RootLayout({
           <Footer />
           <CartDrawer />
           <ConsentGate initialAge={age} initialConsent={consent} />
+          <AnalyticsGate
+            posthogKey={analytics.key}
+            posthogHost={analytics.host}
+          />
         </CartProvider>
       </body>
     </html>

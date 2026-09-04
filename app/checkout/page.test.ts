@@ -50,6 +50,30 @@ vi.mock("@/components/checkout/CheckoutFlow", () => ({
 }))
 
 const { default: CheckoutPage } = await import("./page")
+const { CheckoutFlow } = await import("@/components/checkout/CheckoutFlow")
+const { TrackCheckoutStarted } = await import(
+  "@/components/analytics/TrackCheckoutStarted"
+)
+
+/**
+ * Die Seite rendert seit dem PostHog-Einbau ein Fragment:
+ * [TrackCheckoutStarted, CheckoutFlow]. Die Zugangs- und Vorausfüll-Tests
+ * interessieren sich weiter für die Props des CheckoutFlow — dieser Helfer
+ * fischt sie aus dem Fragment.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function childProps(el: any, type: unknown) {
+  const children = Array.isArray(el.props.children)
+    ? el.props.children
+    : [el.props.children]
+  const child = children.find((c: any) => c?.type === type)
+  expect(child).toBeDefined()
+  return child.props
+}
+function flowProps(el: any) {
+  return childProps(el, CheckoutFlow)
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /** Ein voller Warenkorb, wie ihn readCartState liefern würde. */
 const VOLLER_KORB: CartState = {
@@ -128,14 +152,45 @@ describe("Kasse — Zugangsprüfung", () => {
   it("lässt Angemeldete durch", async () => {
     setup({ session: "token" })
     const el = await CheckoutPage()
-    expect(el.props.initialCart).toEqual(VOLLER_KORB)
+    expect(flowProps(el).initialCart).toEqual(VOLLER_KORB)
   })
 
   it("lässt bei abgeschaltetem Schalter auch Gäste durch", async () => {
     setup({ session: null, pflicht: "false" })
     const el = await CheckoutPage()
-    expect(el.props.initialCart).toEqual(VOLLER_KORB)
-    expect(el.props.prefillAddress).toBeNull()
+    expect(flowProps(el).initialCart).toEqual(VOLLER_KORB)
+    expect(flowProps(el).prefillAddress).toBeNull()
+  })
+
+  it("gibt der Analyse nur Zahlen und Handles mit — nie E-Mail oder Adresse", async () => {
+    // Der Cart trägt hier E-Mail und Adresse; das Analyse-Kind darf davon
+    // nichts sehen (lib/analytics/events.ts erklärt, warum).
+    setup({
+      session: "token",
+      cart: {
+        ...VOLLER_KORB,
+        email: "jana@example.ch",
+        hasShippingAddress: true,
+        address: {
+          firstName: "Jana",
+          lastName: "Muster",
+          address1: "Bahnhofstrasse 1",
+          postalCode: "8001",
+          city: "Zürich",
+          countryCode: "ch",
+        },
+      },
+    })
+    const el = await CheckoutPage()
+    const analytics = childProps(el, TrackCheckoutStarted)
+    expect(analytics).toEqual({
+      itemCount: 3,
+      goodsValue: 42,
+      currency: "CHF",
+      products: [],
+    })
+    expect(JSON.stringify(analytics)).not.toContain("jana@example.ch")
+    expect(JSON.stringify(analytics)).not.toContain("Bahnhofstrasse")
   })
 })
 
@@ -146,8 +201,8 @@ describe("Kasse — Vorausfüllen aus dem Konto", () => {
     mocks.getAddresses.mockResolvedValue([KONTO_ADRESSE])
 
     const el = await CheckoutPage()
-    expect(el.props.prefillEmail).toBe("jana@example.ch")
-    expect(el.props.prefillAddress).toMatchObject({
+    expect(flowProps(el).prefillEmail).toBe("jana@example.ch")
+    expect(flowProps(el).prefillAddress).toMatchObject({
       firstName: "Jana",
       lastName: "Muster",
       address1: "Bahnhofstrasse 1",
@@ -166,9 +221,9 @@ describe("Kasse — Vorausfüllen aus dem Konto", () => {
     mocks.getAddresses.mockResolvedValue([KONTO_ADRESSE])
 
     const el = await CheckoutPage()
-    expect(el.props.initialCart).toEqual(VOLLER_KORB)
-    expect(el.props.initialCart.count).toBe(3)
-    expect(el.props.prefillAddress?.address1).toBe("Bahnhofstrasse 1")
+    expect(flowProps(el).initialCart).toEqual(VOLLER_KORB)
+    expect(flowProps(el).initialCart.count).toBe(3)
+    expect(flowProps(el).prefillAddress?.address1).toBe("Bahnhofstrasse 1")
   })
 
   it("fragt das Konto nicht ab, wenn der Cart schon Adresse und E-Mail trägt", async () => {
@@ -190,7 +245,7 @@ describe("Kasse — Vorausfüllen aus dem Konto", () => {
     })
     const el = await CheckoutPage()
     expect(mocks.getCurrentCustomer).not.toHaveBeenCalled()
-    expect(el.props.prefillAddress).toBeNull()
+    expect(flowProps(el).prefillAddress).toBeNull()
   })
 
   it("kommt ohne hinterlegte Adresse mit leerem Formular klar", async () => {
@@ -199,7 +254,7 @@ describe("Kasse — Vorausfüllen aus dem Konto", () => {
     mocks.getAddresses.mockResolvedValue([])
 
     const el = await CheckoutPage()
-    expect(el.props.prefillEmail).toBe("jana@example.ch")
-    expect(el.props.prefillAddress).toBeNull()
+    expect(flowProps(el).prefillEmail).toBe("jana@example.ch")
+    expect(flowProps(el).prefillAddress).toBeNull()
   })
 })
