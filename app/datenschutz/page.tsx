@@ -132,15 +132,44 @@ export default function DatenschutzPage() {
             gmbh, Schweiz) liegen beide in der Schweiz
       </p>
 
-      <h2>7. Cookies und Analyse</h2>
+      <h2>7. Cookies, Altersabfrage und Analyse</h2>
+      <h3>Zwingend notwendige Cookies</h3>
       <p>
         Wir setzen technisch notwendige Speichermechanismen ein, damit der Shop
         funktioniert (z. B. Warenkorb, Anmeldung). Diese brauchen keine
-        Einwilligung.
+        Einwilligung und lassen sich nicht abwählen.
+      </p>
+      <h3>Altersabfrage</h3>
+      <p>
+        Beim ersten Besuch fragen wir, ob du 18 oder älter bist, weil sich
+        unser Angebot gemäss unseren AGB nur an Erwachsene richtet. Deine
+        Antwort speichern wir in einem Cookie in deinem Browser — bei «ja» für
+        zwölf Monate, bei «nein» nur bis zum Schliessen des Browsers.
+        Gespeichert wird ausschliesslich die Antwort selbst; sie wird weder
+        ausgewertet noch mit anderen Daten verknüpft.
+      </p>
+      <h3>Einwilligung für Analyse-Cookies</h3>
+      <p>
+        Analyse-Cookies setzen wir nur mit deiner Einwilligung. Beim ersten
+        Besuch kannst du im Cookie-Hinweis zwischen «Alle akzeptieren» und
+        «Nur notwendige» wählen — beides ist gleich einfach. Deine Wahl
+        speichern wir in einem Cookie (mit Zeitpunkt der Entscheidung) für
+        sechs Monate; danach fragen wir erneut. Triffst du keine Wahl, bleibt
+        die Analyse aus.
       </p>
       <p>
-        Weitere Cookies oder Trackingdienste setzen wir nicht ein. Es laufen
-          weder Analyse- noch Marketing-Werkzeuge, weder eigene noch fremde.
+        Derzeit ist kein Analysewerkzeug im Einsatz. Sollten wir eines
+        einführen, wird es erst geladen, nachdem du eingewilligt hast — ohne
+        Einwilligung läuft es nicht, auch nicht anonymisiert. Wir passen diese
+        Erklärung dann an und benennen das Werkzeug hier konkret.
+      </p>
+      <h3>Widerruf</h3>
+      <p>
+        Deine Einwilligung kannst du jederzeit widerrufen oder nachträglich
+        erteilen: Der Link «Cookie-Einstellungen» im Footer öffnet die Wahl
+        erneut. Ein Widerruf wirkt sofort und ist genauso einfach wie das
+        Erteilen. Die Altersabfrage kannst du zurücksetzen, indem du die
+        Cookies dieser Website in deinem Browser löschst.
       </p>
 
       <h2>8. Aufbewahrungsdauer</h2>
