@@ -13,7 +13,7 @@ export default function DatenschutzPage() {
     <Prose
       title="Datenschutzerklärung"
       intro="Diese Erklärung beschreibt, welche Personendaten wir bearbeiten, zu welchem Zweck, und welche Rechte du hast. Sie richtet sich nach dem Schweizer Datenschutzgesetz (DSG, in Kraft seit 1. September 2023)."
-      updated="Entwurf vom 21. August 2026 — vor Livegang juristisch prüfen lassen"
+      updated="Entwurf vom 4. September 2026 — vor Livegang juristisch prüfen lassen"
     >
       <p>
         <strong>
@@ -119,6 +119,12 @@ export default function DatenschutzPage() {
                 einem Server in der Schweiz{" "}
           — für den technischen Betrieb.
         </li>
+        <li>
+          <strong>Webanalyse:</strong> PostHog, Inc. (USA) — nur mit deiner
+          Einwilligung; wir nutzen die EU-Cloud von PostHog, die Daten werden
+          auf Servern in der Europäischen Union verarbeitet. Was dabei erfasst
+          wird, steht in Ziffer 7.
+        </li>
       </ul>
 
       <h2>6. Bekanntgabe ins Ausland</h2>
@@ -126,10 +132,13 @@ export default function DatenschutzPage() {
         Personendaten geben wir nur dann ins Ausland bekannt, wenn der
         Zielstaat nach Einschätzung des Bundesrates einen angemessenen
         Datenschutz gewährleistet oder geeignete Garantien wie
-        Standardvertragsklauseln bestehen (Art. 16 f. DSG).{" "}
-        Derzeit findet keine Bekanntgabe ins Ausland statt: Hosting
-            (Infomaniak, Genf) und Zahlungsabwicklung (zahls.ch, siebenberge
-            gmbh, Schweiz) liegen beide in der Schweiz
+        Standardvertragsklauseln bestehen (Art. 16 f. DSG). Hosting
+        (Infomaniak, Genf) und Zahlungsabwicklung (zahls.ch, siebenberge gmbh,
+        Schweiz) liegen beide in der Schweiz. Eine Bekanntgabe ins Ausland
+        findet nur bei der Webanalyse statt — und nur, wenn du eingewilligt
+        hast: Die Analyse-Daten werden von PostHog auf Servern in der
+        Europäischen Union verarbeitet. Die EU-Mitgliedstaaten gewährleisten
+        nach der Liste des Bundesrates einen angemessenen Datenschutz.
       </p>
 
       <h2>7. Cookies, Altersabfrage und Analyse</h2>
@@ -157,18 +166,34 @@ export default function DatenschutzPage() {
         sechs Monate; danach fragen wir erneut. Triffst du keine Wahl, bleibt
         die Analyse aus.
       </p>
+      <h3>Webanalyse mit PostHog</h3>
       <p>
-        Derzeit ist kein Analysewerkzeug im Einsatz. Sollten wir eines
-        einführen, wird es erst geladen, nachdem du eingewilligt hast — ohne
-        Einwilligung läuft es nicht, auch nicht anonymisiert. Wir passen diese
-        Erklärung dann an und benennen das Werkzeug hier konkret.
+        Mit deiner Einwilligung setzen wir PostHog ein, ein Analysewerkzeug
+        von PostHog, Inc. (San Francisco, USA). Wir nutzen die EU-Cloud von
+        PostHog: Die Daten werden auf Servern in der Europäischen Union
+        verarbeitet. Ohne Einwilligung wird PostHog nicht geladen — auch das
+        Skript selbst wird dann nicht abgerufen.
+      </p>
+      <p>
+        Erfasst werden: aufgerufene Seiten, Verweildauer und Klickwege sowie
+        Ereignisse aus dem Shop — Produkt angesehen, in den Warenkorb gelegt,
+        Kasse begonnen und Bestellung abgeschlossen, beim Abschluss mit
+        Bestellwert, Währung und Bestellnummer. Dazu kommt eine Aufzeichnung
+        der Sitzung, also des Bildschirminhalts während deines Besuchs. Dabei
+        sind sämtliche Eingabefelder maskiert: Was du in Formulare eintippst —
+        etwa Adresse, E-Mail-Adresse oder Telefonnummer — wird nicht
+        aufgezeichnet. Die Analyse-Ereignisse enthalten weder Name, E-Mail,
+        Adresse noch Telefonnummer; deine IP-Adresse wird nicht am Ereignis
+        gespeichert, aus ihr wird lediglich der ungefähre Standort (Land,
+        Stadt) abgeleitet, bevor sie verworfen wird.
       </p>
       <h3>Widerruf</h3>
       <p>
         Deine Einwilligung kannst du jederzeit widerrufen oder nachträglich
         erteilen: Der Link «Cookie-Einstellungen» im Footer öffnet die Wahl
-        erneut. Ein Widerruf wirkt sofort und ist genauso einfach wie das
-        Erteilen. Die Altersabfrage kannst du zurücksetzen, indem du die
+        erneut. Ein Widerruf wirkt sofort — die Erfassung durch PostHog stoppt,
+        ohne dass du die Seite neu laden musst — und ist genauso einfach wie
+        das Erteilen. Die Altersabfrage kannst du zurücksetzen, indem du die
         Cookies dieser Website in deinem Browser löschst.
       </p>
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClearCartOnMount } from "@/components/checkout/ClearCartOnMount";
+import { TrackOrderCompleted } from "@/components/analytics/TrackOrderCompleted";
 import { formatPrice } from "@/lib/format";
 import { getOrder } from "@/lib/checkout/order";
 import styles from "@/components/checkout/checkout.module.css";
@@ -36,6 +37,23 @@ export default async function OrderConfirmationPage({
     <div className={styles.confirmation}>
       {/* The cart lives in client state; the cookie is already gone. */}
       <ClearCartOnMount />
+
+      {/* «Bestellung abgeschlossen» — mit Wert und Währung für Trichter und
+          Umsatz. Die Props werden hier Feld für Feld gebaut: order.email,
+          order.address und die Telefonnummer bleiben BEWUSST draussen
+          (Begründung: lib/analytics/events.ts). */}
+      <TrackOrderCompleted
+        orderId={order.id}
+        displayId={order.displayId}
+        total={order.total}
+        subtotal={order.subtotal}
+        shipping={order.shipping}
+        currency={order.currency}
+        lines={order.lines.map((l) => ({
+          productHandle: l.productHandle,
+          quantity: l.quantity,
+        }))}
+      />
 
       <p className="eyebrow">Bestellung {order.displayId || ""}</p>
       <h1 className={styles.confirmTitle}>Danke — das ist bestellt.</h1>
