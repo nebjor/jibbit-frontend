@@ -4,9 +4,11 @@ import { CartProvider } from "@/components/CartProvider";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ConsentGate } from "@/components/consent/ConsentGate";
 import { STORE } from "@/lib/config";
 import { getTenantContext } from "@/lib/tenant/context";
 import { readCartState } from "@/lib/cart/server";
+import { readConsentCookies } from "@/lib/consent/server";
 
 /**
  * MULTI-TENANT: metadataBase, title and OG siteName come from the resolved
@@ -55,11 +57,24 @@ export async function generateViewport(): Promise<Viewport> {
  * from 0 after hydration. `readCartState` is deliberately read-only — it never
  * creates a cart and never writes a cookie, because `cookies().set()` throws
  * outside a Server Action. Creating a cart is the job of the first mutation.
+ *
+ * ALTERSABFRAGE & COOKIE-HINWEIS folgen demselben Prinzip: die beiden
+ * Cookies werden HIER serverseitig gelesen und `ConsentGate` als
+ * Anfangszustand mitgegeben. Beim ersten Besuch steckt die (deckende)
+ * Altersabfrage damit schon im ausgelieferten HTML — der Shop blitzt nicht
+ * erst auf, bevor ein Client-Effekt sie darüberlegt; wiederkehrende
+ * Besucher bekommen gar kein Overlay ins HTML. Der Shop-Inhalt bleibt in
+ * beiden Fällen vollständig im DOM (Overlay statt Redirect), Crawler ohne
+ * Cookies indexieren also weiterhin die Produktseiten und nicht «nur die
+ * Altersabfrage». Warum es die Abfrage überhaupt gibt: lib/consent/state.ts.
  */
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const initialCart = await readCartState();
+  const [initialCart, { age, consent }] = await Promise.all([
+    readCartState(),
+    readConsentCookies(),
+  ]);
 
   return (
     <html lang="de-CH">
@@ -72,6 +87,7 @@ export default async function RootLayout({
           <main id="main">{children}</main>
           <Footer />
           <CartDrawer />
+          <ConsentGate initialAge={age} initialConsent={consent} />
         </CartProvider>
       </body>
     </html>
