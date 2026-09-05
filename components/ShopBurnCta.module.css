@@ -1,0 +1,196 @@
+/*
+ * «ZUM SHOP»-VERBRENN-ANIMATION — die Optik zu components/ShopBurnCta.tsx.
+ *
+ * Vier Phasen, Zeiten aus lib/burn-cta.ts (BEIM ÄNDERN DORT MITZIEHEN,
+ * CSS kennt keine TS-Konstanten):
+ *
+ *   0–180 ms   falten   die obere Knopfhälfte klappt um die Längsachse
+ *                       nach unten (der Knick) — @keyframes fold
+ *   180–420 ms einrollen der gefaltete Streifen dreht sich um die eigene
+ *                       Achse und zieht sich zur Rolle zusammen — @keyframes roll
+ *   420–900 ms brennen  der Pixel-Joint (PixelJoint.tsx, Sprite mit
+ *                       steps()) blendet ein und brennt — @keyframes ignite
+ *   0–900 ms   wachsen  die ganze Bühne skaliert hoch und verglimmt am
+ *                       Ende — @keyframes grow
+ *
+ * NUR transform UND opacity werden animiert: 90–95 % der Besucher kommen
+ * vom Handy, alles andere (Breite, Höhe, Schatten) löst Layout oder Paint
+ * aus und ruckelt. Das «Zusammenziehen» beim Einrollen ist deshalb ein
+ * scaleY, keine Höhenänderung.
+ */
+
+.scene {
+  position: relative;
+  display: inline-block;
+  /* Übernimmt den Aussenabstand des Knopfs (app/page.module.css .cta),
+     damit .stage mit inset: 0 EXAKT auf dem Anker liegt — läge der
+     margin am Anker, wäre die Bühne um genau diesen Abstand verrutscht. */
+  margin-top: var(--s-3);
+  /* Die wachsende Bühne soll über den folgenden Sektionen liegen. */
+  z-index: 5;
+}
+
+.scene a {
+  margin: 0;
+}
+
+/* Der echte Link bleibt stehen (Fokus! Name! Fallback!), wird während der
+   Animation nur durchsichtig — die Hälften darüber sehen exakt gleich aus,
+   der Übergang ist unsichtbar. opacity ist reines Compositing. */
+.linkBurning {
+  opacity: 0;
+}
+
+/* ---- Bühne -------------------------------------------------------------- */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  perspective: 800px;
+  animation: grow 900ms ease-in forwards;
+}
+
+@keyframes grow {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* ---- Phase 1 + 2: das Paper --------------------------------------------- */
+
+.sheet {
+  position: absolute;
+  inset: 0;
+  /* Eigene Fluchtpunkt-Tiefe für die klappende Hälfte darin. */
+  perspective: 600px;
+  transform-origin: 50% 75%;
+  animation:
+    roll 240ms ease-in 180ms forwards,
+    sheetOut 120ms linear 420ms forwards;
+}
+
+/* Der gefaltete Streifen (untere Hälfte + daraufgeklappte obere) liegt in
+   der unteren Knopfhälfte, Mitte bei 75 %: dort dreht er sich ein und
+   zieht sich zusammen, das translateY(-25%) schiebt die fertige Rolle in
+   die Knopfmitte. Zwei volle Umdrehungen in 240 ms — bei dem Tempo liest
+   das Auge «rollt sich auf», keine Geometrie. */
+@keyframes roll {
+  to {
+    transform: translateY(-25%) rotateX(720deg) scaleY(0.22);
+  }
+}
+
+@keyframes sheetOut {
+  to {
+    opacity: 0;
+  }
+}
+
+.foldTop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+  animation: fold 180ms ease-in forwards;
+}
+
+/* Um die Längsachse in der Knopfmitte nach unten auf die andere Hälfte. */
+@keyframes fold {
+  to {
+    transform: rotateX(-180deg);
+  }
+}
+
+.frontClip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+/* Ab 90° zeigt die umklappende Hälfte ihre Rückseite: Papierweiss —
+   der Farbwert ist PAPER_RAMP[1] aus tools/pixel-art/gen_joint_stub.mjs,
+   dieselbe Palette wie der Joint, der gleich daraus wird. */
+.paperBack {
+  position: absolute;
+  inset: 0;
+  background: rgb(246, 240, 228);
+  border-radius: var(--radius);
+  backface-visibility: hidden;
+  transform: rotateX(180deg);
+}
+
+.halfBottom {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+}
+
+/* Die beiden «Gesichter» bekommen zusätzlich die echte Knopfklasse
+   (app/page.module.css .cta) — Farbe, Schrift, Radius kommen also von
+   dort und laufen bei Designänderungen automatisch mit. Hier steht nur,
+   was die Kopie zur Halbansicht macht. `.stage .face` (zwei Klassen)
+   gewinnt die Spezifität gegen `.cta` (eine), egal in welcher Reihenfolge
+   die Module geladen werden. */
+.stage .face,
+.stage .faceBottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200%;
+  margin: 0;
+  width: 100%;
+}
+
+.stage .face {
+  top: 0;
+}
+
+.stage .faceBottom {
+  top: -100%;
+}
+
+/* ---- Phase 3: anzünden und verbrennen ----------------------------------- */
+
+.jointWrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  animation: ignite 480ms ease-out 420ms forwards;
+}
+
+@keyframes ignite {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45) rotate(-20deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-8deg);
+  }
+}
+
+/* Gürtel und Hosenträger: die Logik startet die Animation bei reduzierter
+   Bewegung gar nicht erst (sofortige Navigation, lib/burn-cta.ts) — falls
+   sie doch je montiert würde, steht hier nichts rum und flackert. */
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    display: none;
+  }
+}
