@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getFeaturedProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { Logo } from "@/components/Logo";
+import { ShopBurnCta } from "@/components/ShopBurnCta";
 import { STORE, SHIPPING, PAYMENT_METHODS } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import styles from "./page.module.css";
@@ -27,10 +28,10 @@ export default async function HomePage() {
             man nicht erst schönrechnen muss.
           </p>
           <p className={styles.tagline}>{STORE.tagline}</p>
-          {/* One primary action on this view. */}
-          <Link href="/shop" className={styles.cta}>
-            Zum Shop
-          </Link>
+          {/* One primary action on this view. Der Knopf faltet, rollt und
+              verbrennt sich beim ersten Klick der Sitzung — bleibt aber ein
+              echter <Link href="/shop">, siehe components/ShopBurnCta.tsx. */}
+          <ShopBurnCta className={styles.cta}>Zum Shop</ShopBurnCta>
         </div>
       </section>
 
