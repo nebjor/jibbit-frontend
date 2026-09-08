@@ -57,6 +57,12 @@ export interface ProductVariantView {
   /** Units inside one of these: 1 for a single item, 24 for a display. */
   unitsPerPack: number;
   packType: PackType;
+  /**
+   * Eigenes Bild dieser Variante (Medusa `variant.thumbnail` — «from the
+   * product images»). Nicht gepflegt -> undefined; die Produktseite zeigt
+   * dann das erste Produktbild.
+   */
+  image?: string;
 }
 
 export interface ProductView {
