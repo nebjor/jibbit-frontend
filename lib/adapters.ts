@@ -90,6 +90,12 @@ export function toVariantView(
       v.manage_inventory === false ||
       v.allow_backorder === true ||
       (v.inventory_quantity ?? 0) > 0,
+    // Vorschaubild je Variante: der vorgesehene Haken für «Display zeigt die
+    // Box, Heftchen das Einzelstück». Leerstrings zählen als nicht gepflegt.
+    image:
+      typeof v.thumbnail === "string" && v.thumbnail.trim() !== ""
+        ? v.thumbnail
+        : undefined,
     // A single tier is not a quantity discount — it is just the price. Drop it
     // so the product page renders no table instead of a one-row table.
     tiers: tiers.length > 1 ? tiers : [],
