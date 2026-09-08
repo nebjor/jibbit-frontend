@@ -10,9 +10,13 @@ import {
 import { ProductImage } from "@/components/ProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { AddToCart } from "@/components/AddToCart";
+import { VariantHero } from "@/components/VariantHero";
+import { VariantSelectionProvider } from "@/components/VariantSelection";
 import { TrackProductView } from "@/components/analytics/TrackProductView";
 import { SHIPPING, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
+import { defaultVariant } from "@/lib/pricing";
+import { heroGallery } from "@/lib/variant-image";
 import { getTenantContext } from "@/lib/tenant/context";
 import { toMediaSrc } from "@/lib/media";
 import styles from "./product.module.css";
@@ -57,6 +61,16 @@ export default async function ProductPage({
     getCategory(product.categoryHandle),
     getTenantContext(),
   ]);
+
+  /**
+   * Bild je Variante: «Display» zeigt die Box, «1 Heftchen» das Einzelstück.
+   * Die Zuordnung (samt Randfällen: Variante ohne Bild, nur ein Bild, nur
+   * eine Variante) rechnet lib/variant-image.ts aus; hier wird nur gerendert.
+   * Ist nichts umzuschalten, rendert die Seite exakt wie bisher.
+   */
+  const gallery = heroGallery(product);
+  const variantFor = (src: string) =>
+    product.variants.find((v) => gallery.srcByVariant[v.id] === src);
 
   // Product schema for rich results / Google Shopping.
   const jsonLd = {
@@ -109,56 +123,87 @@ export default async function ProductPage({
         <span className={styles.crumbCurrent}>{product.title}</span>
       </nav>
 
-      <div className={styles.layout}>
-        <div className={styles.gallery}>
-          <ProductImage
-            src={product.images[0]}
-            alt={product.title}
-            product={product}
-            variant="hero"
-            priority
-          />
-          {product.images.length > 1 && (
-            <div className={styles.thumbs}>
-              {product.images.slice(1, 5).map((src, i) => (
-                <ProductImage
-                  key={src}
-                  src={src}
-                  alt={`${product.title} — Ansicht ${i + 2}`}
-                  product={product}
-                  variant="thumb"
-                />
-              ))}
-            </div>
-          )}
+      {/* Der Provider hält NUR die gewählte Variante — Galerie und Kaufbox
+          lesen dieselbe Auswahl, die Seite selbst bleibt Server-Komponente.
+          Vorauswahl identisch mit AddToCart (defaultVariant). */}
+      <VariantSelectionProvider
+        initialId={defaultVariant(product.variants)?.id ?? null}
+      >
+        <div className={styles.layout}>
+          <div className={styles.gallery}>
+            {gallery.interactive && gallery.defaultSrc ? (
+              <VariantHero
+                defaultSrc={gallery.defaultSrc}
+                srcByVariant={gallery.srcByVariant}
+                slides={gallery.slides.map((src) => {
+                  const v = variantFor(src);
+                  return {
+                    src,
+                    node: (
+                      <ProductImage
+                        src={src}
+                        alt={v ? `${product.title} — ${v.title}` : product.title}
+                        product={product}
+                        variant="hero"
+                        // Nur das anfangs sichtbare Bild ist das LCP-Element;
+                        // die verborgenen laden lazy.
+                        priority={src === gallery.initialSrc}
+                      />
+                    ),
+                  };
+                })}
+              />
+            ) : (
+              <ProductImage
+                src={product.images[0]}
+                alt={product.title}
+                product={product}
+                variant="hero"
+                priority
+              />
+            )}
+            {product.images.length > 1 && (
+              <div className={styles.thumbs}>
+                {product.images.slice(1, 5).map((src, i) => (
+                  <ProductImage
+                    key={src}
+                    src={src}
+                    alt={`${product.title} — Ansicht ${i + 2}`}
+                    product={product}
+                    variant="thumb"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.info}>
+            {product.brand && <p className="eyebrow">{product.brand}</p>}
+            <h1 className={styles.title}>{product.title}</h1>
+            <p className={styles.subtitle}>{product.subtitle}</p>
+
+            <AddToCart product={product} />
+
+            <p className={styles.desc}>{product.description}</p>
+
+            <ul className={styles.signals}>
+              <li>
+                Versand ab {formatPrice(SHIPPING.letterRate)} — gratis ab{" "}
+                {formatPrice(SHIPPING.freeThreshold)}
+              </li>
+              <li>Versand ab Lager in der Schweiz, kein Zoll</li>
+              <li>Bezahlung mit TWINT, Kreditkarte oder PostFinance</li>
+              <li>Abgabe nur an Personen ab {MIN_AGE} Jahren</li>
+            </ul>
+
+            <p className={styles.serviceLinks}>
+              <Link href="/service/versand">Versand &amp; Lieferung</Link>
+              <Link href="/service/rueckgabe">Rückgabe</Link>
+              <Link href="/service/kontakt">Fragen? Schreib uns</Link>
+            </p>
+          </div>
         </div>
-
-        <div className={styles.info}>
-          {product.brand && <p className="eyebrow">{product.brand}</p>}
-          <h1 className={styles.title}>{product.title}</h1>
-          <p className={styles.subtitle}>{product.subtitle}</p>
-
-          <AddToCart product={product} />
-
-          <p className={styles.desc}>{product.description}</p>
-
-          <ul className={styles.signals}>
-            <li>
-              Versand ab {formatPrice(SHIPPING.letterRate)} — gratis ab{" "}
-              {formatPrice(SHIPPING.freeThreshold)}
-            </li>
-            <li>Versand ab Lager in der Schweiz, kein Zoll</li>
-            <li>Bezahlung mit TWINT, Kreditkarte oder PostFinance</li>
-            <li>Abgabe nur an Personen ab {MIN_AGE} Jahren</li>
-          </ul>
-
-          <p className={styles.serviceLinks}>
-            <Link href="/service/versand">Versand &amp; Lieferung</Link>
-            <Link href="/service/rueckgabe">Rückgabe</Link>
-            <Link href="/service/kontakt">Fragen? Schreib uns</Link>
-          </p>
-        </div>
-      </div>
+      </VariantSelectionProvider>
 
       {related.length > 0 && (
         <section className={styles.related}>
