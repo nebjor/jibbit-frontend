@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
+import { CategoryComingSoon } from "./CategoryComingSoon";
 import styles from "./shop.module.css";
 
 export const metadata: Metadata = {
@@ -37,6 +38,16 @@ export default async function ShopPage({
   const activeCat = categories.find((c) => c.handle === raw);
   const products = await getProducts({ category: activeCat?.handle });
 
+  /**
+   * Eine LEERE KATEGORIE ist kein Fehlschlag: der Betreiber hat sie angelegt,
+   * die Ware kommt. Sie sagt deshalb «bald verfügbar» (CategoryComingSoon) —
+   * als Standard für jede produktlose Kategorie, ohne Sonderfall je Handle.
+   * Der «0 Produkte»-Zähler entfällt dann; neben einer Ankündigung läse er
+   * sich wie ein Fehler. Das nüchterne «Nichts gefunden» bleibt dem
+   * ungefilterten Sortiment vorbehalten (Backend liefert gar nichts).
+   */
+  const comingSoon = products.length === 0 && activeCat !== undefined;
+
   const description = activeCat
     ? activeCat.description
     : "Das ganze Sortiment: Papers, Filter und Zubehör. Boxen und Displays sind pro Stück günstiger — es lohnt sich, kurz nachzurechnen.";
@@ -48,23 +59,29 @@ export default async function ShopPage({
           <h1 className={styles.title}>
             {activeCat ? activeCat.name : "Shop"}
           </h1>
-          <p className={styles.count} aria-live="polite">
-            <span className="tnum">{products.length}</span>{" "}
-            {products.length === 1 ? "Produkt" : "Produkte"}
-          </p>
+          {!comingSoon && (
+            <p className={styles.count} aria-live="polite">
+              <span className="tnum">{products.length}</span>{" "}
+              {products.length === 1 ? "Produkt" : "Produkte"}
+            </p>
+          )}
         </div>
         {description ? <p className={styles.desc}>{description}</p> : null}
       </header>
 
-      {products.length === 0 ? (
+      {comingSoon && activeCat ? (
+        <CategoryComingSoon categoryName={activeCat.name} />
+      ) : products.length === 0 ? (
+        // Ohne Kategorie heisst leer: das Backend liefert gar nichts. Der
+        // alte Text sprach von «dieser Kategorie» — das stimmt hier nicht.
         <div className={styles.empty}>
           <h2 className={styles.emptyTitle}>Nichts gefunden</h2>
           <p>
-            In dieser Kategorie ist gerade nichts verfügbar. Schau im ganzen
-            Sortiment nach — dort wirst du eher fündig.
+            Im Sortiment ist gerade nichts verfügbar. Schau später noch einmal
+            vorbei.
           </p>
-          <Link href="/shop" className={styles.emptyCta}>
-            Alle Produkte ansehen
+          <Link href="/" className={styles.emptyCta}>
+            Zur Startseite
           </Link>
         </div>
       ) : (
