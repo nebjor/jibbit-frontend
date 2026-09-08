@@ -22,6 +22,10 @@ describe("PRODUCT_FIELDS", () => {
     expect(PRODUCT_FIELDS).toContain("variants.allow_backorder");
   });
 
+  it("fordert das Vorschaubild je Variante an — daran hängt «Display zeigt die Box»", () => {
+    expect(PRODUCT_FIELDS).toContain("variants.thumbnail");
+  });
+
   it("fordert weiterhin Preise, Bilder, Kategorien und Metadaten an", () => {
     for (const f of [
       "variants.calculated_price",
@@ -65,5 +69,26 @@ describe("Verfuegbarkeit einer Variante", () => {
   it("GENAU DIESER FALL war der Fehler: gar keine Bestandsfelder", () => {
     // So sah die Antwort aus, solange die Felder nicht angefordert wurden.
     expect(variant({}).inStock).toBe(false);
+  });
+});
+
+describe("Vorschaubild einer Variante", () => {
+  const variant = (extra: Record<string, unknown>) =>
+    toVariantView({ id: "v", title: "Standard", ...extra } as never, []);
+
+  it("übernimmt ein gepflegtes Thumbnail als Variantenbild", () => {
+    expect(variant({ thumbnail: "https://cdn.example/box.jpg" }).image).toBe(
+      "https://cdn.example/box.jpg",
+    );
+  });
+
+  it("nicht gepflegt (null oder fehlend): kein Bild — die Seite fällt aufs erste Produktbild zurück", () => {
+    expect(variant({ thumbnail: null }).image).toBeUndefined();
+    expect(variant({}).image).toBeUndefined();
+  });
+
+  it("Leer- und Whitespace-Strings zählen als nicht gepflegt", () => {
+    expect(variant({ thumbnail: "" }).image).toBeUndefined();
+    expect(variant({ thumbnail: "   " }).image).toBeUndefined();
   });
 });

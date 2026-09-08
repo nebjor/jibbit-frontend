@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useCart } from "./CartProvider";
+import { useVariantSelection } from "./VariantSelection";
 import { trackAddToCart } from "@/lib/analytics/client";
 import { Price } from "./Price";
 import { PriceTable } from "./PriceTable";
@@ -36,9 +37,16 @@ export function AddToCart({ product }: { product: ProductView }) {
   const { addLine, isPending } = useCart();
   const multi = product.variants.length > 1;
 
-  const [variantId, setVariantId] = useState<string | null>(
+  // Die Auswahl lebt — wenn vorhanden — im VariantSelectionProvider der
+  // Produktseite, damit die Galerie das Bild zur gewählten Variante zeigen
+  // kann. Ohne Provider (Tests, andere Aufrufstellen) fällt der Baustein auf
+  // seinen bisherigen lokalen State zurück; Verhalten unverändert.
+  const selection = useVariantSelection();
+  const [localVariantId, setLocalVariantId] = useState<string | null>(
     () => defaultVariant(product.variants)?.id ?? null,
   );
+  const variantId = selection ? selection.selectedId : localVariantId;
+  const setVariantId = selection ? selection.select : setLocalVariantId;
   const [quantity, setQuantity] = useState(1);
 
   const selected = product.variants.find((v) => v.id === variantId);
