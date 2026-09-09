@@ -1,0 +1,76 @@
+/* Erstbesuchs-Intro — Bewegungen. Auflage: es animieren AUSSCHLIESSLICH
+   transform und opacity (90–95 % der Besuche kommen vom Handy). Die
+   Dauern (--t-*) setzt IntroOverlay.tsx aus lib/intro/timings.ts; hier
+   stehen KEINE Zeiten. Phasenfolge: ebenfalls lib/intro/timings.ts. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  /* Über Altersabfrage (300) und Cookie-Hinweis (290): erst die
+     Inszenierung, dann die Pflichten — Begründung in HomeIntro.tsx.
+     400 gehört dem Vor-Hydrations-Deckel (intro-global.css). */
+  z-index: 410;
+}
+
+/* Weisse Fläche (Phase «white» — und Unterlage aller weiteren Phasen).
+   Beim Logo-Flug blendet sie auf, darunter steht die fertige Seite. */
+.bg {
+  position: absolute;
+  inset: 0;
+  background: var(--c-ground);
+  transition: opacity var(--t-logo-flight) var(--ease);
+}
+
+.overlay[data-phase="logoFlight"] .bg {
+  opacity: 0;
+}
+
+.logoLayer,
+.jointLayer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* ---- Joint: fliegt von unten links zur Mitte («jointIn»), brennt dort
+        («jointBurn», die Sprite-Schleife von PixelJoint läuft weiter) und
+        verschwindet unter der wachsenden Wolke («smokeGrow»). ----------- */
+.jointLayer {
+  transform: translate(-70vw, 65vh) rotate(-35deg);
+  transition:
+    transform var(--t-joint-in) var(--ease),
+    opacity var(--t-smoke-grow) linear;
+}
+
+.overlay[data-phase="jointIn"] .jointLayer,
+.overlay[data-phase="jointBurn"] .jointLayer {
+  transform: none;
+}
+
+.overlay[data-phase="smokeGrow"] .jointLayer,
+.overlay[data-phase="logoReveal"] .jointLayer,
+.overlay[data-phase="logoHold"] .jointLayer,
+.overlay[data-phase="logoFlight"] .jointLayer {
+  transform: none;
+  opacity: 0;
+}
+
+/* ---- Logo: taucht hinter der Wolke auf («logoReveal»), steht die zwei
+        Sekunden («logoHold») und fliegt dann per FLIP an seinen Platz im
+        Header («logoFlight» — transform setzt IntroOverlay.tsx inline,
+        zur Laufzeit gemessen). ------------------------------------------ */
+.logoBox {
+  opacity: 0;
+  transform-origin: center;
+  transition:
+    opacity var(--t-logo-reveal) linear,
+    transform var(--t-logo-flight) var(--ease);
+  will-change: transform, opacity;
+}
+
+.overlay[data-phase="logoReveal"] .logoBox,
+.overlay[data-phase="logoHold"] .logoBox,
+.overlay[data-phase="logoFlight"] .logoBox {
+  opacity: 1;
+}

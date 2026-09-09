@@ -57,6 +57,10 @@ export async function Header() {
           <Link
             href="/"
             className={styles.brand}
+            /* Landeplatz des Intro-Logos: IntroOverlay.tsx misst diese
+               Position zur LAUFZEIT (FLIP), intro-global.css versteckt
+               das Logo hier, bis das Intro-Logo gelandet ist. */
+            data-intro-logo-target
             aria-label="jibbit — Startseite"
           >
             <Logo size="md" />
