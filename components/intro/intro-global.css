@@ -1,0 +1,22 @@
+/* Vor-Hydrations-Deckel des Erstbesuchs-Intros (warum: HomeIntro.tsx).
+   Greift NUR, wenn das Inline-Script das Attribut gesetzt hat — also nur
+   mit JavaScript, nur beim ersten Besuch der Sitzung und nie bei
+   prefers-reduced-motion (doppelt abgesichert: Script UND Media Query). */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-jibbit-intro]::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    /* Über der Altersabfrage (300), unter dem Intro-Overlay (410). */
+    z-index: 400;
+    background: var(--c-ground);
+  }
+
+  /* Das echte Header-Logo bleibt versteckt, bis das Intro-Logo dort
+     GELANDET ist (IntroOverlay.tsx entfernt das Attribut am Ende) — sonst
+     stünde es doppelt da. visibility statt display: der FLIP-Flug misst
+     die Zielposition zur Laufzeit, das Ziel braucht also sein Layout. */
+  html[data-jibbit-intro] [data-intro-logo-target] {
+    visibility: hidden;
+  }
+}
