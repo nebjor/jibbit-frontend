@@ -1,4 +1,5 @@
 import { INTRO_FAILSAFE_MS, INTRO_SESSION_KEY } from "@/lib/intro/timings";
+import { readConsentCookies } from "@/lib/consent/server";
 import { IntroOverlay } from "./IntroOverlay";
 import "./intro-global.css";
 
@@ -10,14 +11,25 @@ import "./intro-global.css";
  * IntroOverlay.tsx (Client).
  *
  * ABFOLGE MIT ALTERSABFRAGE UND COOKIE-HINWEIS
- * Die Consent-Schicht (components/consent/, UNANGETASTET) steckt beim ersten
- * Besuch bereits serverseitig im HTML (AgeGate z-index 300, Banner 290). Das
- * Intro legt sich mit z-index 400/410 DARÜBER: erst die Inszenierung, dann
- * die Pflichten — nie drei Schichten gleichzeitig sichtbar. Endet das Intro
- * (oder wird es übersprungen), steht die Altersabfrage unverändert da, mit
- * ihrem eigenen Fokus-Management. Damit ein Tastendruck während des Intros
- * nicht versehentlich einen Knopf der darunterliegenden Abfrage auslöst,
- * fängt IntroOverlay.tsx aktivierende Tasten in der Capture-Phase ab.
+ * Die Altersabfrage ist eine BEDINGUNG fürs Betreten, das Intro eine
+ * Inszenierung — also: erst Altersabfrage, dann Intro, dann Cookie-Hinweis.
+ * Konkret:
+ *
+ *   1. Alter noch unbeantwortet: der Server rendert die (deckende)
+ *      Altersabfrage ins HTML (components/consent/), das Intro WARTET —
+ *      der Startwächter (lib/intro/starter.ts) rührt die Entscheidung
+ *      (lib/intro/decision.ts, setzt den «gesehen»-Marker!) erst an, wenn
+ *      «adult» bestätigt ist. Es läuft also nichts im Hintergrund ab und
+ *      nichts gilt als gesehen, solange der Besucher den Knopf sucht.
+ *   2. Nach der Bestätigung startet das Intro aus dem Klick heraus; wer
+ *      «nein» sagt, bleibt auf der Sperrseite und bekommt kein Intro.
+ *   3. Der Cookie-Hinweis wartet, bis das Intro fertig oder übersprungen
+ *      ist (ConsentGate.tsx fragt lib/intro/starter.ts) — er soll der
+ *      Inszenierung nicht in die Quere kommen.
+ *
+ * Ist das Alter von einem früheren Besuch her bestätigt (Cookie, 12 Monate),
+ * erscheint keine Abfrage und das Intro spielt sofort — dafür der Deckel
+ * unten.
  *
  * SUCHMASCHINEN sehen nie «nur das Intro»: die Startseite bleibt vollständig
  * serverseitig gerendert, das Overlay ist eine rein clientseitige Zutat
@@ -34,6 +46,15 @@ import "./intro-global.css";
  * nur ein Attribut; den weissen Deckel malt intro-global.css. Übernimmt
  * React nie (Bundle-Fehler), räumt die Notbremse (INTRO_FAILSAFE_MS) den
  * Deckel wieder weg — die Seite bleibt nie dauerhaft verdeckt.
+ *
+ * NUR BEI BESTÄTIGTEM ALTER: Der Server rendert das Script ausschliesslich,
+ * wenn das Alters-Cookie schon «adult» sagt — nur dann startet das Intro
+ * mit dem ersten Paint. Ist das Alter offen, deckt die serverseitig
+ * gerenderte Altersabfrage die Seite ab (kein Aufblitzen), und ein Deckel
+ * dürfte hier gar nicht liegen: er läge ÜBER der Abfrage (z-index 400 gegen
+ * 300) und der Besucher könnte nicht antworten. Startet das Intro später
+ * aus der Bestätigung heraus, setzt IntroOverlay.tsx das Attribut selbst —
+ * synchron im Klick, bevor die Abfrage aus dem DOM geht.
  */
 const PRE_SCRIPT =
   `(function(){try{` +
@@ -43,10 +64,13 @@ const PRE_SCRIPT =
   `window.__jibbitIntroFailsafe=window.setTimeout(function(){d.removeAttribute("data-jibbit-intro");},${INTRO_FAILSAFE_MS});` +
   `}catch(e){}})();`;
 
-export function HomeIntro() {
+export async function HomeIntro() {
+  const { age } = await readConsentCookies();
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: PRE_SCRIPT }} />
+      {age === "adult" ? (
+        <script dangerouslySetInnerHTML={{ __html: PRE_SCRIPT }} />
+      ) : null}
       <IntroOverlay />
     </>
   );

@@ -9,6 +9,8 @@ import {
   markIntroDone,
   type IntroStorage,
 } from "@/lib/intro/decision";
+import { createIntroStarter, setIntroActive } from "@/lib/intro/starter";
+import { onAgeAnswerChange, readAgeAnswer } from "@/lib/consent/client";
 import { INTRO_TIMINGS, type IntroPhase } from "@/lib/intro/timings";
 import { SmokeCloud, type SmokeState } from "./SmokeCloud";
 import styles from "./IntroOverlay.module.css";
@@ -20,17 +22,25 @@ import styles from "./IntroOverlay.module.css";
  * transform und opacity. Alle Dauern kommen aus lib/intro/timings.ts und
  * werden unten als CSS-Variablen durchgereicht.
  *
+ * ABFOLGE (HomeIntro.tsx): ERST die Altersabfrage, DANN das Intro. Der
+ * Startwächter (lib/intro/starter.ts) hält das Intro zurück, solange die
+ * Abfrage offen ist, und startet es aus dem Klick heraus, sobald «adult»
+ * bestätigt wird — decideIntro (und damit der sessionStorage-Marker) wird
+ * bis dahin nicht angerührt. Während das Intro läuft, meldet
+ * setIntroActive(true) dem ConsentGate, den Cookie-Hinweis noch
+ * zurückzuhalten.
+ *
  * ÜBERSPRINGBAR (Auflage 3): Klick/Tap aufs Overlay, jeder Tastendruck ohne
  * Modifier, Mausrad oder Touch-Wischen brechen SOFORT ab — ohne Ausblenden,
  * die Seite steht augenblicklich da. Aktivierende Tasten (Enter, Space,
  * Escape, Tab) werden dabei in der Capture-Phase abgefangen, damit sie
- * nicht in die darunterliegende Altersabfrage durchschlagen, die den Fokus
- * hält (Abfolge: HomeIntro.tsx). Tastenkürzel mit Ctrl/Cmd/Alt (Reload,
+ * nicht in die Seite darunter durchschlagen (nach dem Intro erscheint dort
+ * gerade der Cookie-Hinweis). Tastenkürzel mit Ctrl/Cmd/Alt (Reload,
  * Adressleiste …) bleiben dem Browser überlassen und überspringen nichts.
  *
  * BARRIEREFREIHEIT: reine Zierde — `aria-hidden`, keine fokussierbaren
  * Elemente, der Fokus kann also gar nicht erst hinein. Screenreader landen
- * direkt auf der (serverseitig gerenderten) Seite bzw. der Altersabfrage.
+ * direkt auf der (serverseitig gerenderten) Seite.
  *
  * FLIP-FLUG: die Zielposition (Header-Logo, `data-intro-logo-target` in
  * Header.tsx) wird zur LAUFZEIT gemessen, nicht geschätzt — der Kopfbereich
@@ -95,31 +105,9 @@ export function IntroOverlay() {
       storage = null;
     }
 
-    if (decideIntro({ prefersReducedMotion: reduced, storage }) === "skip") {
-      // Kein Intro — falls das Inline-Script den Deckel doch gesetzt hat,
-      // weg damit, die Seite gehört sofort dem Besucher.
-      clearPreIntroCover();
-      return;
-    }
+    let machine: ReturnType<typeof createIntroMachine> | null = null;
 
-    // Übernahme vom Inline-Script: Notbremse aus, Attribut sicherstellen
-    // (hält den Deckel als Unterlage und versteckt das echte Header-Logo,
-    // bis das Intro-Logo dort gelandet ist — intro-global.css).
-    clearFailsafeTimer();
-    document.documentElement.setAttribute("data-jibbit-intro", "");
-
-    const machine = createIntroMachine({
-      onPhase: setPhase,
-      onDone: () => {
-        markIntroDone();
-        removeListeners();
-        clearPreIntroCover();
-        setPhase(null);
-      },
-    });
-    machineRef.current = machine;
-
-    const skip = () => machine.skip();
+    const skip = () => machine?.skip();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (["Enter", " ", "Escape", "Tab"].includes(event.key)) {
@@ -129,7 +117,7 @@ export function IntroOverlay() {
       skip();
     };
 
-    // WICHTIG: auch bei normalem Ende wieder abhängen (onDone oben), nicht
+    // WICHTIG: auch bei normalem Ende wieder abhängen (onDone unten), nicht
     // erst beim Unmount — die Seite lebt nach dem Intro weiter, ein global
     // verbliebener Capture-Listener würde ihr die Tastatur stehlen.
     function removeListeners() {
@@ -137,17 +125,57 @@ export function IntroOverlay() {
       window.removeEventListener("wheel", skip);
       window.removeEventListener("touchmove", skip);
     }
-    window.addEventListener("keydown", onKeyDown, true);
-    window.addEventListener("wheel", skip, { passive: true });
-    window.addEventListener("touchmove", skip, { passive: true });
 
-    machine.start();
+    // Läuft SYNCHRON aus der Altersbestätigung heraus (oder direkt hier,
+    // wenn das Alter längst per Cookie bestätigt ist): Deckel setzen, bevor
+    // React die Abfrage wegräumt — so blitzt zwischen Abfrage und erstem
+    // Intro-Bild nie die Seite auf.
+    const startIntro = () => {
+      // Übernahme vom Inline-Script: Notbremse aus, Attribut sicherstellen
+      // (hält den Deckel als Unterlage und versteckt das echte Header-Logo,
+      // bis das Intro-Logo dort gelandet ist — intro-global.css).
+      clearFailsafeTimer();
+      document.documentElement.setAttribute("data-jibbit-intro", "");
+      setIntroActive(true);
+
+      machine = createIntroMachine({
+        onPhase: setPhase,
+        onDone: () => {
+          markIntroDone();
+          removeListeners();
+          clearPreIntroCover();
+          setPhase(null);
+          // Jetzt (erst) darf der Cookie-Hinweis kommen — ConsentGate.tsx.
+          setIntroActive(false);
+        },
+      });
+      machineRef.current = machine;
+
+      window.addEventListener("keydown", onKeyDown, true);
+      window.addEventListener("wheel", skip, { passive: true });
+      window.addEventListener("touchmove", skip, { passive: true });
+
+      machine.start();
+    };
+
+    const starter = createIntroStarter({
+      decide: () => decideIntro({ prefersReducedMotion: reduced, storage }),
+      onAgeChange: onAgeAnswerChange,
+      onPlay: startIntro,
+      // Kein Intro — falls das Inline-Script den Deckel doch gesetzt hat,
+      // weg damit, die Seite gehört sofort dem Besucher.
+      onSkip: clearPreIntroCover,
+    });
+    starter.begin(readAgeAnswer());
 
     return () => {
+      starter.dispose();
       removeListeners();
-      machine.dispose();
+      machine?.dispose();
+      machine = null;
       machineRef.current = null;
       clearPreIntroCover();
+      setIntroActive(false);
     };
   }, []);
 

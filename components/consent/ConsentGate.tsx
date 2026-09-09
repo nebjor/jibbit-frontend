@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   overlayStep,
   type AgeAnswer,
@@ -12,6 +17,7 @@ import {
   writeAgeAnswer,
   writeConsent,
 } from "@/lib/consent/client";
+import { isIntroActive, subscribeIntroActive } from "@/lib/intro/starter";
 import { AgeGate } from "./AgeGate";
 import { ConsentBanner } from "./ConsentBanner";
 
@@ -19,6 +25,14 @@ import { ConsentBanner } from "./ConsentBanner";
  * Orchestriert die beiden Einblendungen: ERST die Altersabfrage, DANN der
  * Cookie-Hinweis, nie beide übereinander (Abfolge: lib/consent/state.ts,
  * `overlayStep`).
+ *
+ * DAS INTRO DAZWISCHEN (nur Startseite): Läuft nach der Altersbestätigung
+ * das Erstbesuchs-Intro (lib/intro/starter.ts, `isIntroActive`), hält
+ * dieser Gate den Cookie-Hinweis so lange zurück — die Abfolge ist damit
+ * Altersabfrage -> Intro -> Cookie-Hinweis. Auf allen anderen Seiten (und
+ * wenn kein Intro spielt) bleibt alles beim Alten: der Hinweis kommt
+ * direkt nach der Bestätigung. NUR die Anzeige wartet; an der
+ * Einwilligungslogik (lib/consent/) ändert das nichts.
  *
  * KEIN AUFBLITZEN: `initialAge`/`initialConsent` kommen aus den Cookies,
  * SERVERSEITIG gelesen (app/layout.tsx -> lib/consent/server.ts). Das
@@ -60,9 +74,21 @@ export function ConsentGate({
     [age],
   );
 
+  // «Läuft das Intro gerade?» — serverseitig immer false (dritter
+  // Parameter), clientseitig schaltet der Store um, BEVOR die
+  // Altersbestätigung rendert (das Intro startet synchron im selben
+  // Klick, lib/intro/starter.ts) — der Hinweis blitzt also nicht kurz auf.
+  const introActive = useSyncExternalStore(
+    subscribeIntroActive,
+    isIntroActive,
+    () => false,
+  );
+
   const step = settingsOpen ? "consent-banner" : overlayStep(age, consent);
+  // Der Cookie-Hinweis wartet, bis das Intro durch ist — er soll der
+  // Inszenierung nicht in die Quere kommen (Abfolge: HomeIntro.tsx).
   const showBanner =
-    step === "consent-banner" && (settingsOpen || !dismissed);
+    step === "consent-banner" && (settingsOpen || !dismissed) && !introActive;
   const showGate = step === "age-gate";
 
   // Hintergrund nicht scrollbar, solange ein Dialog vorne ist (gleiches
