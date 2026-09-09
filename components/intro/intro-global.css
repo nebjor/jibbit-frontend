@@ -1,13 +1,16 @@
 /* Vor-Hydrations-Deckel des Erstbesuchs-Intros (warum: HomeIntro.tsx).
-   Greift NUR, wenn das Inline-Script das Attribut gesetzt hat — also nur
-   mit JavaScript, nur beim ersten Besuch der Sitzung und nie bei
-   prefers-reduced-motion (doppelt abgesichert: Script UND Media Query). */
+   Greift NUR, wenn das Attribut gesetzt ist — vom Inline-Script (nur bei
+   bereits bestätigtem Alter, nur beim ersten Besuch der Sitzung) oder von
+   IntroOverlay.tsx (wenn das Intro nach der Altersbestätigung startet) —
+   und nie bei prefers-reduced-motion (doppelt abgesichert: Script UND
+   Media Query). */
 @media (prefers-reduced-motion: no-preference) {
   html[data-jibbit-intro]::before {
     content: "";
     position: fixed;
     inset: 0;
-    /* Über der Altersabfrage (300), unter dem Intro-Overlay (410). */
+    /* Unter dem Intro-Overlay (410); die Altersabfrage (300) ist zu, wenn
+       der Deckel liegt — er darf sie darum nie verdecken müssen. */
     z-index: 400;
     background: var(--c-ground);
   }
