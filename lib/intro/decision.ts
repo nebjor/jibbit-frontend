@@ -20,6 +20,12 @@ export type IntroStorage = Pick<Storage, "getItem" | "setItem">;
  * jedem Aufruf eines — die Auflage «nur beim ersten Besuch» wiegt schwerer
  * als die Inszenierung. Nur das SCHREIBEN darf scheitern (Quota): dann
  * wissen wir sicher, dass es der erste Besuch ist, und spielen trotzdem.
+ *
+ * ⚠️ NEBENWIRKUNG: `decideIntro` SETZT beim ersten «play» den Marker.
+ * Deshalb NIE aufrufen, solange die Altersabfrage noch offen ist — sonst
+ * gälte das Intro als gesehen, ohne je gelaufen zu sein. Den richtigen
+ * Zeitpunkt wählt der Startwächter (lib/intro/starter.ts): erst nach
+ * bestätigtem «adult».
  */
 let cached: IntroDecision | null = null;
 

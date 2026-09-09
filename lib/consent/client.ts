@@ -43,6 +43,14 @@ import {
 export const CONSENT_CHANGED_EVENT = "jibbit:consent-changed";
 /** Der Footer-Link «Cookie-Einstellungen» will den Dialog (wieder) öffnen. */
 export const CONSENT_OPEN_EVENT = "jibbit:consent-open";
+/**
+ * Altersantwort gegeben/zurückgesetzt — Detail: AgeAnswer. Reine
+ * ZUSTANDSERWEITERUNG für Mithörer ausserhalb des ConsentGate (derzeit
+ * einzig das Startseiten-Intro, lib/intro/starter.ts: es darf erst nach
+ * bestätigtem «adult» starten). Am Verhalten der Einwilligung selbst
+ * ändert dieser Kanal nichts — er meldet nur, was ohnehin geschieht.
+ */
+export const AGE_CHANGED_EVENT = "jibbit:age-changed";
 
 // ---------------------------------------------------------------------------
 // Cookies lesen/schreiben
@@ -81,10 +89,28 @@ export function writeAgeAnswer(answer: "adult" | "minor"): void {
     serializeAgeAnswer(answer),
     answer === "adult" ? AGE_COOKIE_MAX_AGE : undefined,
   );
+  dispatchAgeChanged(answer);
 }
 
 export function clearAgeAnswer(): void {
   writeCookie(AGE_COOKIE, "", 0);
+  dispatchAgeChanged(null);
+}
+
+function dispatchAgeChanged(age: AgeAnswer): void {
+  window.dispatchEvent(
+    new CustomEvent<AgeAnswer>(AGE_CHANGED_EVENT, { detail: age }),
+  );
+}
+
+/**
+ * Auf die Altersantwort reagieren (siehe AGE_CHANGED_EVENT). Gibt die
+ * Abmeldefunktion zurück — gleiches Muster wie onConsentChange.
+ */
+export function onAgeAnswerChange(cb: (age: AgeAnswer) => void): () => void {
+  const handler = (e: Event) => cb((e as CustomEvent<AgeAnswer>).detail);
+  window.addEventListener(AGE_CHANGED_EVENT, handler);
+  return () => window.removeEventListener(AGE_CHANGED_EVENT, handler);
 }
 
 // ---------------------------------------------------------------------------
