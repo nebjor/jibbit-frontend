@@ -1,0 +1,69 @@
+/* Platzhalter-Wolke — Austauschstelle, siehe SmokeCloud.tsx.
+   Farbe: --c-line, der helle Grauton der Colorway (tokens.css) — hier steht
+   bewusst kein Literal, damit ein Colorway-Wechsel die Wolke mitnimmt. */
+
+.smoke {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.smoke[data-state="fade"] {
+  opacity: 0;
+  transition: opacity var(--t-logo-reveal) linear;
+}
+
+.smoke[data-state="gone"] {
+  display: none;
+}
+
+.puff {
+  --grown: scale(1.8);
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    var(--c-line) 0%,
+    var(--c-line) 60%,
+    transparent 100%
+  );
+  transform: scale(0);
+  transition: transform var(--t-smoke-grow) var(--ease);
+  will-change: transform;
+}
+
+/* Zwei versetzte Nebenkreise machen aus dem Kreis eine Wolken-Silhouette;
+   die kleinen Verzögerungen lassen sie «aufquellen» statt aufpoppen. */
+.puffB {
+  --grown: translate(-22vmax, 12vmax) scale(1.3);
+  transition-delay: 60ms;
+}
+
+.puffC {
+  --grown: translate(20vmax, -10vmax) scale(1.3);
+  transition-delay: 120ms;
+}
+
+.smoke[data-state="grow"] .puff,
+.smoke[data-state="fade"] .puff {
+  transform: var(--grown);
+}
+
+/* Die deckende Fläche garantiert «die den ganzen Bildschirm einnimmt» —
+   unabhängig von Bildschirmformat und Kreisgeometrie. */
+.cover {
+  position: absolute;
+  inset: 0;
+  background: var(--c-line);
+  opacity: 0;
+  transition: opacity var(--t-smoke-grow) var(--ease);
+}
+
+.smoke[data-state="grow"] .cover,
+.smoke[data-state="fade"] .cover {
+  opacity: 1;
+}

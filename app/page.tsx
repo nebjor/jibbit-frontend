@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getFeaturedProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
+import { HomeIntro } from "@/components/intro/HomeIntro";
 import { Logo } from "@/components/Logo";
 import { STORE, SHIPPING, PAYMENT_METHODS } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
@@ -14,6 +15,12 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Erstbesuchs-Intro: legt sich ÜBER die weiterhin serverseitig
+          gerenderte Startseite (Overlay, kein Ersatz). Abfolge mit
+          Altersabfrage/Cookie-Hinweis, SEO und Barrierefreiheit sind
+          in components/intro/HomeIntro.tsx begründet; alle Zeiten
+          stehen in lib/intro/timings.ts. */}
+      <HomeIntro />
       {/* ---- HERO ---------------------------------------------------- */}
       <section className={styles.hero}>
         <div className={`page ${styles.heroInner}`}>
