@@ -1,12 +1,30 @@
-/* Platzhalter-Wolke — Austauschstelle, siehe SmokeCloud.tsx.
-   Farbe: --c-line, der helle Grauton der Colorway (tokens.css) — hier steht
-   bewusst kein Literal, damit ein Colorway-Wechsel die Wolke mitnimmt. */
+/* Rauchwolke — Austauschstelle, Vertrag siehe SmokeCloud.tsx.
+   Farbe: --c-smoke (kräftiger dunkler Rauchton) und --c-muted für helle
+   Schlieren, beides aus tokens.css — hier steht bewusst kein Literal,
+   damit ein Colorway-Wechsel die Wolke mitnimmt.
+
+   Aufbau (von unten nach oben):
+     .cover   deckende Fläche, inset: 0 — garantiert die VOLLSTÄNDIGE
+              Deckung auf jedem Seitenverhältnis, unabhängig von der
+              Schwaden-Geometrie. Sie ist mit Verzögerung + verkürzter
+              Dauer sicher VOR Ende von smokeGrow voll da.
+     .puff…   fünf versetzte Schwaden: eigene Grösse, Startposition,
+              Drehung und Verzögerung — sie quellen nacheinander auf,
+              statt synchron aufzupoppen, und ihre unregelmässigen
+              Verlaufs-Ränder machen die Silhouette wolkig.
+     .wisp…   zwei helle Schlieren (--c-muted), die durch den dunklen
+              Rauch nach oben ziehen — Dichteunterschiede im Innern.
+
+   Auflage fürs Handy: AUSSCHLIESSLICH transform und opacity animieren.
+   Alle Dauern sind Bruchteile der --t-*-Variablen aus timings.ts;
+   Verzögerung + Dauer bleiben pro Element immer kleiner als die Phase. */
 
 .smoke {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
+  overflow: hidden;
   pointer-events: none;
 }
 
@@ -19,51 +37,162 @@
   display: none;
 }
 
-.puff {
-  --grown: scale(1.8);
-  position: absolute;
-  width: 70vmax;
-  height: 70vmax;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle closest-side,
-    var(--c-line) 0%,
-    var(--c-line) 60%,
-    transparent 100%
-  );
-  transform: scale(0);
-  transition: transform var(--t-smoke-grow) var(--ease);
-  will-change: transform;
-}
-
-/* Zwei versetzte Nebenkreise machen aus dem Kreis eine Wolken-Silhouette;
-   die kleinen Verzögerungen lassen sie «aufquellen» statt aufpoppen. */
-.puffB {
-  --grown: translate(-22vmax, 12vmax) scale(1.3);
-  transition-delay: 60ms;
-}
-
-.puffC {
-  --grown: translate(20vmax, -10vmax) scale(1.3);
-  transition-delay: 120ms;
-}
-
-.smoke[data-state="grow"] .puff,
-.smoke[data-state="fade"] .puff {
-  transform: var(--grown);
-}
-
-/* Die deckende Fläche garantiert «die den ganzen Bildschirm einnimmt» —
-   unabhängig von Bildschirmformat und Kreisgeometrie. */
+/* Die deckende Fläche garantiert «füllt den ganzen Bildschirm» auf jedem
+   Seitenverhältnis. Verzögerung 0.1 + Dauer 0.85 = 0.95 der Phase: sie
+   ist voll deckend, BEVOR die Maschine nach logoReveal weiterschaltet. */
 .cover {
   position: absolute;
   inset: 0;
-  background: var(--c-line);
+  background: var(--c-smoke);
   opacity: 0;
-  transition: opacity var(--t-smoke-grow) var(--ease);
+  transition: opacity calc(var(--t-smoke-grow) * 0.85) var(--ease);
+  transition-delay: calc(var(--t-smoke-grow) * 0.1);
 }
 
 .smoke[data-state="grow"] .cover,
 .smoke[data-state="fade"] .cover {
   opacity: 1;
+}
+
+/* --- Schwaden ---------------------------------------------------------- */
+
+.puff {
+  --from: translate(0, 8vmax) scale(0);
+  --grown: translate(0, -2vmax) scale(1.7) rotate(8deg);
+  --delay: 0ms;
+  position: absolute;
+  width: 64vmax;
+  height: 64vmax;
+  border-radius: 46% 54% 58% 42% / 56% 46% 54% 44%;
+  background:
+    radial-gradient(
+      circle closest-side at 42% 42%,
+      var(--c-smoke) 0%,
+      var(--c-smoke) 38%,
+      transparent 74%
+    ),
+    radial-gradient(
+      circle closest-side at 64% 56%,
+      var(--c-smoke) 0%,
+      var(--c-smoke) 30%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle closest-side at 48% 68%,
+      var(--c-smoke) 0%,
+      var(--c-smoke) 26%,
+      transparent 62%
+    );
+  transform: var(--from);
+  transition: transform calc(var(--t-smoke-grow) * 0.75) var(--ease);
+  transition-delay: var(--delay);
+  will-change: transform;
+}
+
+.puffB {
+  --from: translate(-6vmax, 10vmax) scale(0);
+  --grown: translate(-26vmax, 6vmax) scale(1.5) rotate(-14deg);
+  --delay: calc(var(--t-smoke-grow) * 0.08);
+  width: 48vmax;
+  height: 48vmax;
+  border-radius: 58% 42% 44% 56% / 44% 58% 42% 56%;
+  opacity: 0.92;
+}
+
+.puffC {
+  --from: translate(6vmax, 8vmax) scale(0);
+  --grown: translate(25vmax, -8vmax) scale(1.45) rotate(12deg);
+  --delay: calc(var(--t-smoke-grow) * 0.13);
+  width: 48vmax;
+  height: 48vmax;
+  border-radius: 42% 58% 52% 48% / 58% 44% 56% 42%;
+  opacity: 0.95;
+}
+
+.puffD {
+  --from: translate(-3vmax, 12vmax) scale(0);
+  --grown: translate(-12vmax, -22vmax) scale(1.4) rotate(-9deg);
+  --delay: calc(var(--t-smoke-grow) * 0.2);
+  width: 36vmax;
+  height: 36vmax;
+  border-radius: 52% 48% 60% 40% / 48% 56% 44% 52%;
+  opacity: 0.85;
+}
+
+.puffE {
+  --from: translate(4vmax, 12vmax) scale(0);
+  --grown: translate(14vmax, 20vmax) scale(1.35) rotate(16deg);
+  --delay: calc(var(--t-smoke-grow) * 0.17);
+  width: 34vmax;
+  height: 34vmax;
+  border-radius: 60% 40% 46% 54% / 42% 60% 40% 58%;
+  opacity: 0.9;
+}
+
+.smoke[data-state="grow"] .puff {
+  transform: var(--grown);
+}
+
+/* Beim Verziehen treiben die Schwaden weiter nach oben und wachsen leicht —
+   die kleine Zusatz-Translation wird pro Schwade mitgedreht und mitskaliert
+   und streut so von selbst. Die Verzögerungen sind hier aus (Shorthand +
+   höhere Spezifität), damit alles binnen --t-logo-reveal fertig ist. */
+.smoke[data-state="fade"] .puff {
+  transform: var(--grown) translate(0, -7vmax) scale(1.06);
+  transition: transform var(--t-logo-reveal) var(--ease);
+}
+
+/* --- Helle Schlieren ---------------------------------------------------- */
+
+.wisp {
+  --w-from: translate(-9vmax, 20vmax) scale(0.5) rotate(-6deg);
+  --w-to: translate(-8vmax, -3vmax) scale(1.05) rotate(6deg);
+  --w-out: translate(-6vmax, -15vmax) scale(1.15) rotate(10deg);
+  --w-alpha: 0.3;
+  --delay: calc(var(--t-smoke-grow) * 0.12);
+  position: absolute;
+  width: 44vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse closest-side at 48% 36%,
+      var(--c-muted) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse closest-side at 56% 70%,
+      var(--c-muted) 0%,
+      transparent 52%
+    );
+  opacity: 0;
+  transform: var(--w-from);
+  transition:
+    transform calc(var(--t-smoke-grow) * 0.8) var(--ease),
+    opacity calc(var(--t-smoke-grow) * 0.8) var(--ease);
+  transition-delay: var(--delay);
+  will-change: transform, opacity;
+}
+
+.wispB {
+  --w-from: translate(11vmax, 22vmax) scale(0.45) rotate(8deg);
+  --w-to: translate(10vmax, 2vmax) scale(1.1) rotate(-5deg);
+  --w-out: translate(8vmax, -12vmax) scale(1.2) rotate(-9deg);
+  --w-alpha: 0.22;
+  --delay: calc(var(--t-smoke-grow) * 0.18);
+  width: 38vmax;
+  height: 62vmax;
+}
+
+.smoke[data-state="grow"] .wisp {
+  opacity: var(--w-alpha);
+  transform: var(--w-to);
+}
+
+.smoke[data-state="fade"] .wisp {
+  opacity: var(--w-alpha);
+  transform: var(--w-out);
+  transition:
+    transform var(--t-logo-reveal) var(--ease),
+    opacity var(--t-logo-reveal) var(--ease);
 }
