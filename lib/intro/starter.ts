@@ -18,10 +18,23 @@ import type { IntroDecision } from "./decision";
  * bestätigt ist; das Intro startet also aus dem Stand, wenn die Abfrage
  * verschwindet.
  *
+ * ZWEI WAHRHEITEN, EIN WÄCHTER: Das Alter kennt der Wächter aus dem Cookie
+ * (readAgeAnswer) und aus dem Kanal — ob die ABFRAGE aber gerade VOR dem
+ * Besucher steht, entscheidet das server-gerenderte HTML plus der
+ * Client-Zustand des ConsentGate, nicht das Cookie. Die beiden können
+ * auseinanderlaufen: ein zweiter Tab setzt das Cookie zwischen Request und
+ * Hydration, ein Cache/Proxy liefert die cookielose HTML-Variante an einen
+ * Browser, der das 12-Monats-Cookie längst trägt. Wer dann nur aufs Cookie
+ * schaut, spielt das Intro ÜBER der offenen Abfrage (z-Stapel) — und die
+ * Abfrage ploppt mitten in der Animation hervor (der Desktop-Bug). Darum
+ * prüft der Wächter zusätzlich `isGateOpen()` (gespeist vom ConsentGate,
+ * Store unten) und wartet auch bei bestätigtem Alter, bis die Abfrage
+ * wirklich zu ist.
+ *
  *   begin(age)   mit dem AKTUELLEN Alters-Stand aufrufen:
- *                  «adult»  -> sofort entscheiden (Cookie von früher — die
- *                              Abfrage erscheint gar nicht, das Intro spielt
- *                              direkt)
+ *                  «adult»  -> sofort entscheiden — ausser die Abfrage ist
+ *                              (wider das Cookie) noch offen: dann warten,
+ *                              bis sie zugeht
  *                  null     -> warten, bis der Alters-Kanal «adult» meldet
  *                              (der Besucher bestätigt gerade)
  *                  «minor»  -> Sperrseite: kein Intro. (Setzt der Besucher
@@ -29,34 +42,50 @@ import type { IntroDecision } from "./decision";
  *                              der Kanal «adult» und das Intro darf noch.)
  *   dispose()    React-Unmount-Cleanup: abbestellen, nie mehr starten.
  *
- * Entschieden wird höchstens EINMAL; danach ist der Kanal abbestellt.
+ * Entschieden wird höchstens EINMAL; danach sind beide Kanäle abbestellt.
  */
 export function createIntroStarter(opts: {
   /** decideIntro, verpackt mit seiner Umgebung — setzt den Marker! */
   decide: () => IntroDecision;
   /** Alters-Kanal (lib/consent/client.ts, onAgeAnswerChange). */
   onAgeChange: (cb: (age: AgeAnswer) => void) => () => void;
+  /** Steht die Altersabfrage gerade vor dem Besucher? (Store unten.) */
+  isGateOpen: () => boolean;
+  /** Sichtbarkeits-Kanal der Abfrage (subscribeAgeGateOpen unten). */
+  onGateChange: (cb: () => void) => () => void;
   /** Entscheidung «play»: Intro jetzt wirklich starten. */
   onPlay: () => void;
   /** Entscheidung «skip»: nichts spielt — Vor-Hydrations-Deckel wegräumen. */
   onSkip: () => void;
 }) {
   let settled = false;
-  let unsubscribe: (() => void) | null = null;
+  let lastAge: AgeAnswer = null;
+  let unsubAge: (() => void) | null = null;
+  let unsubGate: (() => void) | null = null;
 
   const settle = () => {
     settled = true;
-    if (unsubscribe !== null) {
-      unsubscribe();
-      unsubscribe = null;
+    if (unsubAge !== null) {
+      unsubAge();
+      unsubAge = null;
+    }
+    if (unsubGate !== null) {
+      unsubGate();
+      unsubGate = null;
     }
   };
 
-  const tryStart = (age: AgeAnswer) => {
+  const tryStart = () => {
     if (settled) return;
     // Abfrage offen (null) oder verneint («minor»): decide() NICHT anrufen —
     // sonst stünde der «gesehen»-Marker, bevor je ein Bild lief.
-    if (age !== "adult") return;
+    if (lastAge !== "adult") return;
+    // Cookie sagt «adult», aber die Abfrage steht (noch) vor dem Besucher —
+    // etwa nach dem Bestätigungs-Klick, bevor React sie weggeräumt hat, oder
+    // weil Server-HTML und Cookie auseinanderliefen (Kopfkommentar). Erst
+    // wenn sie zu ist, darf die Inszenierung los; den Weckruf liefert der
+    // Sichtbarkeits-Kanal.
+    if (opts.isGateOpen()) return;
     settle();
     if (opts.decide() === "play") {
       opts.onPlay();
@@ -67,9 +96,14 @@ export function createIntroStarter(opts: {
 
   return {
     begin(age: AgeAnswer) {
-      tryStart(age);
-      if (!settled && unsubscribe === null) {
-        unsubscribe = opts.onAgeChange(tryStart);
+      lastAge = age;
+      tryStart();
+      if (!settled && unsubAge === null) {
+        unsubAge = opts.onAgeChange((next) => {
+          lastAge = next;
+          tryStart();
+        });
+        unsubGate = opts.onGateChange(tryStart);
       }
     },
     dispose: settle,
@@ -112,4 +146,44 @@ export function subscribeIntroActive(listener: () => void): () => void {
 export function resetIntroActiveForTests(): void {
   introActive = false;
   introActiveListeners.clear();
+}
+
+/* ---------------------------------------------------------------------------
+ * «Steht die Altersabfrage gerade vor dem Besucher?» — das Gegenstück in
+ * die andere Richtung. NUR ConsentGate.tsx schreibt hier (Layout-Effekt:
+ * der läuft VOR den passiven Effekten des — womöglich später gestreamten —
+ * Seiteninhalts, der Wächter oben liest also nie einen veralteten Wert).
+ * Der Wächter liest und abonniert; am VERHALTEN der Einwilligungslogik
+ * ändert dieser Kanal nichts — er meldet nur, was ohnehin sichtbar ist.
+ *
+ * Serverseitig/initial `false`: solange kein ConsentGate etwas gemeldet
+ * hat, gilt die Abfrage als zu — exakt das bisherige Verhalten, damit das
+ * Intro auf Seiten ohne Gate (bestätigtes Cookie) sofort spielen darf.
+ * ------------------------------------------------------------------------- */
+
+let ageGateOpen = false;
+const ageGateListeners = new Set<() => void>();
+
+/** Nur ConsentGate.tsx schreibt hier: true solange die Abfrage gezeigt wird. */
+export function setAgeGateOpen(open: boolean): void {
+  if (ageGateOpen === open) return;
+  ageGateOpen = open;
+  for (const listener of [...ageGateListeners]) listener();
+}
+
+export function isAgeGateOpen(): boolean {
+  return ageGateOpen;
+}
+
+export function subscribeAgeGateOpen(listener: () => void): () => void {
+  ageGateListeners.add(listener);
+  return () => {
+    ageGateListeners.delete(listener);
+  };
+}
+
+/** Nur für Tests — Produktion setzt den Store nie hart zurück. */
+export function resetAgeGateOpenForTests(): void {
+  ageGateOpen = false;
+  ageGateListeners.clear();
 }

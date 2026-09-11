@@ -4,7 +4,13 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 300; /* über allem, auch über dem CartDrawer (100) */
+  /* Über ALLEM — auch über Intro-Overlay (410) und Vor-Hydrations-Deckel
+     (400): die Abfrage ist Bedingung, das Intro nur Inszenierung. Regulär
+     koexistieren die beiden nie (der Startwächter lib/intro/starter.ts
+     wartet, bis die Abfrage zu ist); liefe das Intro je fälschlich an,
+     bliebe die Abfrage trotzdem vollständig sichtbar und bedienbar, statt
+     mitten in der Animation hervorzuploppen. */
+  z-index: 500;
   background: var(--c-ground);
   display: grid;
   place-items: center;
