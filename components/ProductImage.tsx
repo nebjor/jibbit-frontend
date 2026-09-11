@@ -29,7 +29,7 @@ export type ProductImageVariant = "card" | "hero" | "thumb";
  *
  * Hergeleitet aus den Layouts (`--page-max` 1280 px abzüglich 2 × 24 px
  * Innenabstand = 1232 px nutzbar):
- *   card  — app/shop/shop.module.css: 2 Spalten, ab 640 px 3, ab 1100 px 4.
+ *   card  — app/page.module.css: 2 Spalten, ab 640 px 3, ab 1100 px 4.
  *           Vierspaltig sind das rund 296 px je Kachel.
  *   hero  — app/products/[handle]/product.module.css: ab 900 px teilt sich der
  *           Inhalt in `1.1fr 1fr` mit 48 px Spalt, die Bildspalte misst also

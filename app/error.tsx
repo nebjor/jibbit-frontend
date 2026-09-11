@@ -53,7 +53,7 @@ export default function Error({
               Nochmal versuchen
             </button>
           )}
-          <Link href="/shop" className={styles.alt}>
+          <Link href="/" className={styles.alt}>
             Zum Shop
           </Link>
         </div>
