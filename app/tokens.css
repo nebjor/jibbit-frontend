@@ -25,6 +25,13 @@
   --c-accent: #e11b22;
   --c-on-accent: #ffffff;
 
+  /* ---- Colour: intro smoke ---------------------------------------------
+     Kräftiger, dunkler Rauchton fürs Startseiten-Intro (SmokeCloud). Muss
+     sich auf --c-ground DEUTLICH absetzen — der frühere --c-line-Schleier
+     war auf grossen Flächen unsichtbar. SmokeCloud.test.ts prüft den
+     Kontrast der beiden Tokens; beim Colorway-Wechsel hier mitziehen. */
+  --c-smoke: #2b2926;
+
   /* ---- Colour: semantic (derived from the palette, not new hues) ------- */
   --c-success: #1f7a3d;
   --c-warning: #a86b00;
