@@ -51,8 +51,8 @@ import "./intro-global.css";
  * wenn das Alters-Cookie schon «adult» sagt — nur dann startet das Intro
  * mit dem ersten Paint. Ist das Alter offen, deckt die serverseitig
  * gerenderte Altersabfrage die Seite ab (kein Aufblitzen), und ein Deckel
- * dürfte hier gar nicht liegen: er läge ÜBER der Abfrage (z-index 400 gegen
- * 300) und der Besucher könnte nicht antworten. Startet das Intro später
+ * hätte hier nichts verloren (er liegt seit der Härtung ohnehin UNTER der
+ * Abfrage, z-index 400 gegen 500). Startet das Intro später
  * aus der Bestätigung heraus, setzt IntroOverlay.tsx das Attribut selbst —
  * synchron im Klick, bevor die Abfrage aus dem DOM geht.
  */

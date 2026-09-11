@@ -9,8 +9,9 @@
     content: "";
     position: fixed;
     inset: 0;
-    /* Unter dem Intro-Overlay (410); die Altersabfrage (300) ist zu, wenn
-       der Deckel liegt — er darf sie darum nie verdecken müssen. */
+    /* Unter dem Intro-Overlay (410) und unter der Altersabfrage (500):
+       die ist zu, wenn der Deckel regulär liegt — und bliebe selbst im
+       Fehlerfall sichtbar und bedienbar. */
     z-index: 400;
     background: var(--c-ground);
   }
