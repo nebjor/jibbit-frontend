@@ -12,9 +12,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getCategories(),
   ]);
 
+  // "/shop" fehlt bewusst: die Adresse ist nur noch eine dauerhafte
+  // Umleitung auf die Startseite — Umleitungen gehören nicht in die Sitemap.
   const staticRoutes = [
     "",
-    "/shop",
     "/impressum",
     "/agb",
     "/datenschutz",
@@ -34,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...categories.map((c) => ({
       // Kodieren: Handles können `&` oder Umlaute enthalten.
-      url: `${BASE}/shop?kategorie=${encodeURIComponent(c.handle)}`,
+      url: `${BASE}/?kategorie=${encodeURIComponent(c.handle)}`,
       lastModified: new Date(),
       priority: 0.8,
     })),

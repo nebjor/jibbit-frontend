@@ -100,7 +100,7 @@ export function CartDrawer() {
             <p className={styles.emptyText}>
               Kein Bock auf 6.&ndash; für Papers und Filter? Eben.
             </p>
-            <Link href="/shop" className={styles.emptyCta} onClick={closeCart}>
+            <Link href="/" className={styles.emptyCta} onClick={closeCart}>
               Zum Shop
             </Link>
           </div>

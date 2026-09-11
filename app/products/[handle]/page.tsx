@@ -109,12 +109,12 @@ export default async function ProductPage({
       <TrackProductView product={product} />
 
       <nav className={styles.crumbs} aria-label="Brotkrümelnavigation">
-        <Link href="/shop">Shop</Link>
+        <Link href="/">Shop</Link>
         <span aria-hidden="true">/</span>
         {category && (
           <>
             {/* Kodiert: Handles können `&` oder Umlaute enthalten. */}
-            <Link href={`/shop?kategorie=${encodeURIComponent(category.handle)}`}>
+            <Link href={`/?kategorie=${encodeURIComponent(category.handle)}`}>
               {category.name}
             </Link>
             <span aria-hidden="true">/</span>

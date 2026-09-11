@@ -1,5 +1,5 @@
 import Link from "next/link";
-import styles from "./shop.module.css";
+import styles from "./page.module.css";
 
 /**
  * Standardverhalten für JEDE Kategorie ohne Produkte — nicht nur für eine
@@ -11,6 +11,7 @@ import styles from "./shop.module.css";
  * Kategorie ist kein Fehlschlag des Kunden und keine erfolglose Eingabe,
  * sondern eine Ankündigung des Sortiments. Deshalb «bald verfügbar» statt
  * «nichts gefunden» — freundlich, kurz, mit Weg zurück ins Sortiment.
+ * Das Sortiment liegt auf der Startseite; der Link entfernt nur den Filter.
  */
 export function CategoryComingSoon({ categoryName }: { categoryName: string }) {
   return (
@@ -21,7 +22,7 @@ export function CategoryComingSoon({ categoryName }: { categoryName: string }) {
         Artikel sind bald da. Schau in der Zwischenzeit im übrigen Shop
         vorbei.
       </p>
-      <Link href="/shop" className={styles.emptyCta}>
+      <Link href="/" className={styles.emptyCta}>
         Zum ganzen Sortiment
       </Link>
     </div>

@@ -8,22 +8,26 @@
  * String-Vergleich gegen die geladene Kategorienliste, kein Teilstring,
  * kein Präfix — `filter` darf `filter-tips` nicht mitmarkieren und
  * umgekehrt.
+ *
+ * Der Katalog liegt auf der STARTSEITE («shop ist die neue startseite») —
+ * aktiv wird also nur auf `/` markiert. Die alte Adresse /shop ist nur
+ * noch eine dauerhafte Umleitung und zählt hier nicht.
  */
 
 /**
  * Welcher Navigationseintrag ist aktiv?
  *
- * @returns das aktive Kategorie-Handle; `""` für „Alles“ (Shop ohne oder mit
- *   unbekanntem `kategorie`-Parameter — die Seite zeigt dann das ganze
+ * @returns das aktive Kategorie-Handle; `""` für „Alles“ (Katalog ohne oder
+ *   mit unbekanntem `kategorie`-Parameter — die Seite zeigt dann das ganze
  *   Sortiment, also ist „Alles“ der ehrliche Zustand); `null` ausserhalb
- *   des Shops (kein Eintrag aktiv).
+ *   des Katalogs (kein Eintrag aktiv).
  */
 export function activeCategory(
   pathname: string,
   kategorie: string | null,
   handles: readonly string[],
 ): string | null {
-  if (pathname !== "/shop") return null;
+  if (pathname !== "/") return null;
   if (kategorie !== null && handles.includes(kategorie)) return kategorie;
   return "";
 }
