@@ -89,7 +89,7 @@ export default async function SuchePage({
                 Vielleicht führen wir den Artikel nicht — oder er heisst bei
                 uns anders.
               </p>
-              <Link href="/shop" className={styles.emptyCta}>
+              <Link href="/" className={styles.emptyCta}>
                 Ganzes Sortiment ansehen
               </Link>
             </div>

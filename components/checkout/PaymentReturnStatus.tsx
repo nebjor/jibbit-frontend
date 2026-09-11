@@ -171,7 +171,7 @@ export function PaymentReturnStatus() {
         hast, wird die Bestellung automatisch abgeschlossen — die Bestätigung
         mit allen Details kommt per E-Mail.
       </p>
-      <Link href="/shop" className={styles.secondaryCta}>
+      <Link href="/" className={styles.secondaryCta}>
         Zurück zum Shop
       </Link>
     </div>

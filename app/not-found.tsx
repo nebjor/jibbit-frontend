@@ -15,7 +15,7 @@ export default function NotFound() {
         Diese Seite gibt&rsquo;s nicht (mehr). Vielleicht ein alter Link oder ein
         Tippfehler. Im Shop wirst du eher fündig.
       </p>
-      <Link href="/shop" className={styles.cta}>
+      <Link href="/" className={styles.cta}>
         Zum Shop
       </Link>
     </div>

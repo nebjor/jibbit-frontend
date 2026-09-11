@@ -47,13 +47,13 @@ export function CategoryNav({ categories }: { categories: CategoryView[] }) {
 
   return (
     <nav ref={ref} className={styles.nav} aria-label="Kategorien">
-      <Link href="/shop" aria-current={active === "" ? "page" : undefined}>
+      <Link href="/" aria-current={active === "" ? "page" : undefined}>
         Alles
       </Link>
       {categories.map((c) => (
         <Link
           key={c.id}
-          href={`/shop?kategorie=${encodeURIComponent(c.handle)}`}
+          href={`/?kategorie=${encodeURIComponent(c.handle)}`}
           aria-current={active === c.handle ? "page" : undefined}
         >
           {c.name}

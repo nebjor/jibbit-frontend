@@ -1,167 +1,39 @@
-/* ---- hero -------------------------------------------------------------- */
-.hero {
-  background: var(--c-surface);
-  border-bottom: var(--border-w) solid var(--c-line);
+.wrap {
+  padding-block: var(--s-3) var(--s-8);
 }
 
-.heroInner {
-  padding-block: var(--s-7) var(--s-8);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s-4);
-  max-width: 900px;
+/* Kompakter Seitenkopf: Titel und Produktzahl auf einer Grundlinie, darunter
+   eine Beschreibungszeile. Die frühere Kombination aus Eyebrow, 56px-Titel,
+   Beschreibung, Filterreihe und eigener Zählzeile hat zusammen mit dem
+   Header die halbe Notebook-Höhe gefüllt, bevor ein Produkt sichtbar war. */
+.head {
+  max-width: 72ch;
+  margin-bottom: var(--s-3);
 }
 
-.h1 {
-  font-size: clamp(40px, 11vw, 96px);
+.headRow {
   display: flex;
   align-items: baseline;
+  gap: var(--s-3);
   flex-wrap: wrap;
-  gap: 0.18em;
 }
 
-.heroLogo {
-  font-size: 1em;
-}
-
-.lead {
-  font-size: clamp(16px, 2.4vw, 20px);
-  max-width: 52ch;
-  color: var(--c-ink);
-}
-
-.tagline {
-  font-family: var(--font-display);
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  color: var(--c-muted);
-  max-width: 44ch;
-}
-
-/* The single primary CTA of the landing page. */
-.cta {
-  margin-top: var(--s-3);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-  padding: 0 var(--s-7);
-  background: var(--c-accent);
-  color: var(--c-on-accent);
-  border-radius: var(--radius);
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-}
-
-.cta:hover {
-  text-decoration: none;
-  filter: brightness(0.92);
-}
-
-/* ---- trust ------------------------------------------------------------- */
-.trust {
-  background: var(--c-ground);
-  border-bottom: var(--border-w) solid var(--c-line);
-}
-
-.trustGrid {
-  list-style: none;
-  padding-block: var(--s-6);
+.title {
+  font-size: clamp(26px, 4vw, 36px);
   margin: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--s-5);
 }
 
-.trustTitle {
-  font-size: 14px;
-  letter-spacing: var(--tracking-label);
-  margin-bottom: var(--s-2);
-}
-
-.trustGrid p {
+.count {
   font-size: 13px;
   color: var(--c-muted);
 }
 
-/* ---- generic section --------------------------------------------------- */
-.section {
-  padding-block: var(--s-7);
-}
-
-.sectionHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-4);
-  flex-wrap: wrap;
-}
-
-.sectionTitle {
-  font-size: clamp(24px, 5vw, 36px);
-  margin-bottom: var(--s-5);
-}
-
-.sectionHead .sectionTitle {
-  margin-bottom: var(--s-5);
-}
-
-.sectionLink {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-}
-
-/* ---- categories -------------------------------------------------------- */
-.cats {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--s-4);
-}
-
-.cat {
-  background: var(--c-surface);
-  border: var(--border-w) solid var(--c-line);
-  border-radius: var(--radius);
-  padding: var(--s-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  transition: border-color var(--dur) var(--ease);
-}
-
-.cat:hover {
-  border-color: var(--c-ink);
-  text-decoration: none;
-}
-
-.catName {
-  font-size: 24px;
-}
-
-.catDesc {
-  font-size: 14px;
+.desc {
+  margin-top: var(--s-1);
   color: var(--c-muted);
-  flex: 1;
+  font-size: 14px;
 }
 
-.catMore {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  margin-top: var(--s-3);
-}
-
-/* ---- product grid ------------------------------------------------------ */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -169,61 +41,51 @@
 }
 
 .empty {
-  color: var(--c-muted);
-  padding: var(--s-6) 0;
-}
-
-/* ---- manifesto --------------------------------------------------------- */
-.manifesto {
-  background: var(--c-ink);
-  color: var(--c-ground);
-}
-
-.manifestoInner {
-  padding-block: var(--s-8);
-  max-width: 720px;
+  padding: var(--s-8) 0;
+  max-width: 46ch;
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: var(--s-3);
+  align-items: flex-start;
 }
 
-.manifestoTitle {
-  font-size: clamp(26px, 5vw, 40px);
-  color: var(--c-ground);
+.emptyTitle {
+  font-size: 28px;
 }
 
-.manifestoInner p {
-  font-size: 16px;
-  opacity: 0.85;
+.empty p {
+  color: var(--c-muted);
 }
 
-.manifestoLink {
+.emptyCta {
+  margin-top: var(--s-2);
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s-5);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
-  margin-top: var(--s-2);
+  font-weight: 700;
+}
+
+.emptyCta:hover {
+  background: var(--c-ink);
+  color: var(--c-ground);
+  text-decoration: none;
 }
 
 @media (min-width: 640px) {
-  .trustGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .cats {
-    grid-template-columns: repeat(3, 1fr);
-  }
   .grid {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--s-4);
   }
 }
 
-@media (min-width: 1000px) {
-  .trustGrid {
+@media (min-width: 1100px) {
+  .grid {
     grid-template-columns: repeat(4, 1fr);
-  }
-  .heroInner {
-    padding-block: var(--s-9) var(--s-9);
   }
 }

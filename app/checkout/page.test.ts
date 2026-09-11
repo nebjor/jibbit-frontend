@@ -143,10 +143,10 @@ describe("Kasse — Zugangsprüfung", () => {
     expect(mocks.readCartState).toHaveBeenCalledTimes(1)
   })
 
-  it("prüft erst den Warenkorb: leer heisst /shop, nicht Anmeldung", async () => {
+  it("prüft erst den Warenkorb: leer heisst Startseite, nicht Anmeldung", async () => {
     setup({ cart: EMPTY_CART, session: null })
     const err = await CheckoutPage().catch((e: unknown) => e)
-    expect((err as RedirectSignal).to).toBe("/shop")
+    expect((err as RedirectSignal).to).toBe("/")
   })
 
   it("lässt Angemeldete durch", async () => {

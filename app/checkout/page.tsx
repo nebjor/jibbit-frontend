@@ -36,7 +36,7 @@ export default async function CheckoutPage() {
   const cart = await readCartState();
 
   // Nothing to check out. Bouncing to the shop beats an empty form.
-  if (cart.count === 0) redirect("/shop");
+  if (cart.count === 0) redirect("/");
 
   const sessionToken = await readSessionToken();
 

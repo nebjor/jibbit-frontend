@@ -127,7 +127,7 @@ export default async function OrderConfirmationPage({
         </section>
       )}
 
-      <Link href="/shop" className={styles.secondaryCta}>
+      <Link href="/" className={styles.secondaryCta}>
         Weiter einkaufen
       </Link>
     </div>
