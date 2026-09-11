@@ -7,6 +7,9 @@ import { activeCategory } from "./nav";
  * so gewählt, dass ein Teilstring-/Präfix-Vergleich („filter" in
  * „filter-tips") oder ein kollabiertes Auffang-Handle sofort auffliegen
  * würde.
+ *
+ * Der Katalog liegt inzwischen auf der Startseite — aktiv wird auf `/`
+ * markiert, nicht mehr auf /shop (dort läuft nur noch die Umleitung).
  */
 const HANDLES = ["papers", "filter", "filter-tips", "aschenbecher"] as const;
 
@@ -20,40 +23,41 @@ function activeEntries(pathname: string, kategorie: string | null): string[] {
 
 describe("activeCategory", () => {
   it("markiert bei ?kategorie=filter-tips NUR den Reiter filter-tips", () => {
-    expect(activeCategory("/shop", "filter-tips", HANDLES)).toBe("filter-tips");
-    expect(activeEntries("/shop", "filter-tips")).toEqual(["filter-tips"]);
+    expect(activeCategory("/", "filter-tips", HANDLES)).toBe("filter-tips");
+    expect(activeEntries("/", "filter-tips")).toEqual(["filter-tips"]);
   });
 
   it("markiert bei ?kategorie=filter NUR filter, nicht filter-tips", () => {
-    expect(activeCategory("/shop", "filter", HANDLES)).toBe("filter");
-    expect(activeEntries("/shop", "filter")).toEqual(["filter"]);
+    expect(activeCategory("/", "filter", HANDLES)).toBe("filter");
+    expect(activeEntries("/", "filter")).toEqual(["filter"]);
   });
 
   it("markiert für jede Kategorie genau EINEN Eintrag", () => {
     for (const handle of HANDLES) {
-      expect(activeEntries("/shop", handle)).toHaveLength(1);
+      expect(activeEntries("/", handle)).toHaveLength(1);
     }
   });
 
   it("markiert ohne Parameter den Alles-Reiter", () => {
-    expect(activeCategory("/shop", null, HANDLES)).toBe("");
-    expect(activeEntries("/shop", null)).toEqual([""]);
+    expect(activeCategory("/", null, HANDLES)).toBe("");
+    expect(activeEntries("/", null)).toEqual([""]);
   });
 
   it("fällt bei unbekannter Kategorie auf Alles zurück — die Seite zeigt dann das ganze Sortiment", () => {
-    expect(activeCategory("/shop", "gibts-nicht", HANDLES)).toBe("");
+    expect(activeCategory("/", "gibts-nicht", HANDLES)).toBe("");
   });
 
   it("vergleicht exakt, nie als Teilstring", () => {
-    expect(activeCategory("/shop", "filt", HANDLES)).toBe("");
-    expect(activeCategory("/shop", "ilter", HANDLES)).toBe("");
-    expect(activeCategory("/shop", "filter-", HANDLES)).toBe("");
-    expect(activeCategory("/shop", "filter-tips-extra", HANDLES)).toBe("");
+    expect(activeCategory("/", "filt", HANDLES)).toBe("");
+    expect(activeCategory("/", "ilter", HANDLES)).toBe("");
+    expect(activeCategory("/", "filter-", HANDLES)).toBe("");
+    expect(activeCategory("/", "filter-tips-extra", HANDLES)).toBe("");
   });
 
-  it("markiert ausserhalb des Shops nichts", () => {
-    expect(activeCategory("/", "filter", HANDLES)).toBeNull();
+  it("markiert ausserhalb des Katalogs nichts", () => {
     expect(activeCategory("/products/x", null, HANDLES)).toBeNull();
-    expect(activeCategory("/shop/", "filter", HANDLES)).toBeNull();
+    expect(activeCategory("/checkout", "filter", HANDLES)).toBeNull();
+    // Die alte Shop-Adresse ist nur noch eine Umleitung — kein aktiver Reiter.
+    expect(activeCategory("/shop", "filter", HANDLES)).toBeNull();
   });
 });

@@ -70,7 +70,7 @@ export default async function BestellungenPage() {
             etwas brauchst.
           </p>
           <p className={styles.footNote}>
-            <Link href="/shop">Zum Shop</Link>
+            <Link href="/">Zum Shop</Link>
           </p>
         </>
       ) : (
