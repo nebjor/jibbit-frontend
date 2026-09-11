@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -17,7 +18,11 @@ import {
   writeAgeAnswer,
   writeConsent,
 } from "@/lib/consent/client";
-import { isIntroActive, subscribeIntroActive } from "@/lib/intro/starter";
+import {
+  isIntroActive,
+  setAgeGateOpen,
+  subscribeIntroActive,
+} from "@/lib/intro/starter";
 import { AgeGate } from "./AgeGate";
 import { ConsentBanner } from "./ConsentBanner";
 
@@ -101,6 +106,22 @@ export function ConsentGate({
       document.body.style.overflow = prev;
     };
   }, [showGate, showBanner]);
+
+  // Meldet dem Intro-Startwächter (lib/intro/starter.ts), ob die
+  // Altersabfrage gerade VOR dem Besucher steht. Das Cookie allein taugt
+  // dafür nicht: Server-HTML und Cookie können auseinanderlaufen (zweiter
+  // Tab setzt das Cookie zwischen Request und Hydration; ein Cache liefert
+  // die cookielose HTML-Variante an einen Browser mit Jahres-Cookie) —
+  // dann sagte das Cookie «adult», während die Abfrage hier noch offen
+  // war, und das Intro liefe über ihr. BEWUSST ein Layout-Effekt: er läuft
+  // vor den passiven Effekten des (womöglich später gestreamten)
+  // Seiteninhalts — das IntroOverlay liest beim Mount also nie einen
+  // veralteten Wert. Gemeldet wird NUR der Anzeige-Zustand; am Verhalten
+  // der Einwilligungslogik selbst ändert sich nichts.
+  useLayoutEffect(() => {
+    setAgeGateOpen(showGate);
+    return () => setAgeGateOpen(false);
+  }, [showGate]);
 
   const confirmAge = useCallback(() => {
     writeAgeAnswer("adult");

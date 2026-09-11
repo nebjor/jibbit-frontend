@@ -6,8 +6,9 @@
 .overlay {
   position: fixed;
   inset: 0;
-  /* Über Altersabfrage (300) und Cookie-Hinweis (290): erst die
-     Inszenierung, dann die Pflichten — Begründung in HomeIntro.tsx.
+  /* Über der Seite und dem Cookie-Hinweis (290), aber UNTER der
+     Altersabfrage (500): sie ist Bedingung, das Intro nur Inszenierung —
+     regulär koexistieren beide ohnehin nie (lib/intro/starter.ts).
      400 gehört dem Vor-Hydrations-Deckel (intro-global.css). */
   z-index: 410;
 }

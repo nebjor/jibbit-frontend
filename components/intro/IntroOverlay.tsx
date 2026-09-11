@@ -9,7 +9,12 @@ import {
   markIntroDone,
   type IntroStorage,
 } from "@/lib/intro/decision";
-import { createIntroStarter, setIntroActive } from "@/lib/intro/starter";
+import {
+  createIntroStarter,
+  isAgeGateOpen,
+  setIntroActive,
+  subscribeAgeGateOpen,
+} from "@/lib/intro/starter";
 import { onAgeAnswerChange, readAgeAnswer } from "@/lib/consent/client";
 import { INTRO_TIMINGS, type IntroPhase } from "@/lib/intro/timings";
 import { SmokeCloud, type SmokeState } from "./SmokeCloud";
@@ -161,6 +166,12 @@ export function IntroOverlay() {
     const starter = createIntroStarter({
       decide: () => decideIntro({ prefersReducedMotion: reduced, storage }),
       onAgeChange: onAgeAnswerChange,
+      // Nicht nur das Cookie zählt: solange die Altersabfrage sichtbar ist
+      // (ConsentGate meldet es über den Store), wartet der Wächter — sonst
+      // spielte das Intro über der offenen Abfrage, wenn Cookie und
+      // Server-HTML auseinanderlaufen (Begründung: lib/intro/starter.ts).
+      isGateOpen: isAgeGateOpen,
+      onGateChange: subscribeAgeGateOpen,
       onPlay: startIntro,
       // Kein Intro — falls das Inline-Script den Deckel doch gesetzt hat,
       // weg damit, die Seite gehört sofort dem Besucher.
