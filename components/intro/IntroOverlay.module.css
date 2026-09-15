@@ -75,3 +75,24 @@
 .overlay[data-phase="logoFlight"] .logoBox {
   opacity: 1;
 }
+
+/* Das Logo kommt beim Auftauchen leicht zu gross herein und setzt sich
+   waehrend «logoHold» auf seine Groesse — eine kleine, ruhige Bewegung.
+   WARUM: Vorher stand es die ganze Phase reglos; zwei Sekunden Stillstand
+   mitten in einer Animation lesen sich als Wartezeit, nicht als Inszenierung.
+   Die Phase ist jetzt kuerzer UND in Bewegung. Nur transform — laeuft auf der
+   Grafikeinheit, kostet auf schwachen Geraeten nichts.
+
+   In «logoFlight» darf diese Regel NICHT mehr greifen: dort setzt
+   IntroOverlay.tsx das transform inline (der zur Laufzeit gemessene
+   FLIP-Flug), und eine konkurrierende Klassenregel wuerde ihn verbiegen. */
+.overlay[data-phase="logoReveal"] .logoBox {
+  transform: scale(1.08);
+}
+
+.overlay[data-phase="logoHold"] .logoBox {
+  transform: scale(1);
+  transition:
+    opacity var(--t-logo-reveal) linear,
+    transform var(--t-logo-hold) var(--ease);
+}
