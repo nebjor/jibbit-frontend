@@ -36,12 +36,12 @@ export const INTRO_TIMINGS: Readonly<Record<IntroPhase, number>> = {
   jointIn: 900,
   jointBurn: 500,
   smokeGrow: 800,
-  logoReveal: 600,
-  logoHold: 2000,
-  logoFlight: 650,
+  logoReveal: 500,
+  logoHold: 700,
+  logoFlight: 600,
 };
 
-/** Gesamtdauer des ungestörten Durchlaufs (derzeit 5800 ms). */
+/** Gesamtdauer des ungestörten Durchlaufs (derzeit 4350 ms). */
 export const INTRO_TOTAL_MS = INTRO_PHASE_ORDER.reduce(
   (sum, phase) => sum + INTRO_TIMINGS[phase],
   0,

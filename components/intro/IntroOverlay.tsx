@@ -57,6 +57,7 @@ const TIMING_VARS = {
   "--t-joint-in": `${INTRO_TIMINGS.jointIn}ms`,
   "--t-smoke-grow": `${INTRO_TIMINGS.smokeGrow}ms`,
   "--t-logo-reveal": `${INTRO_TIMINGS.logoReveal}ms`,
+  "--t-logo-hold": `${INTRO_TIMINGS.logoHold}ms`,
   "--t-logo-flight": `${INTRO_TIMINGS.logoFlight}ms`,
 } as CSSProperties;
 
