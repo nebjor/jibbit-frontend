@@ -127,6 +127,35 @@ export function defaultVariant(
 }
 
 /**
+ * Name des Query-Parameters, der eine Variante vorauswählt:
+ * `/products/<handle>?variant=<variantId>`.
+ *
+ * Google verlangt für Produktvarianten, dass sich JEDE Variante über eine
+ * eigene URL direkt vorauswählen lässt («using URL query parameters») — mit
+ * passendem Bild, Preis, Verfügbarkeit und Warenkorb-Knopf. Genau diese URL
+ * steht im JSON-LD an `Offer.url` (lib/seo/jsonld.ts); die Seite liest den
+ * Parameter serverseitig (app/products/[handle]/page.tsx). Die Varianten-ID
+ * und kein sprechender Slug, weil Titel im Admin umbenannt werden, IDs nicht.
+ */
+export const VARIANT_PARAM = "variant";
+
+/**
+ * Welche Variante ist beim Öffnen gewählt — mit Rücksicht auf `?variant=`?
+ *
+ * Eine bekannte ID gewinnt, auch wenn die Variante ausverkauft ist: wer über
+ * den Link zum Display kommt, soll das Display sehen (samt «Ausverkauft»),
+ * nicht stillschweigend das Einzelstück. Unbekannt, leer oder mehrfach
+ * gesetzt -> die übliche Vorauswahl.
+ */
+export function preselectedVariant(
+  variants: ProductVariantView[],
+  requested: string | string[] | undefined,
+): ProductVariantView | undefined {
+  const id = Array.isArray(requested) ? requested[0] : requested;
+  return (id && variants.find((v) => v.id === id)) || defaultVariant(variants);
+}
+
+/**
  * Is this pack genuinely cheaper per unit than buying the same number of
  * singles? Returns the saving in percent, or null when it is a wash.
  *

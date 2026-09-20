@@ -26,6 +26,12 @@ describe("PRODUCT_FIELDS", () => {
     expect(PRODUCT_FIELDS).toContain("variants.thumbnail");
   });
 
+  it("fordert die drei nativen Felder an, aus denen die GTIN kommt", () => {
+    expect(PRODUCT_FIELDS).toContain("variants.ean");
+    expect(PRODUCT_FIELDS).toContain("variants.upc");
+    expect(PRODUCT_FIELDS).toContain("variants.barcode");
+  });
+
   it("fordert weiterhin Preise, Bilder, Kategorien und Metadaten an", () => {
     for (const f of [
       "variants.calculated_price",
@@ -90,5 +96,31 @@ describe("Vorschaubild einer Variante", () => {
   it("Leer- und Whitespace-Strings zählen als nicht gepflegt", () => {
     expect(variant({ thumbnail: "" }).image).toBeUndefined();
     expect(variant({ thumbnail: "   " }).image).toBeUndefined();
+  });
+});
+
+describe("GTIN einer Variante", () => {
+  const variant = (extra: Record<string, unknown>) =>
+    toVariantView({ id: "v", title: "Standard", ...extra } as never, []);
+
+  it("liest GTIN-13 aus ean, GTIN-12 aus upc, GTIN-8 aus barcode", () => {
+    expect(variant({ ean: "8595134501285" }).gtin).toBe("8595134501285");
+    expect(variant({ upc: "716165280293" }).gtin).toBe("716165280293");
+    expect(variant({ barcode: "85966789" }).gtin).toBe("85966789");
+  });
+
+  it("nimmt den ersten GÜLTIGEN Wert — ein kaputtes ean verdeckt kein gutes upc", () => {
+    expect(variant({ ean: "8595134501286", upc: "716165280293" }).gtin).toBe(
+      "716165280293",
+    );
+  });
+
+  it("ein hauseigener Lagercode in barcode ist keine GTIN", () => {
+    expect(variant({ barcode: "LAGER-0042" }).gtin).toBeUndefined();
+  });
+
+  it("nicht gepflegt (null oder fehlend): keine GTIN", () => {
+    expect(variant({ ean: null, upc: null, barcode: null }).gtin).toBeUndefined();
+    expect(variant({}).gtin).toBeUndefined();
   });
 });

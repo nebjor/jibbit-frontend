@@ -11,6 +11,8 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { readCartState } from "@/lib/cart/server";
 import { readConsentCookies } from "@/lib/consent/server";
 import { getAnalyticsRuntimeConfig } from "@/lib/analytics/server";
+import { JsonLd } from "@/components/JsonLd";
+import { graph, organizationJsonLd, webSiteJsonLd } from "@/lib/seo/jsonld";
 
 /**
  * MULTI-TENANT: metadataBase, title and OG siteName come from the resolved
@@ -73,10 +75,25 @@ export async function generateViewport(): Promise<Viewport> {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [initialCart, { age, consent }] = await Promise.all([
+  const [initialCart, { age, consent }, tenant] = await Promise.all([
     readCartState(),
     readConsentCookies(),
+    getTenantContext(),
   ]);
+
+  /**
+   * Betrieb und Website als strukturierte Daten — EINMAL im Layout, also auf
+   * jeder Seite. Die Produktseite verweist mit `@id` darauf zurück, statt
+   * Verkäufer und Rückgaberegel je Angebot zu wiederholen.
+   *
+   * MULTI-TENANT: Name und Domain kommen aus dem aufgelösten Mandanten. Die
+   * Anbieterkennzeichnung (Adresse, Telefon) fügt `organizationJsonLd` nur
+   * auf jibbits eigener Domain an — Begründung dort.
+   */
+  const siteJsonLd = graph(
+    organizationJsonLd(tenant.theme),
+    webSiteJsonLd(tenant.theme),
+  );
 
   // PostHog: Schlüssel/Host zur LAUFZEIT aus der Umgebung gelesen und als
   // Props zum Client gereicht — bewusst kein NEXT_PUBLIC_ (Begründung:
@@ -87,6 +104,7 @@ export default async function RootLayout({
   return (
     <html lang="de-CH">
       <body>
+        <JsonLd data={siteJsonLd} />
         <CartProvider initialCart={initialCart}>
           <a href="#main" className="srOnly">
             Zum Inhalt springen
