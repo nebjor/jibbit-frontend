@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveTenantForHost } from "@/lib/tenant/resolve-tenant";
-import { parseMediaPath } from "@/lib/media";
+import { parseMediaPath, resolveImageContentType } from "@/lib/media";
 
 /**
  * Bildproxy: `/media/<host>/<key>` -> `<tenant.backendUrl>/static/<key>`.
@@ -49,15 +49,6 @@ export const runtime = "nodejs";
  */
 const CACHE_CONTROL = "public, max-age=31536000, immutable";
 
-/** Was ein Produktbild sein darf. Alles andere wird nicht durchgereicht. */
-const ALLOWED_CONTENT_TYPES = [
-  "image/webp",
-  "image/jpeg",
-  "image/png",
-  "image/avif",
-  "image/gif",
-];
-
 function notFound() {
   return new NextResponse("Not Found", {
     status: 404,
@@ -97,12 +88,16 @@ export async function GET(
 
   if (!response.ok || !response.body) return notFound();
 
-  const contentType = (response.headers.get("content-type") ?? "")
-    .split(";")[0]
-    .trim();
-  // SVG steht bewusst NICHT auf der Liste: es kann Skripte enthalten, und ein
-  // Produktbild ist nie ein SVG.
-  if (!ALLOWED_CONTENT_TYPES.includes(contentType)) return notFound();
+  // NICHT einfach den Header des Backends übernehmen: Medusas express.static
+  // kennt `.avif` nicht und meldet dafür `application/octet-stream`. Wer hier
+  // nur gegen eine Typliste vergleicht, beantwortet jedes AVIF mit 404 — genau
+  // so sind die Bilder im Shop ausgefallen. Regel und Begründung stehen bei
+  // `resolveImageContentType` in lib/media.ts (dort auch: warum kein SVG).
+  const contentType = resolveImageContentType(
+    response.headers.get("content-type"),
+    parsed.key,
+  );
+  if (!contentType) return notFound();
 
   const headers = new Headers({
     "content-type": contentType,
