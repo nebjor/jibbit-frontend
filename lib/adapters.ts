@@ -22,6 +22,7 @@ import type {
   ProductVariantView,
   ProductView,
 } from "./types";
+import { normalizeGtin } from "./gtin";
 import { MOCK_CATEGORIES } from "./mock-catalog";
 
 /** variant id -> its quantity breaks, as returned by /store/price-tiers. */
@@ -68,6 +69,25 @@ function toCategoryHandle(raw: string | null | undefined): CategoryHandle {
   return h || "zubehoer";
 }
 
+/**
+ * Die GTIN einer Variante aus Medusas drei nativen Feldern.
+ *
+ * Der Katalog-Import legt jede GTIN — gleich welcher Länge — in `ean` ab
+ * (backend/src/scripts/gtin.ts). `upc` und `barcode` werden trotzdem gelesen,
+ * falls dort im Admin von Hand ein Code gepflegt wurde. Es gewinnt der erste
+ * Wert, der die Prüfung besteht — nicht der erste, der da ist: `barcode` darf
+ * im Admin auch ein hauseigener Lagercode sein.
+ */
+function toGtin(
+  v: Pick<StoreProductVariant, "ean" | "upc" | "barcode">,
+): string | undefined {
+  for (const raw of [v.ean, v.upc, v.barcode]) {
+    const gtin = normalizeGtin(raw);
+    if (gtin) return gtin;
+  }
+  return undefined;
+}
+
 /** Exportiert fuer die Regressionstests der Verfuegbarkeit
  *  (lib/product-fields.test.ts) — sonst modulintern. */
 export function toVariantView(
@@ -96,6 +116,7 @@ export function toVariantView(
       typeof v.thumbnail === "string" && v.thumbnail.trim() !== ""
         ? v.thumbnail
         : undefined,
+    gtin: toGtin(v),
     // A single tier is not a quantity discount — it is just the price. Drop it
     // so the product page renders no table instead of a one-row table.
     tiers: tiers.length > 1 ? tiers : [],

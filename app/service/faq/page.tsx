@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/Prose";
+import { JsonLd } from "@/components/JsonLd";
 import { SHIPPING, MIN_AGE, STORE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 
@@ -51,6 +52,11 @@ const FAQS = [
 
 export default function FaqPage() {
   // FAQPage schema so the answers can surface directly in Google.
+  //
+  // Gerendert über <JsonLd>, nicht über ein eigenes <script>: dort wird `<`
+  // escaped. Die Antworten hier sind zwar redaktionell, aber der Ausgabeweg
+  // soll shopweit derselbe sein — sonst ist genau die eine Stelle, die
+  // später dynamischen Text bekommt, die ungeschützte.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -63,10 +69,7 @@ export default function FaqPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       <Prose
         title="Häufige Fragen"
         intro="Das Meiste ist hier schon beantwortet. Wenn nicht, schreib uns einfach."

@@ -5,6 +5,7 @@ import {
   lineTotal,
   nextTier,
   packAdvantagePercent,
+  preselectedVariant,
   pricePerUnit,
   unitPriceFor,
   upgradeHint,
@@ -204,5 +205,29 @@ describe("pricePerUnit", () => {
       tiers: [{ minQuantity: 1, maxQuantity: null, price: 33.6 }],
     });
     expect(pricePerUnit(display, 1)).toBeCloseTo(1.4, 5);
+  });
+});
+
+describe("preselectedVariant (?variant=)", () => {
+  const single = variant({ id: "v1" });
+  const display = variant({ id: "v2", packType: "display", unitsPerPack: 24 });
+
+  it("selects the requested variant — the URL Google crawls per variant", () => {
+    expect(preselectedVariant([single, display], "v2")?.id).toBe("v2");
+  });
+
+  it("keeps a requested variant even when it is sold out", () => {
+    const soldOut = { ...display, inStock: false };
+    expect(preselectedVariant([single, soldOut], "v2")?.id).toBe("v2");
+  });
+
+  it("falls back to the default for unknown, empty or missing ids", () => {
+    for (const requested of ["nope", "", undefined]) {
+      expect(preselectedVariant([display, single], requested)?.id).toBe("v1");
+    }
+  });
+
+  it("takes the first value when the parameter is repeated", () => {
+    expect(preselectedVariant([single, display], ["v2", "v1"])?.id).toBe("v2");
   });
 });

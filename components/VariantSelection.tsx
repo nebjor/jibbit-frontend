@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useMemo,
   useState,
@@ -17,6 +18,12 @@ import {
  * hebt dieser Provider NUR die eine Zeile State an: die Seite bleibt eine
  * Server-Komponente, der Provider umschliesst Galerie und Kaufbox, und beide
  * lesen dieselbe Auswahl.
+ *
+ * ADRESSZEILE: mit `urlParam` schreibt jede Auswahl `?<urlParam>=<id>` in die
+ * URL (`replaceState` — kein Neuladen, kein Verlaufseintrag, kein Server-
+ * Roundtrip). Damit ist die Adresse, die jemand kopiert oder teilt, dieselbe
+ * Varianten-URL, die im JSON-LD an `Offer.url` steht und die die Seite
+ * serverseitig vorauswählt (app/products/[handle]/page.tsx).
  */
 
 interface VariantSelection {
@@ -28,14 +35,29 @@ const Ctx = createContext<VariantSelection | null>(null);
 
 export function VariantSelectionProvider({
   initialId,
+  urlParam,
   children,
 }: {
-  /** Vorauswahl — dieselbe wie in AddToCart (`defaultVariant`). */
+  /** Vorauswahl — `?variant=` oder dieselbe wie in AddToCart (`defaultVariant`). */
   initialId: string | null;
+  /** Query-Parameter, der die Auswahl in der Adresszeile mitführt. */
+  urlParam?: string;
   children: ReactNode;
 }) {
-  const [selectedId, select] = useState<string | null>(initialId);
-  const value = useMemo(() => ({ selectedId, select }), [selectedId]);
+  const [selectedId, setSelectedId] = useState<string | null>(initialId);
+
+  const select = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      if (!urlParam) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set(urlParam, id);
+      window.history.replaceState(null, "", url);
+    },
+    [urlParam],
+  );
+
+  const value = useMemo(() => ({ selectedId, select }), [selectedId, select]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

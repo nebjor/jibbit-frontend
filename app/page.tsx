@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { HomeIntro } from "@/components/intro/HomeIntro";
+import { JsonLd } from "@/components/JsonLd";
 import { CategoryComingSoon } from "./CategoryComingSoon";
 import { SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
+import { breadcrumbJsonLd, graph, itemListJsonLd } from "@/lib/seo/jsonld";
+import { getTenantContext } from "@/lib/tenant/context";
 import styles from "./page.module.css";
 
 /**
@@ -54,6 +57,7 @@ export default async function HomePage({
   const categories = await getCategories();
   const activeCat = categories.find((c) => c.handle === raw);
   const products = await getProducts({ category: activeCat?.handle });
+  const tenant = await getTenantContext();
 
   /**
    * Eine LEERE KATEGORIE ist kein Fehlschlag: der Betreiber hat sie angelegt,
@@ -69,8 +73,37 @@ export default async function HomePage({
     ? activeCat.description
     : "Das ganze Sortiment: Papers, Filter und Zubehör. Boxen und Displays sind pro Stück günstiger — es lohnt sich, kurz nachzurechnen.";
 
+  /**
+   * Der Katalog als `ItemList`: die Startseite ZEIGT Produkte, sie IST keins.
+   * Ohne diese Auskunft muss ein Crawler aus einem Raster von Kacheln raten,
+   * was hier die Hauptsache ist — und Kategoriefilter (`?kategorie=…`) sind
+   * eigene Listen, keine Dubletten derselben Seite.
+   *
+   * Die Brotkrümel bilden denselben Weg ab wie die Kategorienavigation im
+   * Header. Auf der ungefilterten Startseite ist es ein einziger Eintrag —
+   * dann ist die Liste der Weg.
+   *
+   * Steht nichts im Regal («bald verfügbar»), wird auch nichts ausgezeichnet:
+   * eine leere ItemList ist eine Aussage über ein leeres Sortiment.
+   */
+  const base = `https://${tenant.theme.domain}`;
+  const jsonLd = graph(
+    products.length
+      ? itemListJsonLd({
+          products,
+          domain: tenant.theme.domain,
+          name: activeCat ? activeCat.name : "Sortiment",
+        })
+      : undefined,
+    breadcrumbJsonLd([
+      { name: "Shop", url: activeCat ? `${base}/` : undefined },
+      ...(activeCat ? [{ name: activeCat.name }] : []),
+    ]),
+  );
+
   return (
     <>
+      <JsonLd data={jsonLd} />
       {/* Erstbesuchs-Intro: legt sich ÜBER den weiterhin serverseitig
           gerenderten Katalog (Overlay, kein Ersatz). Abfolge mit
           Altersabfrage/Cookie-Hinweis, SEO und Barrierefreiheit sind

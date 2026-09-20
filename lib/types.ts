@@ -63,6 +63,12 @@ export interface ProductVariantView {
    * dann das erste Produktbild.
    */
   image?: string;
+  /**
+   * GTIN dieser Packung (8/12/13/14 Ziffern), bereits geprüft — siehe
+   * lib/gtin.ts. Je Variante, weil Einzelstück und Display zwei Artikel mit
+   * zwei Nummern sind. Nicht gepflegt oder ungültig -> undefined.
+   */
+  gtin?: string;
 }
 
 export interface ProductView {

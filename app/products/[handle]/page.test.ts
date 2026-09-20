@@ -52,6 +52,7 @@ const { VariantSelectionProvider } = await import(
   "@/components/VariantSelection"
 );
 const { ProductImage } = await import("@/components/ProductImage");
+const { JsonLd } = await import("@/components/JsonLd");
 
 const BOX = "https://cdn.example/box.jpg";
 const HEFT = "https://cdn.example/heft.jpg";
@@ -104,9 +105,15 @@ function findAll(el: any, type: unknown): any[] {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-async function renderPage(p: ProductView) {
+async function renderPage(
+  p: ProductView,
+  query: Record<string, string | string[]> = {},
+) {
   mocks.getProduct.mockResolvedValue(p);
-  return ProductPage({ params: Promise.resolve({ handle: p.handle }) });
+  return ProductPage({
+    params: Promise.resolve({ handle: p.handle }),
+    searchParams: Promise.resolve(query),
+  });
 }
 
 describe("Produktseite — Bild folgt der Variante", () => {
@@ -139,6 +146,42 @@ describe("Produktseite — Bild folgt der Variante", () => {
     const el = await renderPage(product());
     const [provider] = findAll(el, VariantSelectionProvider);
     expect(provider.props.initialId).toBe("v_heft");
+  });
+
+  it("`?variant=` wählt die Packung serverseitig vor — Auswahl UND LCP-Bild", async () => {
+    // Das ist die URL, die im JSON-LD an `Offer.url` steht: ein Crawler muss
+    // dort schon im HTML das Display sehen, nicht das Heftchen.
+    const el = await renderPage(product(), { variant: "v_display" });
+    const [provider] = findAll(el, VariantSelectionProvider);
+    expect(provider.props.initialId).toBe("v_display");
+    expect(provider.props.urlParam).toBe("variant");
+    const [hero] = findAll(el, VariantHero);
+    const bySrc = Object.fromEntries(
+      hero.props.slides.map((s: { src: string; node: { props: { priority: boolean } } }) => [
+        s.src,
+        s.node.props.priority,
+      ]),
+    );
+    expect(bySrc).toEqual({ [HEFT]: false, [BOX]: true });
+  });
+
+  it("unbekanntes `?variant=`: die übliche Vorauswahl, kein Fehler", async () => {
+    const el = await renderPage(product(), { variant: "gibt-es-nicht" });
+    const [provider] = findAll(el, VariantSelectionProvider);
+    expect(provider.props.initialId).toBe("v_heft");
+  });
+
+  it("das JSON-LD nennt je Packung genau die URL, die sie vorauswählt", async () => {
+    const el = await renderPage(product());
+    const [jsonLd] = findAll(el, JsonLd);
+    const [group] = jsonLd.props.data["@graph"];
+    expect(group["@type"]).toBe("ProductGroup");
+    expect(
+      group.hasVariant.map((v: { offers: { url: string } }) => v.offers.url),
+    ).toEqual([
+      "https://shop.example/products/elements-ultra-thin?variant=v_heft",
+      "https://shop.example/products/elements-ultra-thin?variant=v_display",
+    ]);
   });
 
   it("nur ein Bild: kein Umschalter, ein ProductImage mit dem ersten Bild — wie bisher", async () => {
