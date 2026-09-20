@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import { Prose, Platzhalter } from "@/components/Prose";
 import { STORE } from "@/lib/config";
+import { robotsMetadata } from "@/lib/seo/indexing";
 
-export const metadata: Metadata = {
-  title: "Impressum",
-  description: `Impressum und Anbieterkennzeichnung von ${STORE.domain}.`,
-  robots: { index: true, follow: false },
-};
+/**
+ * Funktion statt `metadata`-Konstante: ein `robots` auf Seitenebene ersetzt
+ * das des Layouts, und das feste `index: true` hätte die Noindex-Sperre eines
+ * Staging-Deployments für genau diese Seite wieder aufgehoben. Der Schalter
+ * wird zur Laufzeit gelesen — lib/seo/indexing.ts.
+ */
+export function generateMetadata(): Metadata {
+  return {
+    title: "Impressum",
+    description: `Impressum und Anbieterkennzeichnung von ${STORE.domain}.`,
+    robots: robotsMetadata({ index: true, follow: false }),
+  };
+}
 
 export default function ImpressumPage() {
   return (
