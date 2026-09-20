@@ -4,6 +4,10 @@ import { TENANT_CONFIG_HEADER } from "@/lib/tenant/constants";
 import { encodeTenantHeader } from "@/lib/tenant/header-codec";
 import { resolveTenantForHost } from "@/lib/tenant/resolve-tenant";
 import { classifyHost } from "@/lib/tenant/resolve-host";
+import {
+  applyIndexingHeader,
+  isTenantlessAssetPath,
+} from "@/lib/seo/indexing";
 
 /**
  * Host-based tenant resolution — the front door of multi-tenancy.
@@ -26,8 +30,27 @@ import { classifyHost } from "@/lib/tenant/resolve-host";
  * with no control plane deployed — it is keyed by exact host and can only ADD
  * known hosts, so the "unknown host -> 404" rule above still holds. See
  * lib/tenant/static-tenants.ts.
+ *
+ * ZWEITE AUFGABE — NOINDEX FÜR GESPERRTE DEPLOYMENTS. Solange
+ * SITE_INDEXABLE nicht ausdrücklich gesetzt ist (Staging), trägt JEDE Antwort,
+ * die hier durchläuft, `X-Robots-Tag: noindex, nofollow` — auch das 404 für
+ * unbekannte Hosts. Warum hier und nicht in `headers()` der next.config.ts:
+ * deren Ergebnis friert der Build ins Routen-Manifest ein; dieser Proxy läuft
+ * im Node-Prozess des Containers und liest die Umgebung je Anfrage. Schalter
+ * und Begründung der sicheren Voreinstellung: lib/seo/indexing.ts.
  */
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  // Bild- und Asset-Pfade (zweiter Matcher-Block unten): KEINE
+  // Tenant-Auflösung — die vertragen sie nicht, Begründung am Matcher. Sie
+  // kommen nur hier vorbei, damit auch Bilder eines Staging-Deployments den
+  // Noindex-Header tragen und nicht in der Bildersuche landen. Indexierbar
+  // ist das ein unverändertes Durchreichen.
+  if (isTenantlessAssetPath(request.nextUrl.pathname)) {
+    const passthrough = NextResponse.next();
+    applyIndexingHeader(passthrough.headers);
+    return passthrough;
+  }
+
   const rawHost = request.headers.get("host") ?? "";
 
   // Die Kette selbst steht in lib/tenant/resolve-tenant.ts — sie wird auch vom
@@ -53,7 +76,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     // anyway ("not intended for slow data fetching" / heavy logic).
     return new NextResponse("Not Found", {
       status: 404,
-      headers: { "content-type": "text/plain; charset=utf-8" },
+      headers: applyIndexingHeader(
+        new Headers({ "content-type": "text/plain; charset=utf-8" }),
+      ),
     });
   }
 
@@ -64,7 +89,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   requestHeaders.delete(TENANT_CONFIG_HEADER);
   requestHeaders.set(TENANT_CONFIG_HEADER, encodeTenantHeader(tenant));
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  applyIndexingHeader(response.headers);
+  return response;
 }
 
 export const config = {
@@ -95,5 +122,22 @@ export const config = {
     // entscheiden, und ihr „unbekannter Host -> 404" würde ausgerechnet auf
     // der Fehlerseite auch noch das Fehlerbild wegnehmen.
     "/((?!_next/static|_next/image|favicon.ico|healthz|media/|loader/).*)",
+
+    // ZWEITER BLOCK — nur für den Noindex-Header, OHNE Tenant-Auflösung
+    // (`isTenantlessAssetPath` zweigt sie oben vorher ab). Der Ausschluss im
+    // ersten Block bleibt deshalb unverändert gültig. Der interne Aufruf des
+    // Bildoptimizers an /media ist kein HTTP-Request und kommt hier gar nicht
+    // vorbei; betroffen sind nur echte Anfragen von aussen.
+    //
+    // Weiterhin draussen: `_next/static` (gehashte JS/CSS-Bündel — keine
+    // Suchtreffer, dafür die mit Abstand meisten Anfragen), `favicon.ico` und
+    // `healthz`. Wer auch die lückenlos abdecken will, setzt den Header im
+    // vorgeschalteten Reverse-Proxy.
+    //
+    // Matcher müssen Konstanten sein (Next wertet sie beim Build statisch
+    // aus) — der Schalter selbst kann hier also nicht stehen.
+    "/_next/image",
+    "/media/:path*",
+    "/loader/:path*",
   ],
 };
