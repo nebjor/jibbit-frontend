@@ -121,3 +121,68 @@ export function parseMediaPath(segments: string[]): MediaPath | null {
   const key = toMediaKey(`/static/${rest.join("/")}`);
   return key ? { host, key } : null;
 }
+
+/** Was ein Produktbild sein darf. Alles andere reicht der Bildproxy nicht durch. */
+export const ALLOWED_IMAGE_TYPES = [
+  "image/webp",
+  "image/jpeg",
+  "image/png",
+  "image/avif",
+  "image/gif",
+] as const;
+
+/**
+ * Dateiendung -> Bildtyp, NUR für den Fall unten. SVG fehlt mit Absicht: es
+ * kann Skripte enthalten, und ein Produktbild ist nie ein SVG.
+ */
+const TYPE_BY_EXTENSION: Record<string, string> = {
+  webp: "image/webp",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  avif: "image/avif",
+  gif: "image/gif",
+};
+
+/** Was ein Server sagt, wenn er die Dateiendung nicht kennt. */
+const UNKNOWN_TYPES = ["", "application/octet-stream"];
+
+/**
+ * Der Content-Type, mit dem der Bildproxy eine Backend-Antwort ausliefert —
+ * oder `null`, wenn sie kein Produktbild ist.
+ *
+ * WARUM DIE ANGABE DES BACKENDS NICHT REICHT
+ * Medusa liefert `/static` über `express.static` aus, und dessen
+ * Typtabelle (`send` 0.19 -> `mime` 1.6.0, Stand 2017) KENNT `.avif`
+ * NICHT. Eine einwandfreie AVIF-Datei kommt deshalb als
+ * `application/octet-stream` an. Der Proxy verglich früher nur diese Angabe
+ * mit der Liste oben, antwortete mit 404, der Bildoptimizer machte daraus ein
+ * 400 („The requested resource isn't a valid image") — und JEDES im Admin
+ * hochgeladene AVIF erschien im Shop als „Bild liess sich nicht laden",
+ * während JPEG, PNG und WebP daneben funktionierten.
+ *
+ * Deshalb: sagt das Backend „weiss ich nicht" (octet-stream oder gar nichts),
+ * entscheidet die Dateiendung des Schlüssels. Nennt es dagegen einen
+ * KONKRETEN anderen Typ (text/html, image/svg+xml, …), bleibt es bei der
+ * Ablehnung — die Endung darf eine ausdrückliche Angabe nicht überstimmen.
+ *
+ * Dass die Endung lügen könnte, ist unkritisch: die Antwort trägt
+ * `X-Content-Type-Options: nosniff`, ein falsch benanntes Etwas wird im
+ * Browser also schlicht nicht dekodiert, und `next/image` prüft ohnehin
+ * selbst die ersten Bytes, bevor es etwas umrechnet.
+ */
+export function resolveImageContentType(
+  upstreamType: string | null | undefined,
+  key: string,
+): string | null {
+  const declared = (upstreamType ?? "").split(";")[0].trim().toLowerCase();
+
+  if ((ALLOWED_IMAGE_TYPES as readonly string[]).includes(declared)) {
+    return declared;
+  }
+  if (!UNKNOWN_TYPES.includes(declared)) return null;
+
+  const dot = key.lastIndexOf(".");
+  if (dot === -1) return null;
+  return TYPE_BY_EXTENSION[key.slice(dot + 1).toLowerCase()] ?? null;
+}

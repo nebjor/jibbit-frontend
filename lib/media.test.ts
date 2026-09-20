@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseMediaPath, toMediaKey, toMediaSrc } from "./media";
+import {
+  parseMediaPath,
+  resolveImageContentType,
+  toMediaKey,
+  toMediaSrc,
+} from "./media";
 
 describe("toMediaKey", () => {
   it("nimmt den Schlüssel hinter /static/", () => {
@@ -113,5 +118,53 @@ describe("parseMediaPath", () => {
     expect(parseMediaPath(["test.jibbit.ch", "..", "medusa-config.js"])).toBeNull();
     expect(parseMediaPath(["..", "foo.webp"])).toBeNull();
     expect(parseMediaPath(["test.jibbit.ch", "private-1755-export.csv"])).toBeNull();
+  });
+});
+
+describe("resolveImageContentType", () => {
+  it("übernimmt einen erlaubten Typ des Backends", () => {
+    expect(resolveImageContentType("image/jpeg", "1755-foo.jpg")).toBe("image/jpeg");
+    expect(resolveImageContentType("image/webp; charset=binary", "1755-foo.webp")).toBe(
+      "image/webp",
+    );
+    expect(resolveImageContentType("IMAGE/PNG", "1755-foo.png")).toBe("image/png");
+  });
+
+  /**
+   * DER AUSFALL VOM 20.09.2026: Medusas express.static (send -> mime 1.6.0)
+   * kennt `.avif` nicht und meldet `application/octet-stream`. Der Proxy
+   * machte daraus 404, der Bildoptimizer 400, und alle im Admin hochgeladenen
+   * AVIF-Fotos standen im Shop als „Bild liess sich nicht laden".
+   * Gemessen: GET api-test.jibbit.ch/static/1789907161607-5053_ocb.avif
+   *   -> 200, Content-Type: application/octet-stream.
+   */
+  it("erkennt AVIF an der Endung, wenn das Backend nur octet-stream meldet", () => {
+    expect(
+      resolveImageContentType("application/octet-stream", "1789907161607-5053_ocb.avif"),
+    ).toBe("image/avif");
+  });
+
+  it("entscheidet auch bei fehlendem Header und grossgeschriebener Endung nach der Endung", () => {
+    expect(resolveImageContentType(null, "1755-foo.AVIF")).toBe("image/avif");
+    expect(resolveImageContentType("", "2026/1755-foo.JPG")).toBe("image/jpeg");
+    expect(resolveImageContentType(undefined, "1755-foo.jpeg")).toBe("image/jpeg");
+  });
+
+  it("lässt unbekannte Endungen auch bei octet-stream nicht durch", () => {
+    expect(resolveImageContentType("application/octet-stream", "1755-foto.heic")).toBeNull();
+    expect(resolveImageContentType("application/octet-stream", "1755-export.csv")).toBeNull();
+    expect(resolveImageContentType("application/octet-stream", "1755-logo.svg")).toBeNull();
+    expect(resolveImageContentType("application/octet-stream", "ohne-endung")).toBeNull();
+  });
+
+  /**
+   * Die Endung darf eine AUSDRÜCKLICHE Angabe nie überstimmen — sonst liesse
+   * sich eine HTML- oder SVG-Datei mit `.avif` im Namen durch den Proxy
+   * schieben.
+   */
+  it("überstimmt einen konkreten fremden Typ nicht", () => {
+    expect(resolveImageContentType("text/html", "1755-foo.avif")).toBeNull();
+    expect(resolveImageContentType("image/svg+xml", "1755-foo.png")).toBeNull();
+    expect(resolveImageContentType("application/json", "1755-foo.jpg")).toBeNull();
   });
 });
