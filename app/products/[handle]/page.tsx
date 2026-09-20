@@ -13,12 +13,13 @@ import { AddToCart } from "@/components/AddToCart";
 import { VariantHero } from "@/components/VariantHero";
 import { VariantSelectionProvider } from "@/components/VariantSelection";
 import { TrackProductView } from "@/components/analytics/TrackProductView";
+import { JsonLd } from "@/components/JsonLd";
 import { SHIPPING, MIN_AGE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
-import { defaultVariant } from "@/lib/pricing";
+import { VARIANT_PARAM, preselectedVariant } from "@/lib/pricing";
 import { heroGallery } from "@/lib/variant-image";
 import { getTenantContext } from "@/lib/tenant/context";
-import { toMediaSrc } from "@/lib/media";
+import { breadcrumbJsonLd, graph, productJsonLd } from "@/lib/seo/jsonld";
 import styles from "./product.module.css";
 
 /**
@@ -43,18 +44,35 @@ export async function generateMetadata({
   return {
     title: product.title,
     description: product.description.slice(0, 160),
+    // EINE kanonische Adresse je Produkt — ohne `?variant=`. Die Varianten-
+    // URLs (siehe unten) zeigen dieselbe Seite mit anderer Vorauswahl; Google
+    // verlangt für dieses Modell genau eine kanonische URL der ProductGroup.
+    // Relativ: `metadataBase` aus dem Layout setzt die Mandantendomain davor.
+    alternates: { canonical: `/products/${handle}` },
     openGraph: { title: product.title, description: product.subtitle },
   };
 }
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ handle: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { handle } = await params;
+  const [{ handle }, query] = await Promise.all([params, searchParams]);
   const product = await getProduct(handle);
   if (!product) notFound();
+
+  /**
+   * Vorauswahl: `?variant=<id>` gewinnt, sonst wie bisher das Einzelstück
+   * (`defaultVariant`). Serverseitig gelesen, damit ein Crawler unter der
+   * Varianten-URL aus dem JSON-LD (`Offer.url`) schon im HTML das Bild, den
+   * Preis und die Verfügbarkeit DIESER Packung sieht. Die Seite ist wegen
+   * der Mandantenauflösung (`headers()`) ohnehin dynamisch — der Parameter
+   * kostet kein statisches Rendering.
+   */
+  const preselected = preselectedVariant(product.variants, query[VARIANT_PARAM]);
 
   const [related, category, tenant] = await Promise.all([
     getRelatedProducts(product),
@@ -69,41 +87,47 @@ export default async function ProductPage({
    * Ist nichts umzuschalten, rendert die Seite exakt wie bisher.
    */
   const gallery = heroGallery(product);
+  const initialSrc =
+    (preselected && gallery.srcByVariant[preselected.id]) ?? gallery.defaultSrc;
   const variantFor = (src: string) =>
     product.variants.find((v) => gallery.srcByVariant[v.id] === src);
 
-  // Product schema for rich results / Google Shopping.
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.title,
-    description: product.description,
-    // Absolut und über die eigene Domain: die Bild-URL aus Medusa zeigt auf
-    // die Backend-Adresse des Tenants, die von aussen in der Regel gar nicht
-    // erreichbar ist (im Compose `http://medusa:9000`). Siehe lib/media.ts.
-    image: product.images
-      .map((url) => toMediaSrc(url, tenant.host).src)
-      .map((src) =>
-        src.startsWith("/") ? `https://${tenant.theme.domain}${src}` : src,
-      ),
-    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
-    offers: {
-      "@type": "Offer",
-      price: product.price,
-      priceCurrency: product.currency,
-      availability: product.variants.some((v) => v.inStock)
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-      url: `https://${tenant.theme.domain}/products/${product.handle}`,
-    },
-  };
+  /**
+   * Strukturierte Daten für Rich Results / Google Shopping.
+   *
+   * Produkt und Brotkrümel stehen in EINEM `@graph`: dieselbe Seite, ein
+   * Block, und `@id` verknüpft sie mit Organisation und Website aus dem
+   * Layout. Gebaut wird alles in lib/seo/jsonld.ts — hier wird nur
+   * eingesetzt, was die Seite ohnehin schon geladen hat.
+   */
+  const base = `https://${tenant.theme.domain}`;
+  const jsonLd = graph(
+    productJsonLd({
+      product,
+      domain: tenant.theme.domain,
+      host: tenant.host,
+      categoryName: category?.name,
+    }),
+    breadcrumbJsonLd([
+      { name: "Shop", url: `${base}/` },
+      ...(category
+        ? [
+            {
+              name: category.name,
+              // Kodiert, wie im sichtbaren Brotkrümel: Handles können `&`
+              // oder Umlaute enthalten.
+              url: `${base}/?kategorie=${encodeURIComponent(category.handle)}`,
+            },
+          ]
+        : []),
+      // Letzter Eintrag ohne `item` — das ist diese Seite.
+      { name: product.title },
+    ]),
+  );
 
   return (
     <div className={`page ${styles.wrap}`}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       {/* «Produkt angesehen» — öffentliche Katalogdaten, keine Personendaten. */}
       <TrackProductView product={product} />
@@ -125,9 +149,12 @@ export default async function ProductPage({
 
       {/* Der Provider hält NUR die gewählte Variante — Galerie und Kaufbox
           lesen dieselbe Auswahl, die Seite selbst bleibt Server-Komponente.
-          Vorauswahl identisch mit AddToCart (defaultVariant). */}
+          Vorauswahl: `?variant=`, sonst wie in AddToCart (defaultVariant).
+          `urlParam` hält die Adresszeile bei jeder Auswahl auf der URL der
+          gewählten Packung — dieselbe, die im JSON-LD steht. */}
       <VariantSelectionProvider
-        initialId={defaultVariant(product.variants)?.id ?? null}
+        initialId={preselected?.id ?? null}
+        urlParam={product.variants.length > 1 ? VARIANT_PARAM : undefined}
       >
         <div className={styles.layout}>
           <div className={styles.gallery}>
@@ -147,7 +174,7 @@ export default async function ProductPage({
                         variant="hero"
                         // Nur das anfangs sichtbare Bild ist das LCP-Element;
                         // die verborgenen laden lazy.
-                        priority={src === gallery.initialSrc}
+                        priority={src === initialSrc}
                       />
                     ),
                   };

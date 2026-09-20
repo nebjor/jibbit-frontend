@@ -47,8 +47,9 @@ export default function VersandPage() {
       <h2>Lieferfrist</h2>
       <p>
         Wir versenden in der Regel innerhalb von 1–3 Werktagen nach
-        Bestelleingang. Beim Kauf auf Rechnung kann sich der Versand bis zur
-        Bestätigung der Zahlungsart leicht verzögern.
+        Bestelleingang. Danach ist die Sendung mit A-Post 1–2 Werktage
+        unterwegs, mit B-Post 2–3 — was es wird, hängt auch davon ab, zu
+        welcher Tageszeit du bestellst.
       </p>
       <p>
         Angegebene Fristen sind Richtwerte. In Spitzenzeiten oder bei
