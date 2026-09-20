@@ -156,7 +156,12 @@ export const PRODUCT_FIELDS =
   // Einzelstück» auf der Produktseite. Fehlt das Feld in der Antwort, zeigt
   // jede Variante still das erste Produktbild — kein Fehler, nur wieder das
   // alte Verhalten.
-  "+variants.allow_backorder,+variants.thumbnail";
+  "+variants.allow_backorder,+variants.thumbnail," +
+  // GTIN je Variante fürs Produkt-Schema (lib/adapters.ts `toGtin`). Die drei
+  // Felder stecken heute schon in `*variants`; sie stehen trotzdem hier,
+  // damit die Nummern nicht still aus dem Schema verschwinden, wenn jemand
+  // die Standardauswahl einmal enger fasst.
+  "+variants.ean,+variants.upc,+variants.barcode";
 
 export async function getProducts(opts?: {
   category?: CategoryHandle;

@@ -23,6 +23,17 @@ vi.mock("@/lib/data", () => ({
   getCategories: mocks.getCategories,
 }));
 
+// Die Seite zeichnet den Katalog als ItemList aus und braucht dafür die
+// Domain des Mandanten. `getTenantContext` liest den Request-Header —
+// ausserhalb eines Requests wirft das, also hier auflösen.
+vi.mock("@/lib/tenant/context", () => ({
+  getTenantContext: vi.fn().mockResolvedValue({
+    id: "jibbit",
+    host: "test.jibbit.ch",
+    theme: { domain: "test.jibbit.ch", storeName: "jibbit" },
+  }),
+}));
+
 const { default: HomePage } = await import("./page");
 const { CategoryComingSoon } = await import("./CategoryComingSoon");
 const { ProductCard } = await import("@/components/ProductCard");

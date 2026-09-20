@@ -44,6 +44,70 @@ export const PAYMENT_METHODS = [
 export const MIN_AGE = 18;
 
 /**
+ * Anbieterkennzeichnung — dieselben Angaben, die app/impressum/page.tsx für
+ * Menschen rendert, hier maschinenlesbar für das Organization-Schema
+ * (lib/seo/jsonld.ts).
+ *
+ * ⚠️ ZWEI ORTE, EIN SACHVERHALT: ändert sich die Adresse oder die Nummer,
+ * muss sie HIER UND im Impressum geändert werden. Bewusst nicht zusammen-
+ * gelegt — die Impressumsseite ist ein Rechtstext mit eigener Gliederung und
+ * offenen Punkten, kein Datensatz. Wer sie später auf diese Konstanten
+ * umstellt, löst das Problem richtig.
+ */
+export const BUSINESS = {
+  legalName: "Neber Import",
+  owner: "Joris Neber",
+  street: "Unterwegli 1",
+  postalCode: "8404",
+  city: "Winterthur",
+  /** ISO-3166-1 alpha-2. Steht auch in jeder Versand- und Rückgabeangabe. */
+  countryCode: "CH",
+  email: "joris@jibbit.ch",
+  /** E.164 — schema.org will eine international wählbare Nummer. */
+  telephone: "+41764140890",
+} as const;
+
+/**
+ * Lieferfristen in Werktagen, für `OfferShippingDetails.deliveryTime`.
+ *
+ * Bearbeitung: 1–3 Werktage nach Bestelleingang, so auch auf
+ * /service/versand.
+ *
+ * Transport (Angabe des Betreibers): A-Post 1–2 Werktage, B-Post 2–3 — je
+ * nachdem, zu welcher Tageszeit bestellt wird. Ausgezeichnet wird 1–3, weil
+ * das beide Versandarten abdeckt und der Shop im Bestellprozess keine
+ * zusichert. Wer später nur noch B-Post bucht, verengt hier auf 2–3: eine
+ * genauere Angabe ist besser, eine zu knappe ist eine Zusage, die bricht.
+ *
+ * Die Zahlen müssen mit dem übereinstimmen, was /service/versand schreibt —
+ * Google gleicht das Markup gegen die Seite ab.
+ */
+export const DELIVERY = {
+  handlingDaysMin: 1,
+  handlingDaysMax: 3,
+  /** A-Post: 1–2 Werktage. */
+  transitDaysMin: 1,
+  /** B-Post: 2–3 Werktage. */
+  transitDaysMax: 3,
+} as const;
+
+/**
+ * Rückgabe, maschinenlesbar. Menschenlesbar: /service/rueckgabe.
+ *
+ * `MerchantReturnNotPermitted` ist keine Nachlässigkeit, sondern die
+ * Regelung: das Schweizer Recht kennt für Onlinebestellungen kein
+ * Widerrufsrecht, und jibbit gewährt freiwillig keines. Defekte und
+ * Falschlieferungen laufen über die gesetzliche Sachgewährleistung — die
+ * ist kein Rückgabefenster und darf auch nicht als eines ausgezeichnet
+ * werden.
+ */
+export const RETURNS = {
+  category: "MerchantReturnNotPermitted",
+  /** Sachgewährleistung nach OR, in Jahren. Nur Anzeige/Doku. */
+  warrantyYears: 2,
+} as const;
+
+/**
  * Browser theme colour (address bar on mobile).
  *
  * ⚠️ This must mirror `--c-ground` in app/tokens.css. It cannot read the CSS
