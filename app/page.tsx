@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { HomeIntro } from "@/components/intro/HomeIntro";
@@ -28,11 +29,24 @@ import styles from "./page.module.css";
  * Der `kategorie`-Parameter wird gegen die GELADENEN Kategorien geprüft
  * (exakter Handle-Vergleich), nicht gegen eine fest verdrahtete Liste —
  * der Betreiber legt Kategorien im Admin an, und jede davon muss hier
- * ohne Code-Änderung funktionieren. Unbekannte Werte fallen auf «Alles»
- * zurück statt auf eine leere Seite. Die Kategorienavigation lebt im
+ * ohne Code-Änderung funktionieren. Unbekannte Werte ergeben ein echtes
+ * 404. Die Kategorienavigation lebt im
  * Header (`CategoryNav`) — diese Seite rendert bewusst keine eigene
  * Filterreihe (Begründung unverändert: keine doppelten Linkreihen).
  */
+
+type PageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+async function activeCategory(searchParams: PageProps["searchParams"]) {
+  const { kategorie } = await searchParams;
+  const raw = Array.isArray(kategorie) ? kategorie[0] : kategorie;
+  if (!raw) return undefined;
+  const found = (await getCategories()).find((c) => c.handle === raw);
+  if (!found) notFound();
+  return found;
+}
 
 /**
  * Der Titel bleibt der Site-Standard aus dem Layout («<Storename> — Online
@@ -40,22 +54,18 @@ import styles from "./page.module.css";
  * Nur die Beschreibung ist seitenspezifisch: sie beschreibt jetzt den
  * Katalog, nicht mehr die Landingpage.
  */
-export const metadata: Metadata = {
-  description: `Papers, Filter und Zubehör für die Schweiz. Faire Preise, Versand ab Lager, Gratisversand ab ${formatPrice(SHIPPING.freeThreshold)}.`,
-};
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const activeCat = await activeCategory(searchParams);
+  return {
+    description: `Papers, Filter und Zubehör für die Schweiz. Faire Preise, Versand ab Lager, Gratisversand ab ${formatPrice(SHIPPING.freeThreshold)}.`,
+    alternates: {
+      canonical: activeCat ? `/?kategorie=${encodeURIComponent(activeCat.handle)}` : "/",
+    },
+  };
+}
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const params = await searchParams;
-  const raw = Array.isArray(params.kategorie)
-    ? params.kategorie[0]
-    : params.kategorie;
-
-  const categories = await getCategories();
-  const activeCat = categories.find((c) => c.handle === raw);
+export default async function HomePage({ searchParams }: PageProps) {
+  const activeCat = await activeCategory(searchParams);
   const products = await getProducts({ category: activeCat?.handle });
   const tenant = await getTenantContext();
 
