@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
  * robots.txt in beiden Zuständen des Schalters SITE_INDEXABLE
- * (lib/seo/indexing.ts). Der gesperrte Zustand ist der heikle: er darf das
- * Crawlen NICHT verbieten — sonst sieht Google das Noindex nie.
+ * (lib/seo/indexing.ts).
  */
 
 vi.mock("@/lib/tenant/context", () => ({
@@ -27,11 +26,9 @@ describe("robots.txt", () => {
     });
   });
 
-  it("gesperrt: KEIN Disallow — der Crawler muss das Noindex lesen dürfen", async () => {
+  it("gesperrt: Disallow /", async () => {
     vi.stubEnv("SITE_INDEXABLE", "false");
-    const result = await robots();
-    expect(result.rules).toEqual({ userAgent: "*", allow: "/" });
-    expect(JSON.stringify(result)).not.toContain("disallow");
+    expect((await robots()).rules).toEqual({ userAgent: "*", disallow: "/" });
   });
 
   it("gesperrt: führt keine Sitemap auf", async () => {

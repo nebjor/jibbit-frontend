@@ -11,15 +11,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const tenant = await getTenantContext();
 
   if (!isSiteIndexable()) {
-    // GESPERRTES DEPLOYMENT (Staging) — und trotzdem `Allow: /`. Das ist
-    // kein Versehen: ein `Disallow: /` verbietet das CRAWLEN, nicht das
-    // Indexieren. Google dürfte die Seiten dann nicht mehr abrufen, sähe
-    // weder den `X-Robots-Tag`-Header noch das Meta-Tag und behielte bereits
-    // bekannte URLs im Index («Indexiert, obwohl durch robots.txt
-    // blockiert»). Noindex wirkt nur, wenn der Crawler es lesen darf.
-    //
-    // Keine `sitemap`-Zeile: eine Sitemap ist eine Einladung zum Indexieren.
-    return { rules: { userAgent: "*", allow: "/" } };
+    return { rules: { userAgent: "*", disallow: "/" } };
   }
 
   return {
