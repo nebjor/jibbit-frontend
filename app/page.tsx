@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { HomeIntro } from "@/components/intro/HomeIntro";
 import { JsonLd } from "@/components/JsonLd";
 import { CategoryComingSoon } from "./CategoryComingSoon";
-import { SHIPPING } from "@/lib/config";
+import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { breadcrumbJsonLd, graph, itemListJsonLd } from "@/lib/seo/jsonld";
 import { getTenantContext } from "@/lib/tenant/context";
@@ -71,7 +71,7 @@ export default async function HomePage({
 
   const description = activeCat
     ? activeCat.description
-    : "Das ganze Sortiment: Papers, Filter und Zubehör. Boxen und Displays sind pro Stück günstiger — es lohnt sich, kurz nachzurechnen.";
+    : PRICE_CLAIM.full;
 
   /**
    * Der Katalog als `ItemList`: die Startseite ZEIGT Produkte, sie IST keins.

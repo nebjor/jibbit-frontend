@@ -5,7 +5,7 @@ import { useCart } from "./CartProvider";
 import { useVariantSelection } from "./VariantSelection";
 import { useTierSelection } from "./TierSelection";
 import { trackAddToCart } from "@/lib/analytics/client";
-import { Price } from "./Price";
+import { Price, SaveBadge } from "./Price";
 import { PriceTable } from "./PriceTable";
 import { formatAmount, formatPrice } from "@/lib/format";
 import {
@@ -143,9 +143,11 @@ export function AddToCart({ product }: { product: ProductView }) {
                 <span className={`${styles.chipPrice} tnum`}>
                   {product.currency} {formatAmount(c.price)} / Stk.
                 </span>
-                <span className={styles.chipSave}>
-                  {c.savePercent > 0 ? `−${c.savePercent}%` : "Einzelpreis"}
-                </span>
+                {c.savePercent > 0 ? (
+                  <SaveBadge percent={c.savePercent} />
+                ) : (
+                  <span className={styles.chipBase}>Einzelpreis</span>
+                )}
               </button>
             ))}
           </div>
@@ -191,8 +193,11 @@ export function AddToCart({ product }: { product: ProductView }) {
 
         {saving && saving.amount > 0 ? (
           <span className={styles.perUnit}>
-            {product.currency} {formatAmount(unitPrice)} / Stk. · du sparst{" "}
-            {formatPrice(saving.amount)} (−{saving.percent}%)
+            {product.currency} {formatAmount(unitPrice)} / Stk. ·{" "}
+            <span className={styles.saving}>
+              du sparst {formatPrice(saving.amount)}
+            </span>{" "}
+            <SaveBadge percent={saving.percent} />
           </span>
         ) : (
           perUnit !== null && (
@@ -204,19 +209,17 @@ export function AddToCart({ product }: { product: ProductView }) {
       </div>
 
       <div className={styles.bar}>
-        {!chipMode && (
-          <div className={styles.barPrice}>
-            <Price
-              price={unitPrice}
-              compareAt={selected?.compareAt ?? product.compareAt}
-              currency={product.currency}
-              size="md"
-            />
-            {quantity > 1 && (
-              <span className={styles.total}>Total {formatPrice(lineTotal)}</span>
-            )}
-          </div>
-        )}
+        <div className={styles.barPrice}>
+          <Price
+            price={unitPrice}
+            compareAt={selected?.compareAt ?? product.compareAt}
+            currency={product.currency}
+            size="md"
+          />
+          {!chipMode && quantity > 1 && (
+            <span className={styles.total}>Total {formatPrice(lineTotal)}</span>
+          )}
+        </div>
         <button
           type="button"
           className={styles.cta}

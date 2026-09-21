@@ -9,6 +9,16 @@ export const STORE = {
 } as const;
 
 /**
+ * Discount positioning, shop-wide instead of per price. No superlatives
+ * ("günstigste der Schweiz", "Tiefstpreis-Garantie") without proof — UWG
+ * Art. 3 Abs. 1 lit. e.
+ */
+export const PRICE_CLAIM = {
+  short: "Dauertiefpreise",
+  full: "Dauertiefpreise · mit Mengenrabatt noch günstiger",
+} as const;
+
+/**
  * Shipping rules. Used by the cart's free-shipping progress indicator and by
  * every piece of shipping copy in the shop.
  *

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { FreeShippingMeter } from "./FreeShippingMeter";
+import { Price } from "./Price";
 import { formatPrice } from "@/lib/format";
 import styles from "./CartDrawer.module.css";
 
@@ -121,11 +122,14 @@ export function CartDrawer() {
                     {l.variantTitle && (
                       <p className={styles.lineVariant}>{l.variantTitle}</p>
                     )}
-                    <p className={`${styles.linePrice} tnum`}>
-                      {formatPrice(l.unitPrice)}
+                    <p className={styles.linePrice}>
+                      <Price
+                        price={l.unitPrice}
+                        compareAt={l.compareAtUnitPrice}
+                        size="sm"
+                      />
                       {l.quantity > 1 && (
-                        <span className={styles.lineTotal}>
-                          {" "}
+                        <span className={`${styles.lineTotal} tnum`}>
                           &times; {l.quantity} = {formatPrice(l.lineTotal)}
                         </span>
                       )}

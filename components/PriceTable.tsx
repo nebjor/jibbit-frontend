@@ -3,6 +3,7 @@
 import { formatAmount, formatPrice } from "@/lib/format";
 import { activeTier, upgradeHint } from "@/lib/pricing";
 import type { PriceTier } from "@/lib/types";
+import { SaveBadge } from "./Price";
 import styles from "./PriceTable.module.css";
 
 /**
@@ -62,7 +63,7 @@ export function PriceTable({
                   <span className={styles.per}> / Stk.</span>
                 </span>
                 <span className={styles.off}>
-                  {off > 0 ? `−${off}%` : ""}
+                  {off > 0 && <SaveBadge percent={off} />}
                 </span>
               </button>
             </li>

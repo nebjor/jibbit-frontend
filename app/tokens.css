@@ -20,10 +20,13 @@
   --c-line: #dedcd7; /* hairlines, dividers, input borders */
 
   /* ---- Colour: accent --------------------------------------------------
-     RULE: the accent is reserved for PRICE and the ONE primary CTA per view.
+     RULE: the accent is reserved for a CONCRETE SAVING (Aktionspreis,
+     Mengenrabatt) and the ONE primary CTA per view. Regular prices are ink.
      Do not use it for decoration, hovers, or secondary buttons. */
   --c-accent: #e11b22;
   --c-on-accent: #ffffff;
+  --c-price: var(--c-ink);
+  --c-save: var(--c-accent);
 
   /* ---- Colour: intro smoke ---------------------------------------------
      Kräftiger, dunkler Rauchton fürs Startseiten-Intro (SmokeCloud). Muss
