@@ -14,10 +14,7 @@ import { SHIPPING } from "@/lib/config";
  *   item_total 100.00 -> cart.shipping_total 0
  *   item_total 104.60 -> cart.shipping_total 0
  *
- * Die Schwelle liegt seit dem 22.08.2026 bei CHF 69.00 statt CHF 100.00, und
- * unterhalb davon gibt es zwei Saetze (Brief 3.75, Paket 9.00). Die Schaetzung
- * hier nennt bewusst den Pakettarif, weil das Gewicht in der Storefront nicht
- * vorliegt.
+ * Seither: Schwelle CHF 69.00, darunter ein einziger Versandpreis.
  *
  * The provider compares the GROSS goods total against its threshold, which is
  * the same quantity this estimate uses. If someone changes `SHIPPING` without
@@ -25,9 +22,9 @@ import { SHIPPING } from "@/lib/config";
  * shipping meter starts promising something the checkout does not deliver.
  */
 describe("estimateShipping", () => {
-  it("charges the parcel rate below the threshold", () => {
-    expect(estimateShipping(68.99)).toBe(SHIPPING.parcelRate);
-    expect(estimateShipping(0.05)).toBe(SHIPPING.parcelRate);
+  it("charges the shipping rate below the threshold", () => {
+    expect(estimateShipping(68.99)).toBe(SHIPPING.rate);
+    expect(estimateShipping(0.05)).toBe(SHIPPING.rate);
   });
 
   it("is free at the threshold exactly, matching the backend", () => {
@@ -40,9 +37,10 @@ describe("estimateShipping", () => {
   });
 
   it("uses the same numbers the backend module is configured with", () => {
-    // medusa-config.ts: letterPrice 3.75, parcelPrice 9, freeShippingThreshold 69.
-    expect(SHIPPING.letterRate).toBe(3.75);
-    expect(SHIPPING.parcelRate).toBe(9);
+    // medusa-config.ts: price 4.5, freeShippingThreshold 69.
+    expect(SHIPPING.rate).toBe(4.5);
+    // «Wir teilen das Paketporto» stimmt nur, solange jibbit wirklich teilt.
+    expect(SHIPPING.rate).toBeLessThan(SHIPPING.postage);
     expect(SHIPPING.freeThreshold).toBe(69);
   });
 });

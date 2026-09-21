@@ -33,7 +33,7 @@ export default function ZahlungsartenPage() {
         der Bezahlseite zur Verfügung, wenn dein Gerät sie unterstützt.
       </p>
 
-      <h2>PostFinance</h2>
+      <h2>Kauf auf Rechnung</h2>
       <p>
         Kauf auf Rechnung bieten wir derzeit nicht an. Sobald sich das ändert,
         steht es hier zuerst.
@@ -48,7 +48,7 @@ export default function ZahlungsartenPage() {
 
       <h2>Währung und Mehrwertsteuer</h2>
       <p>
-        Alle Preise sind in Schweizer Franken (CHF) angegeben und verstehen sich
+        Alle Preise sind in Schweizer Franken (CHF) angegeben und verstehen sich als
         Endpreise. Wir sind nicht mehrwertsteuerpflichtig, daher wird keine
         Mehrwertsteuer erhoben und keine ausgewiesen. Versandkosten weisen wir vor
         Abschluss der Bestellung separat aus.
@@ -58,7 +58,7 @@ export default function ZahlungsartenPage() {
       <p>
         Erstattungen laufen immer über denselben Weg zurück, den du beim Bezahlen
         genutzt hast. Details dazu unter{" "}
-        <Link href="/service/rueckgabe">Rückgabe &amp; Umtausch</Link>.
+        <Link href="/service/rueckgabe">Rückgaberecht &amp; Reklamation</Link>.
       </p>
 
       <h2>Rechtliches</h2>
