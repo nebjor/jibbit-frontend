@@ -107,6 +107,11 @@ interface CartContextValue {
   isPending: boolean;
   /** Last failure, in German, or null. */
   error: string | null;
+  /**
+   * Non-failure news from the last mutation, in German — e.g. "item X is no
+   * longer available and was removed" after a blocked cart was rebuilt.
+   */
+  notice: string | null;
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
@@ -138,6 +143,7 @@ export function CartProvider({
 }) {
   const [cart, setCart] = useState<CartState>(initialCart);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -162,9 +168,10 @@ export function CartProvider({
         try {
           const result = await next;
           setCart(result.cart);
+          setError(result.ok ? null : result.message);
           // A successful action can still carry news the customer must see —
           // e.g. unavailable items dropped while rebuilding a blocked cart.
-          setError(result.ok ? (result.notice ?? null) : result.message);
+          setNotice(result.ok ? (result.notice ?? null) : null);
         } catch {
           setError(
             "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.",
@@ -200,6 +207,7 @@ export function CartProvider({
       freeShippingProgress: freeShippingProgress(cart.subtotal),
       isPending,
       error,
+      notice,
       isOpen,
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
@@ -216,9 +224,10 @@ export function CartProvider({
       applyCart: (next) => {
         setCart(next);
         setError(null);
+        setNotice(null);
       },
     };
-  }, [cart, error, isOpen, isPending, run]);
+  }, [cart, error, notice, isOpen, isPending, run]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

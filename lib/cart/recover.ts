@@ -37,10 +37,14 @@ import type { HttpTypes } from "@medusajs/types";
 import { toCartLineView } from "./adapter";
 import type { CartLineView } from "./types";
 
-const STALE_PATTERNS = [
-  /do not exist or belong to a product that is not published/i,
-  /do not have a price/i,
-];
+/**
+ * Loose on purpose: Medusa rethrows the step's original MedusaError
+ * (workflow-orchestrator `throw ret.errors[0].error`, error-handler maps
+ * INVALID_DATA to 400 with the message untouched), but a reworded message in
+ * a minor release must not silently switch the recovery off. Must mention
+ * variants AND one of the three phrases.
+ */
+const STALE_PATTERNS = [/do not exist/i, /not published/i, /do not have a price/i];
 
 function statusOf(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -67,7 +71,9 @@ export function staleVariantIds(error: unknown): string[] | null {
   const status = statusOf(error);
   if (status !== undefined && status !== 400) return null;
   const message = messageOf(error);
-  if (!STALE_PATTERNS.some((p) => p.test(message))) return null;
+  if (!/variant/i.test(message) || !STALE_PATTERNS.some((p) => p.test(message))) {
+    return null;
+  }
   return Array.from(new Set(message.match(/variant_[0-9A-Za-z]+/g) ?? []));
 }
 
