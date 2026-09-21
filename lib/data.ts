@@ -240,7 +240,12 @@ async function fetchPriceTiers(
     const res = await sdk.client.fetch<{
       tiers: Record<
         string,
-        { min_quantity: number; max_quantity: number | null; amount: number }[]
+        {
+          min_quantity: number;
+          max_quantity: number | null;
+          amount: number;
+          original_amount?: number;
+        }[]
       >;
     }>("/store/price-tiers", {
       query: { variant_id: variantIds, region_id: regionId },
@@ -253,6 +258,9 @@ async function fetchPriceTiers(
           minQuantity: r.min_quantity,
           maxQuantity: r.max_quantity,
           price: r.amount,
+          ...(r.original_amount != null && r.original_amount > r.amount
+            ? { compareAt: r.original_amount }
+            : {}),
         })),
       ]),
     );

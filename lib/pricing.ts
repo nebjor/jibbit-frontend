@@ -214,6 +214,8 @@ export interface TierChip {
   label: string;
   /** Ersparnis gegenüber dem Einzelpreis in ganzen Prozent, 0 bei Stufe 1. */
   savePercent: number;
+  /** Regulärer Stückpreis (durchgestrichen), wenn höher als `price`. */
+  compareAt?: number;
   image?: string;
 }
 
@@ -235,6 +237,7 @@ export function tierChips(
       (t.minQuantity === 1 ? "1 Stück" : `${t.minQuantity} Stück`),
     savePercent:
       base > 0 ? Math.max(0, Math.floor(((base - t.price) / base) * 100)) : 0,
+    compareAt: t.compareAt,
     image: extras[t.minQuantity]?.image,
   }));
 }
