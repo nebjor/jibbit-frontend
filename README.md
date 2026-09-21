@@ -103,7 +103,7 @@ of the shop and would otherwise be indexed as a duplicate of `jibbit.ch`.
 | `SITE_INDEXABLE` | Result |
 | --- | --- |
 | `true` (also `1`/`on`/`ja`/`yes`) | Indexable. Exactly the previous behaviour: `index, follow`, `robots.txt` with the sitemap, full `sitemap.xml`, no `X-Robots-Tag`. |
-| anything else — **unset, empty, a typo** | **Noindex.** `X-Robots-Tag: noindex, nofollow` on every response that passes `proxy.ts` (pages, `robots.txt`, `sitemap.xml`, 404s, `/media`, `/_next/image`, `/loader`), `<meta name="robots" content="noindex, nofollow">` on every page, a `robots.txt` with `Disallow: /` and no sitemap line, and an empty `sitemap.xml`. |
+| anything else — **unset, empty, a typo** | **Noindex.** `X-Robots-Tag: noindex, nofollow` on every response that passes `proxy.ts` (pages, `robots.txt`, `sitemap.xml`, 404s, `/media`, `/_next/image`, `/loader`), `<meta name="robots" content="noindex, nofollow">` on every page, a `robots.txt` without a sitemap line, and an empty `sitemap.xml`. |
 
 > **⚠️ GO-LIVE CHECKLIST: the safe default is NOINDEX.** Production must set
 > `SITE_INDEXABLE=true`, or it silently drops out of Google. The variable has
@@ -128,9 +128,8 @@ indexable goes unnoticed for weeks. The server therefore logs a loud
   image built with the wrong value would stay wrong whatever Compose says. The
   switch is read from `process.env` on every request (`lib/seo/indexing.ts`);
   all routes render dynamically, so restarting the container is enough.
-- **`robots.txt` disallows on staging.** Tradeoff: a blocked crawler no longer
-  sees the noindex, so staging URLs that are already indexed stay until removed
-  via Search Console.
+- **`robots.txt` does not `Disallow` on staging, on purpose.** A blocked
+  crawler never sees the noindex and keeps already-known URLs in the index.
 - **Not covered by the header:** `/_next/static/*`, `/favicon.ico` and
   `/healthz` (excluded from the proxy matcher). For airtight coverage — or to
   keep people out as well as crawlers — add the header or Basic Auth in the

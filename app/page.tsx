@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/PageLoading";
+import type { CategoryView } from "@/lib/types";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { HomeIntro } from "@/components/intro/HomeIntro";
@@ -66,6 +69,23 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function HomePage({ searchParams }: PageProps) {
   const activeCat = await activeCategory(searchParams);
+  // Erst prüfen, dann streamen: ausserhalb der Grenze setzt notFound() noch ein 404.
+  return (
+    <>
+      {/* Erstbesuchs-Intro: legt sich ÜBER den weiterhin serverseitig
+          gerenderten Katalog (Overlay, kein Ersatz). Abfolge mit
+          Altersabfrage/Cookie-Hinweis, SEO und Barrierefreiheit sind
+          in components/intro/HomeIntro.tsx begründet; alle Zeiten
+          stehen in lib/intro/timings.ts. */}
+      <HomeIntro />
+      <Suspense key={activeCat?.handle} fallback={<PageLoading />}>
+        <Catalog activeCat={activeCat} />
+      </Suspense>
+    </>
+  );
+}
+
+async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
   const products = await getProducts({ category: activeCat?.handle });
   const tenant = await getTenantContext();
 
@@ -114,12 +134,6 @@ export default async function HomePage({ searchParams }: PageProps) {
   return (
     <>
       <JsonLd data={jsonLd} />
-      {/* Erstbesuchs-Intro: legt sich ÜBER den weiterhin serverseitig
-          gerenderten Katalog (Overlay, kein Ersatz). Abfolge mit
-          Altersabfrage/Cookie-Hinweis, SEO und Barrierefreiheit sind
-          in components/intro/HomeIntro.tsx begründet; alle Zeiten
-          stehen in lib/intro/timings.ts. */}
-      <HomeIntro />
       <div className={`page ${styles.wrap}`}>
         <header className={styles.head}>
           <div className={styles.headRow}>
