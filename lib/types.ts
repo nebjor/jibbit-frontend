@@ -36,6 +36,8 @@ export interface PriceTier {
   maxQuantity: number | null;
   /** Decimal CHF for ONE unit of this variant at this quantity. */
   price: number;
+  /** Regular (struck-through) unit price when higher than `price`. */
+  compareAt?: number;
 }
 
 /** How a variant is packaged. Drives the unit-price line and the deal badge. */
