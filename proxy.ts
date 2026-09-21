@@ -8,6 +8,7 @@ import {
   applyIndexingHeader,
   isTenantlessAssetPath,
 } from "@/lib/seo/indexing";
+import { legacyRedirect } from "@/lib/seo/legacy-redirects";
 
 /**
  * Host-based tenant resolution — the front door of multi-tenancy.
@@ -80,6 +81,15 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
         new Headers({ "content-type": "text/plain; charset=utf-8" }),
       ),
     });
+  }
+
+  const { domain } = tenant.theme;
+  const { pathname, search } = request.nextUrl;
+  const legacyTarget = legacyRedirect(domain, pathname);
+  if (legacyTarget) {
+    const target = legacyTarget.includes("?") ? legacyTarget : legacyTarget + search;
+    // Nicht request.nextUrl als Basis: hinter nginx trägt sie die interne Adresse.
+    return NextResponse.redirect(new URL(target, `https://${domain}`), 301);
   }
 
   const requestHeaders = new Headers(request.headers);
