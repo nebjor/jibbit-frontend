@@ -154,7 +154,40 @@ export function toProductView(
     variants,
     images: (p.images ?? []).map((i) => i.url).filter(Boolean),
     featured: p.tags?.some((t) => t.value === "featured") ?? false,
+    tierExtras: toTierExtras(p),
   };
+}
+
+/**
+ * product.metadata.preistabelle.stufen -> { [abMenge]: { label, image } }.
+ *
+ * Geschrieben vom Admin-Widget «Preistabelle»; das Foto ist die id eines
+ * Produktbilds und wird hier auf dessen URL aufgelöst. Metadata ist
+ * unvalidiertes JSON — alles Unbekannte fällt still weg, ein Foto, das nicht
+ * (mehr) am Produkt hängt, ebenso.
+ */
+function toTierExtras(
+  p: Pick<StoreProduct, "metadata" | "images">,
+): Record<number, { label?: string; image?: string }> {
+  const raw = (p.metadata?.preistabelle as { stufen?: unknown } | undefined)
+    ?.stufen;
+  if (!Array.isArray(raw)) return {};
+  const urlById = new Map(
+    (p.images ?? [])
+      .filter((i) => i?.id && i?.url)
+      .map((i) => [i.id, i.url] as const),
+  );
+  const out: Record<number, { label?: string; image?: string }> = {};
+  for (const e of raw as Record<string, unknown>[]) {
+    const min = Number(e?.min_quantity);
+    if (!Number.isInteger(min) || min < 1) continue;
+    const label =
+      typeof e.label === "string" && e.label.trim() ? e.label.trim() : undefined;
+    const image =
+      typeof e.image_id === "string" ? urlById.get(e.image_id) : undefined;
+    if (label || image) out[min] = { label, image };
+  }
+  return out;
 }
 
 export function toCategoryView(c: StoreProductCategory): CategoryView {

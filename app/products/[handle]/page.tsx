@@ -12,6 +12,8 @@ import { ProductCard } from "@/components/ProductCard";
 import { AddToCart } from "@/components/AddToCart";
 import { VariantHero } from "@/components/VariantHero";
 import { VariantSelectionProvider } from "@/components/VariantSelection";
+import { TierSelectionProvider } from "@/components/TierSelection";
+import { TierGallery } from "@/components/TierGallery";
 import { TrackProductView } from "@/components/analytics/TrackProductView";
 import { JsonLd } from "@/components/JsonLd";
 import { SHIPPING, MIN_AGE } from "@/lib/config";
@@ -93,6 +95,21 @@ export default async function ProductPage({
     product.variants.find((v) => gallery.srcByVariant[v.id] === src);
 
   /**
+   * Stufenfotos aus der Preistabelle («24er Display» zeigt die Box). Nur bei
+   * Produkten mit einer Variante — dem Modell der Preistabelle; ältere
+   * Produkte mit Display-Variante behalten die bisherige Galerie.
+   */
+  const imageByTier: Record<number, string> = {};
+  for (const [min, extra] of Object.entries(product.tierExtras ?? {})) {
+    if (extra.image && product.images.includes(extra.image)) {
+      imageByTier[Number(min)] = extra.image;
+    }
+  }
+  const tierImages = new Set(Object.values(imageByTier));
+  const useTierGallery =
+    product.variants.length === 1 && tierImages.size > 0;
+
+  /**
    * Strukturierte Daten für Rich Results / Google Shopping.
    *
    * Produkt und Brotkrümel stehen in EINEM `@graph`: dieselbe Seite, ein
@@ -156,9 +173,42 @@ export default async function ProductPage({
         initialId={preselected?.id ?? null}
         urlParam={product.variants.length > 1 ? VARIANT_PARAM : undefined}
       >
+        <TierSelectionProvider>
         <div className={styles.layout}>
           <div className={styles.gallery}>
-            {gallery.interactive && gallery.defaultSrc ? (
+            {useTierGallery ? (
+              <TierGallery
+                images={product.images}
+                imageByTier={imageByTier}
+                hero={Object.fromEntries(
+                  product.images.map((src, i) => [
+                    src,
+                    <ProductImage
+                      key={src}
+                      src={src}
+                      alt={i === 0 ? product.title : `${product.title} — Ansicht ${i + 1}`}
+                      product={product}
+                      variant="hero"
+                      // Erstes Bild = LCP; Stufenfotos vorladen, damit der
+                      // Wechsel beim Tippen auf eine Stufe sofort sitzt.
+                      priority={i === 0 || tierImages.has(src)}
+                    />,
+                  ]),
+                )}
+                thumb={Object.fromEntries(
+                  product.images.map((src, i) => [
+                    src,
+                    <ProductImage
+                      key={src}
+                      src={src}
+                      alt={`${product.title} — Ansicht ${i + 1}`}
+                      product={product}
+                      variant="thumb"
+                    />,
+                  ]),
+                )}
+              />
+            ) : gallery.interactive && gallery.defaultSrc ? (
               <VariantHero
                 defaultSrc={gallery.defaultSrc}
                 srcByVariant={gallery.srcByVariant}
@@ -189,7 +239,7 @@ export default async function ProductPage({
                 priority
               />
             )}
-            {product.images.length > 1 && (
+            {!useTierGallery && product.images.length > 1 && (
               <div className={styles.thumbs}>
                 {product.images.slice(1, 5).map((src, i) => (
                   <ProductImage
@@ -230,6 +280,7 @@ export default async function ProductPage({
             </p>
           </div>
         </div>
+        </TierSelectionProvider>
       </VariantSelectionProvider>
 
       {related.length > 0 && (
