@@ -78,10 +78,12 @@ function textOf(el: any): string {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-function render(kategorie: string | undefined, products: ProductView[]) {
+async function render(kategorie: string | undefined, products: ProductView[]) {
   mocks.getCategories.mockResolvedValue([KRAEUTER, PAPERS]);
   mocks.getProducts.mockResolvedValue(products);
-  return HomePage({ searchParams: Promise.resolve({ kategorie }) });
+  const page = await HomePage({ searchParams: Promise.resolve({ kategorie }) });
+  const catalog = page.props.children[1].props.children;
+  return [page, await catalog.type(catalog.props)];
 }
 
 afterEach(() => vi.clearAllMocks());

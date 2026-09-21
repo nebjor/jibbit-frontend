@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/PageLoading";
+import type { ProductView } from "@/lib/types";
 import {
   getProduct,
   getRelatedProducts,
@@ -64,6 +67,21 @@ export default async function ProductPage({
   const product = await getProduct(handle);
   if (!product) notFound();
 
+  // Erst prüfen, dann streamen: ausserhalb der Grenze setzt notFound() noch ein 404.
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <ProductDetails product={product} query={query} />
+    </Suspense>
+  );
+}
+
+async function ProductDetails({
+  product,
+  query,
+}: {
+  product: ProductView;
+  query: { [key: string]: string | string[] | undefined };
+}) {
   /**
    * Vorauswahl: `?variant=<id>` gewinnt, sonst wie bisher das Einzelstück
    * (`defaultVariant`). Serverseitig gelesen, damit ein Crawler unter der

@@ -2,10 +2,10 @@ import { PixelJoint } from "@/components/PixelJoint";
 import styles from "./PageLoading.module.css";
 
 /**
- * Routen-Ladezustand, eingehängt als loading.tsx in checkout/, konto/ und
- * suche/. Bewusst NICHT im Root: eine Suspense-Grenze über Startseite und
- * Produktseite liesse Next 200 senden, bevor notFound() ein 404 setzen kann.
- * Kopf und Fusszeile stehen im Layout
+ * Ladezustand: loading.tsx in checkout/, konto/ und suche/, auf Startseite und
+ * Produktseite als Suspense-Fallback INNERHALB der Seite. Bewusst kein
+ * Root-loading.tsx: eine Grenze über der ganzen Seite liesse Next 200 senden,
+ * bevor notFound() ein 404 setzen kann. Kopf und Fusszeile stehen im Layout
  * und bleiben sichtbar — es „lädt" also erkennbar die Seite, nicht der Shop.
  *
  * EIN Joint, mittig, mehr nicht. Und auch der erst nach `--loader-delay`
@@ -20,7 +20,7 @@ import styles from "./PageLoading.module.css";
  * (aria-hidden in PixelJoint). Bei `prefers-reduced-motion` steht das Sprite
  * auf seinem ersten Bild (PixelJoint.module.css).
  */
-export default function Loading() {
+export function PageLoading() {
   return (
     <div className={`page ${styles.wrap}`} role="status">
       <div className={styles.reveal}>

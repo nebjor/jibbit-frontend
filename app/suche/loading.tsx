@@ -1,1 +1,1 @@
-export { default } from "@/components/PageLoading";
+export { PageLoading as default } from "@/components/PageLoading";
