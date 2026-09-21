@@ -1,35 +1,10 @@
 /**
- * WARENKORB MIT TOTEN ARTIKELN — erkennen, ehrlich melden, neu aufbauen.
+ * A Medusa cart whose lines point at deleted or unpublished variants still
+ * reads fine, but every write re-validates all lines (`refreshCartItemsWorkflow`)
+ * and fails with 400 — deleting one line fails on the next dead one. The only
+ * way out is a fresh cart holding what is still orderable.
  *
- * ══ DER FEHLER, DEN DAS HIER BEHEBT ═══════════════════════════════════════
- * Ein Medusa-Cart speichert seine Positionen als Schnappschuss (Titel, Preis,
- * Variante). `GET /store/carts/:id` liest nur diesen Schnappschuss — der
- * Warenkorb wird also tadellos angezeigt, auch wenn das Produkt dahinter
- * längst gelöscht oder nicht mehr veröffentlicht ist.
- *
- * JEDE schreibende Cart-Route dagegen (Adresse setzen, Artikel hinzufügen,
- * Menge ändern, Position löschen, Versandart wählen) läuft durch
- * `refreshCartItemsWorkflow`, und der prüft jede Position gegen den Katalog.
- * Eine einzige tote Variante reicht, und Medusa antwortet mit 400:
- *
- *   «Variants variant_… do not exist or belong to a product that is not
- *    published»  bzw.  «Variants with IDs variant_… do not have a price»
- *
- * Der Cart ist dann dauerhaft blockiert. Auch Löschen hilft nicht: das
- * Löschen EINER Position frischt die übrigen auf und scheitert an der
- * nächsten toten. So ist es auf test.jibbit.ch passiert — ein Cart mit den
- * Demo-Artikeln aus dem Seed, die der echte Katalog abgelöst hat. Die Kasse
- * meldete «nicht erreichbar, bitte nochmals versuchen», was falsch war und
- * beim nächsten Versuch genauso scheiterte.
- *
- * ══ DIE AUFLÖSUNG ═════════════════════════════════════════════════════════
- * Ein neuer Cart, in den nur die noch bestellbaren Positionen einzeln
- * übernommen werden (E-Mail und Adressen gleich mit). Was sich nicht mehr
- * übernehmen lässt, wird der Kundin mit Namen genannt. Einzeln statt in einem
- * Rutsch, weil ein einziger toter Artikel in `items: [...]` den ganzen
- * Aufbau scheitern liesse und Medusa nicht immer alle IDs nennt.
- *
- * Rein bis auf das übergebene SDK — testbar ohne Next.
+ * Pure apart from the passed SDK.
  */
 
 import type Medusa from "@medusajs/js-sdk";
@@ -37,13 +12,7 @@ import type { HttpTypes } from "@medusajs/types";
 import { toCartLineView } from "./adapter";
 import type { CartLineView } from "./types";
 
-/**
- * Loose on purpose: Medusa rethrows the step's original MedusaError
- * (workflow-orchestrator `throw ret.errors[0].error`, error-handler maps
- * INVALID_DATA to 400 with the message untouched), but a reworded message in
- * a minor release must not silently switch the recovery off. Must mention
- * variants AND one of the three phrases.
- */
+/** Loose on purpose, so a reworded Medusa message does not switch recovery off. */
 const STALE_PATTERNS = [/do not exist/i, /not published/i, /do not have a price/i];
 
 function statusOf(error: unknown): number | undefined {
@@ -63,9 +32,8 @@ function messageOf(error: unknown): string {
 }
 
 /**
- * Die Varianten, an denen Medusa den Cart abgelehnt hat — oder `null`, wenn
- * der Fehler NICHT von toten Artikeln kommt. Ein leeres Array heisst:
- * «tote Artikel, aber Medusa hat nicht gesagt welche».
+ * The variants Medusa refused, `[]` if it did not name them, or `null` when
+ * the error is not about dead lines at all.
  */
 export function staleVariantIds(error: unknown): string[] | null {
   const status = statusOf(error);
@@ -84,12 +52,7 @@ export const REJECTED_ERROR =
   "Der Warenkorb liess sich nicht aktualisieren. Bitte lade die Seite neu. " +
   "Klappt es dann immer noch nicht, schreib uns kurz — wir helfen sofort weiter.";
 
-/**
- * Eine Meldung, die stimmt. «Nicht erreichbar, gleich nochmals versuchen» nur,
- * wenn das Backend wirklich nicht antwortet (kein Status, 5xx, 429). Eine
- * 4xx-Ablehnung wird durch Warten nicht besser — dort braucht die Kundin einen
- * anderen Ausweg.
- */
+/** "Try again later" only when retrying can help: no response, 5xx or 429. */
 export function describeCartFailure(error: unknown): string {
   const status = statusOf(error);
   if (status === undefined || status >= 500 || status === 429) {
@@ -102,7 +65,6 @@ function lineLabel(line: CartLineView): string {
   return line.variantTitle ? `${line.title} (${line.variantTitle})` : line.title;
 }
 
-/** Die Meldung an die Kundin, nachdem tote Artikel entfernt wurden. */
 export function droppedNotice(
   dropped: readonly CartLineView[],
   remainingCount: number,
@@ -122,11 +84,7 @@ export function droppedNotice(
 
 type AddressLike = HttpTypes.StoreCartAddress | null | undefined;
 
-/**
- * Nur die Felder, die `POST /store/carts` annimmt — der Validator ist
- * `.strict()`, eine mitgeschleppte `id` oder `created_at` liesse den ganzen
- * Neuaufbau scheitern.
- */
+/** `POST /store/carts` validates addresses `.strict()` — no id, no timestamps. */
 function toAddressPayload(address: AddressLike) {
   if (!address?.country_code) return undefined;
   const pick = (v: string | null | undefined) => v ?? undefined;
@@ -150,12 +108,8 @@ export interface RebuildResult {
 }
 
 /**
- * Baut aus einem blockierten Cart einen neuen, bestellbaren.
- *
- * `knownDead` sind die Varianten, die Medusa im Fehler schon genannt hat —
- * die werden gar nicht erst versucht. Jede weitere Position wird einzeln
- * übernommen; scheitert sie wieder an «tot», fällt sie weg, jeder ANDERE
- * Fehler bricht ab (dann ist das Backend das Problem, nicht der Katalog).
+ * Lines are re-added one by one (one dead item in a bulk create would sink
+ * the rest); a dead-line refusal drops the line, any other error aborts.
  */
 export async function rebuildCart(
   sdk: Pick<Medusa, "store">,

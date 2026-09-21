@@ -1,17 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/**
- * Regression: test.jibbit.ch, Kasse Schritt 1. Der Warenkorb enthielt
- * Demo-Artikel aus dem Seed, die der echte Katalog inzwischen abgelöst hatte.
- * GET /store/carts/:id zeigte ihn tadellos an, jedes POST scheiterte mit 400
- * «Variants … do not exist or belong to a product that is not published» —
- * und die Kasse meldete «nicht erreichbar, bitte nochmals versuchen». Für
- * immer.
- *
- * Erwartet wird jetzt: neuer Cart mit dem, was noch bestellbar ist, Adresse
- * darauf, und eine ehrliche Meldung, was entfernt wurde.
- */
-
 const mocks = vi.hoisted(() => ({
   cookieCartId: "cart_old" as string | null,
   sessionToken: null as string | null,
@@ -65,8 +53,22 @@ function item(id: string, variant: string, quantity: number, title: string, vari
 const DEAD = new Set(["variant_OCB1", "variant_ELE5"]);
 
 /** A tiny in-memory Medusa that behaves like v2.13 for dead line items. */
-function fakeMedusa() {
-  const carts = new Map<string, { id: string; items: ReturnType<typeof item>[]; email?: string; shipping_address?: unknown }>();
+const SHIPPING_OPTIONS = [
+  { id: "so_free", provider_id: "manual_manual", amount: 0 },
+  { id: "so_swiss", provider_id: "swiss-shipping_swiss-shipping", amount: undefined },
+];
+
+type FakeCart = {
+  id: string;
+  items: ReturnType<typeof item>[];
+  email?: string;
+  shipping_address?: unknown;
+  shipping_methods?: { id: string; shipping_option_id: string }[];
+  shipping_total?: number;
+};
+
+function fakeMedusa(options: unknown[] = SHIPPING_OPTIONS) {
+  const carts = new Map<string, FakeCart>();
   carts.set("cart_old", {
     id: "cart_old",
     items: [
@@ -108,6 +110,18 @@ function fakeMedusa() {
           return { cart: structuredClone(carts.get(id)!) };
         }),
         transferCart: vi.fn(async () => ({ cart: {} })),
+        addShippingMethod: vi.fn(async (id: string, body: { option_id: string }) => {
+          refresh(id);
+          Object.assign(carts.get(id)!, {
+            shipping_methods: [{ id: "sm_1", shipping_option_id: body.option_id }],
+            shipping_total: 4.5,
+          });
+          return { cart: structuredClone(carts.get(id)!) };
+        }),
+      },
+      fulfillment: {
+        listCartOptions: vi.fn(async () => ({ shipping_options: options })),
+        calculate: vi.fn(async (id: string) => ({ shipping_option: { id, amount: 4.5 } })),
       },
       customer: {
         listAddress: vi.fn(async () => ({ addresses: [] })),
@@ -129,6 +143,47 @@ const ADDRESS = {
   countryCode: "ch",
   phone: "",
 };
+
+describe("saveContactAndAddress puts the delivery method on the cart", () => {
+  beforeEach(() => {
+    mocks.cookieCartId = "cart_ok";
+    mocks.sessionToken = null;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  function healthy(options?: unknown[]) {
+    const medusa = fakeMedusa(options);
+    medusa.carts.set("cart_ok", { id: "cart_ok", items: [item("li", "variant_LIVE", 1, "RAW")] });
+    mocks.sdk = medusa.sdk;
+    return medusa;
+  }
+
+  it("selects the swiss-shipping option itself — no chooser for the customer", async () => {
+    const { sdk } = healthy();
+
+    const result = await saveContactAndAddress("kundin@example.ch", ADDRESS);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(sdk.store.cart.addShippingMethod).toHaveBeenCalledWith(
+      "cart_ok",
+      { option_id: "so_swiss" },
+      expect.anything(),
+    );
+    expect(result.cart.hasShippingMethod).toBe(true);
+    expect(result.cart.shipping).toBe(4.5);
+  });
+
+  it("says so honestly when nothing can ship to the address", async () => {
+    healthy([]);
+
+    const result = await saveContactAndAddress("kundin@example.ch", ADDRESS);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.message).toContain("nicht liefern");
+  });
+});
 
 describe("saveContactAndAddress with a cart blocked by unavailable items", () => {
   beforeEach(() => {

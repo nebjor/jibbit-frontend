@@ -1,9 +1,11 @@
 /**
  * DATA LAYER — the only place components get products/categories from.
  *
- * Every function tries the Medusa backend via the SDK and falls back to the
- * mock catalog when the backend is unreachable (which it is during early
- * development). This is what keeps `next build` green while the backend boots.
+ * Every function tries the Medusa backend via the SDK. Outside production
+ * (dev, test) an unreachable backend falls back to the mock catalog. In
+ * production it never does: products throw `CatalogUnavailableError` (the
+ * segment's error boundary shows an honest error state), categories degrade
+ * to an empty list so the header still renders.
  *
  * Rule for callers: never import `mock-catalog` or `medusa` directly from a
  * component. Import from here.
@@ -30,14 +32,33 @@ import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "./mock-catalog";
 import type { CategoryHandle, CategoryView, ProductView } from "./types";
 import type Medusa from "@medusajs/js-sdk";
 
+export class CatalogUnavailableError extends Error {
+  constructor(where: string) {
+    super(`Katalog nicht verfügbar (${where})`);
+    this.name = "CatalogUnavailableError";
+  }
+}
+
+/** The mock catalog is a dev/test aid only — never shown to real customers. */
+function mockAllowed(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
+/** The mock value outside production; otherwise throws so the page can say so. */
+function mockOrThrow<T>(mock: T, where: string): T {
+  if (mockAllowed()) return mock;
+  throw new CatalogUnavailableError(where);
+}
+
 /** Per-tenant, so the build/runtime log shows the fallback once per tenant, not once ever. */
 const warnedFor = new Set<string>();
 function warnFallback(tenant: TenantConfig, where: string, err: unknown) {
   const msg = err instanceof Error ? err.message : String(err);
   const key = `${tenant.id}:${where}`;
   if (!warnedFor.has(key)) {
+    const effect = mockAllowed() ? "serving MOCK catalog" : "no mock in production";
     console.warn(
-      `[jibbit:${tenant.id}] Medusa backend unavailable — serving MOCK catalog. (${where}: ${msg})`,
+      `[jibbit:${tenant.id}] Medusa backend unavailable — ${effect}. (${where}: ${msg})`,
     );
     warnedFor.add(key);
   }
@@ -45,8 +66,8 @@ function warnFallback(tenant: TenantConfig, where: string, err: unknown) {
 
 /**
  * The region determines currency and pricing. Resolved lazily and cached per
- * tenant for the process; falls back to undefined, in which case we serve
- * mocks. Keyed by tenant id — see module doc comment.
+ * tenant — but only once found; a miss is retried on the next request.
+ * Keyed by tenant id — see module doc comment.
  */
 const regionIdPromises = new Map<string, Promise<string | undefined>>();
 
@@ -67,10 +88,6 @@ async function getRegionId(tenant: TenantConfig, sdk: Medusa): Promise<string | 
       }
     })();
     regionIdPromises.set(tenant.id, promise);
-    // Only a FOUND region is worth keeping for the process lifetime. A miss
-    // (backend still booting, network blip) cached forever would pin the
-    // tenant to the mock catalogue and create carts without a region until
-    // the next restart. Forget it so the next request asks again.
     const pending = promise;
     void pending.then((id) => {
       if (!id && regionIdPromises.get(tenant.id) === pending) {
@@ -126,7 +143,10 @@ async function fetchBackendCategories(
 export async function getCategories(): Promise<CategoryView[]> {
   const tenant = await getTenantContext();
   const sdk = getSdkForTenant(tenant);
-  return (await fetchBackendCategories(tenant, sdk)) ?? MOCK_CATEGORIES;
+  return (
+    (await fetchBackendCategories(tenant, sdk)) ??
+    (mockAllowed() ? MOCK_CATEGORIES : [])
+  );
 }
 
 export async function getCategory(
@@ -188,7 +208,7 @@ export async function getProducts(opts?: {
   const sdk = getSdkForTenant(tenant);
 
   const regionId = await getRegionId(tenant, sdk);
-  if (!regionId) return filterMock(MOCK_PRODUCTS);
+  if (!regionId) return mockOrThrow(filterMock(MOCK_PRODUCTS), "regions");
 
   try {
     // `opts.category` is our internal handle, not a Medusa category id, so it
@@ -209,7 +229,7 @@ export async function getProducts(opts?: {
       fields: PRODUCT_FIELDS,
       ...(categoryId ? { category_id: [categoryId] } : {}),
     });
-    if (!products?.length) return filterMock(MOCK_PRODUCTS);
+    if (!products?.length) return mockAllowed() ? filterMock(MOCK_PRODUCTS) : [];
 
     // Not `products.map(toProductView)` — map would hand the array index in as
     // the tiers argument. The listing needs no tiers anyway: cards show the
@@ -221,7 +241,7 @@ export async function getProducts(opts?: {
       : views;
   } catch (err) {
     warnFallback(tenant, "products", err);
-    return filterMock(MOCK_PRODUCTS);
+    return mockOrThrow(filterMock(MOCK_PRODUCTS), "products");
   }
 }
 
@@ -278,30 +298,34 @@ export async function getProduct(
   const tenant = await getTenantContext();
   const sdk = getSdkForTenant(tenant);
 
-  const regionId = await getRegionId(tenant, sdk);
-  if (!regionId) return MOCK_PRODUCTS.find((p) => p.handle === handle);
+  const findMock = () => MOCK_PRODUCTS.find((p) => p.handle === handle);
 
+  const regionId = await getRegionId(tenant, sdk);
+  if (!regionId) return mockOrThrow(findMock(), "regions");
+
+  let products;
   try {
-    const { products } = await sdk.store.product.list({
+    ({ products } = await sdk.store.product.list({
       handle,
       region_id: regionId,
       limit: 1,
       fields: PRODUCT_FIELDS,
-    });
-    const found = products?.[0];
-    if (found) {
-      const tiers = await fetchPriceTiers(
-        tenant,
-        sdk,
-        (found.variants ?? []).map((v) => v.id),
-        regionId,
-      );
-      return toProductView(found, tiers);
-    }
+    }));
   } catch (err) {
     warnFallback(tenant, "product", err);
+    return mockOrThrow(findMock(), "product");
   }
-  return MOCK_PRODUCTS.find((p) => p.handle === handle);
+
+  const found = products?.[0];
+  if (!found) return mockAllowed() ? findMock() : undefined;
+
+  const tiers = await fetchPriceTiers(
+    tenant,
+    sdk,
+    (found.variants ?? []).map((v) => v.id),
+    regionId,
+  );
+  return toProductView(found, tiers);
 }
 
 export async function getFeaturedProducts(
@@ -329,7 +353,10 @@ export async function getRelatedProducts(
   return all.filter((p) => p.handle !== product.handle).slice(0, limit);
 }
 
-/** Handles for prerendering. Derived from mocks so the build never hits the network. */
+/**
+ * Handles for prerendering. Derived from mocks so the build never hits the
+ * network — and none in production, where mock pages must not exist.
+ */
 export function getStaticProductHandles(): string[] {
-  return MOCK_PRODUCTS.map((p) => p.handle);
+  return mockAllowed() ? MOCK_PRODUCTS.map((p) => p.handle) : [];
 }

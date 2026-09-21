@@ -81,31 +81,8 @@ export interface CheckoutAddress {
   phone?: string;
 }
 
-/** One selectable delivery method. */
-export interface ShippingOptionView {
-  id: string;
-  name: string;
-  /** Prose from the shipping option type; never a price. */
-  description: string;
-  /**
-   * Gross price, or `null` when Medusa cannot state it up front.
-   *
-   * The seeded Swiss option is `price_type: "calculated"`, and the store route
-   * (`listShippingOptionsForCartWorkflow`) documents that it does NOT compute
-   * calculated prices — `amount` comes back undefined. The binding price only
-   * materialises as `cart.shipping_total` once the method is on the cart, which
-   * is why the checkout selects a method before showing a shipping figure.
-   */
-  amount: number | null;
-}
-
 /** Every cart mutation answers with this. Errors are values, not exceptions. */
 export type CartActionResult =
-  /**
-   * `notice`: the action succeeded, but the customer must be told something —
-   * e.g. that unavailable items were dropped while rebuilding a blocked cart
-   * (lib/cart/recover.ts).
-   */
   | { ok: true; cart: CartState; notice?: string }
   | { ok: false; message: string; cart: CartState };
 
