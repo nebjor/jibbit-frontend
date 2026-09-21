@@ -87,6 +87,13 @@ export interface ProductView {
   images: string[];
   /** Editorially featured on the landing page. */
   featured: boolean;
+  /**
+   * Bezeichnung und Foto je Preisstufe aus dem Admin-Widget «Preistabelle»
+   * (product.metadata.preistabelle), Schlüssel = «ab»-Menge. Leer, wenn nichts
+   * gepflegt ist — dann heissen die Chips «24 Stück» und die Galerie bleibt
+   * in ihrer normalen Reihenfolge.
+   */
+  tierExtras?: Record<number, { label?: string; image?: string }>;
 }
 
 /** A line in the local (pre-backend) cart. */
@@ -105,5 +112,10 @@ export interface CartLine {
   quantity: number;
   /** Copied from the variant so the cart can reprice itself on quantity change. */
   tiers?: PriceTier[];
+  /**
+   * Schrittweite der +/−-Knöpfe im Warenkorb: die Preisstufe, die der Kunde
+   * gewählt hat (24er Display -> 24). Fehlt sie, 1.
+   */
+  step?: number;
   unitsPerPack?: number;
 }
