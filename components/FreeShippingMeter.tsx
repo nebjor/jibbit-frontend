@@ -3,6 +3,7 @@
 import { useCart } from "./CartProvider";
 import { formatPrice } from "@/lib/format";
 import { SHIPPING } from "@/lib/config";
+import { ShippingSplitNote } from "./ShippingSplitNote";
 import styles from "./FreeShippingMeter.module.css";
 
 /**
@@ -49,12 +50,7 @@ export function FreeShippingMeter() {
           style={{ width: `${Math.round(freeShippingProgress * 100)}%` }}
         />
       </div>
-      {!reached && (
-        <p className={styles.hint}>
-          Versand ab {formatPrice(SHIPPING.letterRate)} · gratis ab{" "}
-          {formatPrice(SHIPPING.freeThreshold)}
-        </p>
-      )}
+      {!reached && <ShippingSplitNote />}
     </div>
   );
 }

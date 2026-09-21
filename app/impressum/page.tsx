@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Prose, Platzhalter } from "@/components/Prose";
-import { STORE } from "@/lib/config";
+import { Prose } from "@/components/Prose";
+import { STORE, BUSINESS } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Impressum",
@@ -13,16 +13,8 @@ export default function ImpressumPage() {
     <Prose
       title="Impressum"
       intro={`Angaben zum Betreiber von ${STORE.domain} gemäss Art. 3 Abs. 1 lit. s UWG (Anbieterkennzeichnung im elektronischen Geschäftsverkehr).`}
-      updated="Entwurf vom 21. August 2026 — offene Angaben sind markiert"
+      updated="21. September 2026"
     >
-      <p>
-        <strong>
-          Hinweis für den Betreiber: alle markierten Felder vor dem Livegang
-          durch die echten Angaben ersetzen. Es wurden bewusst keine Daten
-          erfunden — eine erkennbare Lücke ist besser als eine falsche Adresse.
-        </strong>
-      </p>
-
       <h2>Verantwortlich für diese Website</h2>
       <dl>
         <div>
@@ -31,8 +23,8 @@ export default function ImpressumPage() {
             Joris Neber
             <br />
             Neber Import
-              <br />
-              Einzelunternehmen
+            <br />
+            Einzelunternehmen
           </dd>
         </div>
         <div>
@@ -48,7 +40,7 @@ export default function ImpressumPage() {
         <div>
           <dt>E-Mail</dt>
           <dd>
-            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
+            <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </dd>
         </div>
         <div>
@@ -61,7 +53,7 @@ export default function ImpressumPage() {
           <dt>Mehrwertsteuer</dt>
           <dd>
             Nicht mehrwertsteuerpflichtig. Auf den Preisen wird keine
-              Mehrwertsteuer erhoben und keine ausgewiesen.
+            Mehrwertsteuer erhoben und keine ausgewiesen.
           </dd>
         </div>
       </dl>
