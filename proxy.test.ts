@@ -222,3 +222,22 @@ describe("proxy (matcher, Noindex-Block)", () => {
     ]);
   });
 });
+
+describe("proxy (alte Odoo-URLs)", () => {
+  const redirectFor = async (host: string, path: string) => {
+    vi.mocked(resolveTenantConfig).mockResolvedValue(makeConfig("jibbit", host));
+    const req = new NextRequest(`https://${host}${path}`, { headers: new Headers({ host }) });
+    return proxy(req, makeEvent());
+  };
+
+  it("leitet auf jibbit.ch mit 301 um, Query bleibt", async () => {
+    const res = await redirectFor("jibbit.ch", "/shop/gizeh-dw-extra-fine-61?utm_source=x");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://jibbit.ch/products/gizeh-dw-extra-fine?utm_source=x");
+  });
+
+  it("lässt andere Mandanten unberührt", async () => {
+    const res = await redirectFor("a.jibbit.app", "/terms");
+    expect(res.status).not.toBe(301);
+  });
+});
