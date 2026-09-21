@@ -101,7 +101,12 @@ export interface ShippingOptionView {
 
 /** Every cart mutation answers with this. Errors are values, not exceptions. */
 export type CartActionResult =
-  | { ok: true; cart: CartState }
+  /**
+   * `notice`: the action succeeded, but the customer must be told something —
+   * e.g. that unavailable items were dropped while rebuilding a blocked cart
+   * (lib/cart/recover.ts).
+   */
+  | { ok: true; cart: CartState; notice?: string }
   | { ok: false; message: string; cart: CartState };
 
 export const EMPTY_CART: CartState = Object.freeze({

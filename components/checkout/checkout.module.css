@@ -182,6 +182,24 @@
   color: var(--c-accent);
 }
 
+.errorLink {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  /* Thumb-sized target on phones. */
+  display: inline-block;
+  padding-block: var(--s-1);
+}
+
+.notice {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  font-size: 14px;
+}
+
 .muted {
   color: var(--c-muted);
   font-size: 14px;

@@ -25,14 +25,21 @@ import type { HttpTypes } from "@medusajs/types";
 import { toCartState } from "@/lib/cart/adapter";
 import {
   CART_FIELDS,
-  NETWORK_ERROR,
   cartContext,
   clearCartId,
   currentCartId,
+  describeCartFailure,
   logCartError,
   readCartState,
+  recoverStaleCart,
+  type CartContext,
 } from "@/lib/cart/server";
-import { EMPTY_CART, type CartActionResult, type ShippingOptionView } from "@/lib/cart/types";
+import {
+  EMPTY_CART,
+  type CartActionResult,
+  type CartState,
+  type ShippingOptionView,
+} from "@/lib/cart/types";
 import type { CheckoutAddress } from "@/lib/cart/types";
 import { readSessionToken } from "@/lib/auth/session";
 import {
@@ -57,6 +64,7 @@ export type PlaceOrderResult =
 interface LiveCart {
   cart: HttpTypes.StoreCart;
   sdk: Medusa;
+  ctx: CartContext;
 }
 
 /** The live Medusa cart, or null when there is none to check out. */
@@ -70,7 +78,7 @@ async function loadCart(): Promise<LiveCart | null> {
       fields: CART_FIELDS,
     });
     if (cart.completed_at) return null;
-    return { cart, sdk: ctx.sdk };
+    return { cart, sdk: ctx.sdk, ctx };
   } catch (error) {
     logCartError("checkout:retrieve", error);
     return null;
@@ -82,8 +90,13 @@ async function loadCart(): Promise<LiveCart | null> {
 // ---------------------------------------------------------------------------
 
 export type SaveAddressResult =
-  | { ok: true; cart: CartActionResult["cart"] }
-  | { ok: false; message?: string; errors: AddressErrors };
+  /** `notice`: saved, but unavailable items had to be dropped first. */
+  | { ok: true; cart: CartState; notice?: string }
+  /**
+   * `cart`: set when the cart itself changed while failing (a blocked cart
+   * was rebuilt) — the UI must show THIS cart, not the one it still holds.
+   */
+  | { ok: false; message?: string; errors: AddressErrors; cart?: CartState };
 
 export async function saveContactAndAddress(
   email: string,
@@ -117,9 +130,9 @@ export async function saveContactAndAddress(
     phone: normalized.phone,
   };
 
-  try {
+  const writeAddress = async (cartId: string) => {
     const { cart } = await live.sdk.store.cart.update(
-      live.cart.id,
+      cartId,
       {
         email: email.trim(),
         shipping_address: medusaAddress,
@@ -130,17 +143,46 @@ export async function saveContactAndAddress(
       },
       { fields: CART_FIELDS },
     );
-
     // Die Adresse ins Adressbuch, damit die nächste Bestellung sie kennt —
     // der eigentliche Zweck der Kontopflicht. Fehler dort bleiben dort.
     if (sessionToken) {
       await saveAddressToAccount(live.sdk, sessionToken, normalized);
     }
+    return toCartState(cart);
+  };
 
-    return { ok: true, cart: toCartState(cart) };
+  try {
+    return { ok: true, cart: await writeAddress(live.cart.id) };
   } catch (error) {
     logCartError("checkout:address", error);
-    return { ok: false, message: NETWORK_ERROR, errors: {} };
+
+    // Medusa re-validates every line on each cart write. One product that was
+    // deleted or unpublished since it went into the cart blocks the address
+    // step FOREVER — this is what froze the checkout on test.jibbit.ch.
+    // Rebuild the cart from what is still orderable and try once more.
+    const recovered = await recoverStaleCart(live.ctx, error);
+    if (!recovered) {
+      return { ok: false, message: describeCartFailure(error), errors: {} };
+    }
+    if (recovered.state.count === 0) {
+      return { ok: false, message: recovered.notice, errors: {}, cart: recovered.state };
+    }
+
+    try {
+      if (sessionToken) {
+        await attachCartToCustomer(live.sdk, { id: recovered.id }, sessionToken);
+      }
+      const cart = await writeAddress(recovered.id);
+      return { ok: true, cart, notice: recovered.notice };
+    } catch (retryError) {
+      logCartError("checkout:address:after-recover", retryError);
+      return {
+        ok: false,
+        message: `${recovered.notice} ${describeCartFailure(retryError)}`,
+        errors: {},
+        cart: recovered.state,
+      };
+    }
   }
 }
 
@@ -184,16 +226,44 @@ export async function selectShippingOption(
   const live = await loadCart();
   if (!live) return { ok: false, message: NO_CART, cart: EMPTY_CART };
 
-  try {
+  const addMethod = async (cartId: string) => {
     const { cart } = await live.sdk.store.cart.addShippingMethod(
-      live.cart.id,
+      cartId,
       { option_id: optionId },
       { fields: CART_FIELDS },
     );
-    return { ok: true, cart: toCartState(cart) };
+    return toCartState(cart);
+  };
+
+  try {
+    return { ok: true, cart: await addMethod(live.cart.id) };
   } catch (error) {
     logCartError("checkout:shipping-method", error);
-    return { ok: false, message: NETWORK_ERROR, cart: await readCartState() };
+
+    // Same trap as in step 1: an item that went off sale in the meantime.
+    // The rebuilt cart carries e-mail and address over, so the delivery
+    // method can go straight onto it.
+    const recovered = await recoverStaleCart(live.ctx, error);
+    if (!recovered) {
+      return { ok: false, message: describeCartFailure(error), cart: await readCartState() };
+    }
+    if (recovered.state.count === 0) {
+      return { ok: false, message: recovered.notice, cart: recovered.state };
+    }
+    try {
+      const sessionToken = await readSessionToken();
+      if (sessionToken) {
+        await attachCartToCustomer(live.sdk, { id: recovered.id }, sessionToken);
+      }
+      return { ok: true, cart: await addMethod(recovered.id), notice: recovered.notice };
+    } catch (retryError) {
+      logCartError("checkout:shipping-method:after-recover", retryError);
+      return {
+        ok: false,
+        message: `${recovered.notice} ${describeCartFailure(retryError)}`,
+        cart: recovered.state,
+      };
+    }
   }
 }
 

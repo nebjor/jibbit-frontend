@@ -77,6 +77,8 @@ export function CheckoutFlow({
   );
   const [errors, setErrors] = useState<AddressErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  /** Non-blocking news, e.g. "item X is no longer available and was removed". */
+  const [notice, setNotice] = useState<string | null>(null);
   const [options, setOptions] = useState<ShippingOptionView[] | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
@@ -111,25 +113,41 @@ export function CheckoutFlow({
         if (result.ok) {
           setSelectedOption(list[0].id);
           cart.applyCart(result.cart);
+          if (result.notice) setNotice(result.notice);
         } else {
+          // See adoptFailedCart below.
+          if (result.cart.id) cart.applyCart(result.cart);
           setFormError(result.message);
         }
       }
     });
   }, [cart]);
 
+  /**
+   * A failed step can still hand back a DIFFERENT cart — a blocked cart that
+   * was rebuilt without its unavailable items. Show that one, or the summary
+   * keeps listing articles that are gone. A cart without id is a read that
+   * failed, not an empty basket; keep what is on screen then.
+   */
+  function adoptFailedCart(next: CartState | undefined) {
+    if (next?.id) cart.applyCart(next);
+  }
+
   function submitAddress(event: React.FormEvent) {
     event.preventDefault();
     setFormError(null);
+    setNotice(null);
     startTransition(async () => {
       const result = await saveAddressAction(email, address);
       if (!result.ok) {
+        adoptFailedCart(result.cart);
         setErrors(result.errors);
         setFormError(result.message ?? null);
         return;
       }
       setErrors({});
       cart.applyCart(result.cart);
+      setNotice(result.notice ?? null);
       setStep("shipping");
       loadOptions();
     });
@@ -140,11 +158,13 @@ export function CheckoutFlow({
     startTransition(async () => {
       const result = await selectShippingOptionAction(optionId);
       if (!result.ok) {
+        adoptFailedCart(result.cart);
         setFormError(result.message);
         return;
       }
       setSelectedOption(optionId);
       cart.applyCart(result.cart);
+      if (result.notice) setNotice(result.notice);
     });
   }
 
@@ -226,6 +246,21 @@ export function CheckoutFlow({
           {formError && (
             <p className={styles.error} role="alert">
               {formError}
+              {/* Never a dead end: with nothing left to order, the way out
+                  is the shop, not a disabled button. */}
+              {cart.count === 0 && (
+                <>
+                  {" "}
+                  <Link href="/" className={styles.errorLink}>
+                    Zum Shop
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
+          {notice && (
+            <p className={styles.notice} role="status">
+              {notice}
             </p>
           )}
 
