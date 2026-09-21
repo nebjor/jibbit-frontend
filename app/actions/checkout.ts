@@ -8,9 +8,10 @@
  * system provider settles inline. See lib/checkout/payment.ts.
  */
 
-import type { CheckoutAddress } from "@/lib/cart/types";
+import type { CartActionResult, CheckoutAddress } from "@/lib/cart/types";
 import {
   completeCart,
+  ensureShippingMethod,
   placeOrder,
   saveContactAndAddress,
   type PlaceOrderResult,
@@ -26,6 +27,10 @@ export async function saveAddressAction(
   address: CheckoutAddress,
 ): Promise<SaveAddressResult> {
   return saveContactAndAddress(email, address);
+}
+
+export async function ensureShippingAction(): Promise<CartActionResult> {
+  return ensureShippingMethod();
 }
 
 export async function placeOrderAction(): Promise<PlaceOrderResult> {

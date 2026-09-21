@@ -34,7 +34,12 @@ import {
   recoverStaleCart,
   type CartContext,
 } from "@/lib/cart/server";
-import type { CartState, CheckoutAddress } from "@/lib/cart/types";
+import {
+  EMPTY_CART,
+  type CartActionResult,
+  type CartState,
+  type CheckoutAddress,
+} from "@/lib/cart/types";
 import { readSessionToken } from "@/lib/auth/session";
 import {
   hasErrors,
@@ -174,6 +179,24 @@ export async function saveContactAndAddress(
         cart: recovered.state,
       };
     }
+  }
+}
+
+/**
+ * Re-applies the automatic delivery method when it went missing after step 1
+ * (a drawer change can drop it), so "Kaufen" never dead-ends.
+ */
+export async function ensureShippingMethod(): Promise<CartActionResult> {
+  const live = await loadCart();
+  if (!live) return { ok: false, message: NO_CART, cart: EMPTY_CART };
+  if (live.cart.shipping_methods?.length || !live.cart.shipping_address?.country_code) {
+    return { ok: true, cart: toCartState(live.cart) };
+  }
+  try {
+    return { ok: true, cart: await applyShippingMethod(live.sdk, live.cart.id) };
+  } catch (error) {
+    logCartError("checkout:ensure-shipping", error);
+    return { ok: false, message: failureReason(error), cart: toCartState(live.cart) };
   }
 }
 

@@ -28,7 +28,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
 import { FreeShippingMeter } from "@/components/FreeShippingMeter";
-import { placeOrderAction, saveAddressAction } from "@/app/actions/checkout";
+import {
+  ensureShippingAction,
+  placeOrderAction,
+  saveAddressAction,
+} from "@/app/actions/checkout";
 import { EMPTY_ADDRESS, SUPPORTED_COUNTRIES, type AddressErrors } from "@/lib/checkout/address";
 import type { CartState, CheckoutAddress } from "@/lib/cart/types";
 import { EMPTY_CART } from "@/lib/cart/types";
@@ -92,6 +96,26 @@ export function CheckoutFlow({
     seeded.current = true;
     if (!cartId) applyCart(initialCart);
   }, [applyCart, cartId, initialCart]);
+
+  const needsShipping =
+    step === "review" &&
+    cart.count > 0 &&
+    Boolean(cart.email) &&
+    cart.hasShippingAddress &&
+    !cart.hasShippingMethod;
+  const shippingAttemptFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!needsShipping || busy || cart.isPending) return;
+    // One attempt per cart state, so a failure cannot loop.
+    const key = `${cart.cartId}:${cart.count}:${cart.subtotal}`;
+    if (shippingAttemptFor.current === key) return;
+    shippingAttemptFor.current = key;
+    startTransition(async () => {
+      const result = await ensureShippingAction();
+      cart.applyCart(result.cart);
+      if (!result.ok) setFormError(result.message);
+    });
+  }, [needsShipping, busy, cart]);
 
   function submitAddress(event: React.FormEvent) {
     event.preventDefault();

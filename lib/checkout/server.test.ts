@@ -30,7 +30,7 @@ vi.mock("@/lib/auth/session", () => ({
   bearer: (t: string) => ({ Authorization: `Bearer ${t}` }),
 }));
 
-import { saveContactAndAddress } from "./server";
+import { ensureShippingMethod, saveContactAndAddress } from "./server";
 import { NETWORK_ERROR } from "@/lib/cart/recover";
 
 function fetchError(status: number, message: string) {
@@ -182,6 +182,49 @@ describe("saveContactAndAddress puts the delivery method on the cart", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.message).toContain("nicht liefern");
+  });
+});
+
+describe("ensureShippingMethod — delivery method dropped on step «Kaufen»", () => {
+  beforeEach(() => {
+    mocks.cookieCartId = "cart_ok";
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  function cartWith(shipping_methods?: FakeCart["shipping_methods"]) {
+    const medusa = fakeMedusa();
+    medusa.carts.set("cart_ok", {
+      id: "cart_ok",
+      items: [item("li", "variant_LIVE", 1, "RAW")],
+      email: "kundin@example.ch",
+      shipping_address: { country_code: "ch", city: "Zürich" },
+      shipping_methods,
+    });
+    mocks.sdk = medusa.sdk;
+    return medusa;
+  }
+
+  it("re-applies the automatic choice without the customer doing anything", async () => {
+    const { sdk } = cartWith(undefined);
+
+    const result = await ensureShippingMethod();
+
+    expect(result.ok).toBe(true);
+    expect(result.cart.hasShippingMethod).toBe(true);
+    expect(sdk.store.cart.addShippingMethod).toHaveBeenCalledWith(
+      "cart_ok",
+      { option_id: "so_swiss" },
+      expect.anything(),
+    );
+  });
+
+  it("leaves a cart that still has its method alone", async () => {
+    const { sdk } = cartWith([{ id: "sm_1", shipping_option_id: "so_swiss" }]);
+
+    const result = await ensureShippingMethod();
+
+    expect(result.ok).toBe(true);
+    expect(sdk.store.cart.addShippingMethod).not.toHaveBeenCalled();
   });
 });
 
