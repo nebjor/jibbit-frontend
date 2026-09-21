@@ -51,7 +51,6 @@ import { EMPTY_CART, type CartActionResult, type CartState } from "./types";
 const CART_FIELDS =
   "+items.total,+items.original_total,*payment_collection,+customer_id";
 
-/** Adding a variant that is no longer sold — the one stale case not rebuilt. */
 const UNAVAILABLE_ITEM =
   "Dieser Artikel ist leider nicht mehr erhältlich. Lade die Seite neu, um das aktuelle Sortiment zu sehen.";
 
@@ -187,18 +186,13 @@ async function getOrCreateCart(
 export interface RecoveredCart {
   id: string;
   state: CartState;
-  /** German, for the customer: what was dropped and what happens next. */
   notice: string;
 }
 
 /**
- * If `error` is Medusa refusing the cart because of dead line items, replace
- * the cart with a fresh one holding only what is still orderable, point the
- * cookie at it and return it. Otherwise — or if the rebuild itself fails —
- * null, and the caller reports the original failure.
- *
- * Server Actions only (writes the cart cookie). See lib/cart/recover.ts for
- * why the blocked cart cannot simply be repaired in place.
+ * Replaces a cart blocked by dead lines (lib/cart/recover.ts) and points the
+ * cookie at the new one. Null when `error` is something else or the rebuild
+ * fails. Server Actions only.
  */
 export async function recoverStaleCart(
   ctx: CartContext,
@@ -216,9 +210,7 @@ export async function recoverStaleCart(
     });
     if (stale.completed_at) return null;
 
-    // Medusa named variants, but none of them is IN this cart: the request
-    // itself asked for a dead variant (an "add" from a stale product page).
-    // The cart is fine; rebuilding it would change nothing.
+    // The refused variant was the one being added, not one in the cart.
     const inCart = new Set((stale.items ?? []).map((i) => i.variant_id));
     if (knownDead.length > 0 && !knownDead.some((v) => inCart.has(v))) {
       return null;
@@ -246,7 +238,6 @@ export async function recoverStaleCart(
   }
 }
 
-/** The honest message for a failed cart write. */
 function failureMessage(error: unknown): string {
   return staleVariantIds(error) !== null ? UNAVAILABLE_ITEM : describeCartFailure(error);
 }
@@ -317,9 +308,6 @@ async function mutate(
     return { ok: true, cart: await applyPlan(ctx, id, state, plan) };
   } catch (error) {
     logCartError(where, error);
-
-    // A cart blocked by items that are no longer sold fails EVERY write, so
-    // "try again" would never work. Rebuild it and apply the change once more.
     const recovered = await recoverStaleCart(ctx, error);
     if (recovered) {
       try {
@@ -339,7 +327,6 @@ async function mutate(
   }
 }
 
-/** Plan against `state`, apply, and re-price a merged line if needed. */
 async function applyPlan(
   ctx: CartContext,
   id: string,
@@ -412,9 +399,7 @@ export async function clearCart(): Promise<CartActionResult> {
     return { ok: true, cart: toCartState(cart) };
   } catch (error) {
     logCartError("clear", error);
-    // A cart blocked by unavailable items cannot even be emptied line by line
-    // (every delete re-validates the remaining lines). The customer asked for
-    // an empty cart: forget this one, the next "add" starts a fresh one.
+    // A blocked cart cannot be emptied line by line; drop it instead.
     if (staleVariantIds(error) !== null) {
       await clearCartId();
       return { ok: true, cart: EMPTY_CART };

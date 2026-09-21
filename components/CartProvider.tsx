@@ -62,6 +62,7 @@ import {
   freeShippingProgress,
   remainingForFreeShipping,
 } from "@/lib/cart/shipping";
+import { NETWORK_ERROR } from "@/lib/cart/recover";
 import type {
   CartActionResult,
   CartLineView,
@@ -107,10 +108,7 @@ interface CartContextValue {
   isPending: boolean;
   /** Last failure, in German, or null. */
   error: string | null;
-  /**
-   * Non-failure news from the last mutation, in German — e.g. "item X is no
-   * longer available and was removed" after a blocked cart was rebuilt.
-   */
+  /** Non-failure news from the last mutation, e.g. items that were removed. */
   notice: string | null;
   isOpen: boolean;
   openCart: () => void;
@@ -169,13 +167,9 @@ export function CartProvider({
           const result = await next;
           setCart(result.cart);
           setError(result.ok ? null : result.message);
-          // A successful action can still carry news the customer must see —
-          // e.g. unavailable items dropped while rebuilding a blocked cart.
           setNotice(result.ok ? (result.notice ?? null) : null);
         } catch {
-          setError(
-            "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.",
-          );
+          setError(NETWORK_ERROR);
         }
       });
     },

@@ -285,7 +285,6 @@
   color: var(--c-warning);
 }
 
-/* News that is not a failure (e.g. an unavailable item was removed). */
 .notice {
   margin: 0;
   padding: var(--s-3) var(--s-4);

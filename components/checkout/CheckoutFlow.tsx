@@ -1,59 +1,54 @@
 "use client";
 
 /**
- * THE KASSENSTRECKE — three steps on one page.
+ * THE KASSENSTRECKE — two steps on one page.
  *
- *   1. Kontakt + Lieferadresse
- *   2. Versandart
- *   3. Übersicht + Bestellabschluss
+ *   1. Kontakt + Lieferadresse (the server also puts the delivery method on
+ *      the cart — the customer never picks one, see lib/checkout/shipping-choice.ts)
+ *   2. Übersicht + Bestellabschluss
  *
- * One page rather than three routes: the basket, the price and the progress
- * stay visible the whole way, and a customer who wants to change the address
- * after seeing the shipping cost does not lose their place.
+ * One page rather than routes: the basket, the price and the progress stay
+ * visible the whole way. A cart that already carries address and delivery
+ * method (returning customer, reload) opens straight on step 2.
  *
  * ══ WHERE THE MONEY COMES FROM ════════════════════════════════════════════
  * Every number rendered here comes out of `useCart()`, which mirrors the Medusa
  * cart. Each step's Server Action returns the updated cart and pushes it in via
- * `applyCart`, so the summary here and the drawer can never disagree.
- *
- * ══ SHIPPING PRICE ════════════════════════════════════════════════════════
- * The Swiss shipping option is `price_type: "calculated"`, and Medusa's store
- * route does not compute prices for those — the option list carries no amount.
- * The price becomes knowable only once the method is ON the cart. Hence: the
- * single available option is selected automatically as soon as the step opens,
- * and from that moment the summary shows Medusa's binding `shipping_total`
- * rather than any estimate.
+ * `applyCart`, so the summary here and the drawer can never disagree. Until
+ * the delivery method is on the cart, shipping is the storefront's estimate
+ * and labelled as such; afterwards it is Medusa's binding `shipping_total`.
  *
  * ══ PAYMENT ═══════════════════════════════════════════════════════════════
- * There is no payment step in this UI yet, by design. `placeOrderAction` may
- * answer `{ kind: "redirect" }`, which is handled below — that is the whole
+ * `placeOrderAction` may answer `{ kind: "redirect" }` — that is the whole
  * change a redirect PSP needs on this side. See lib/checkout/payment.ts.
  */
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/CartProvider";
-import {
-  listShippingOptionsAction,
-  placeOrderAction,
-  saveAddressAction,
-  selectShippingOptionAction,
-} from "@/app/actions/checkout";
+import { FreeShippingMeter } from "@/components/FreeShippingMeter";
+import { placeOrderAction, saveAddressAction } from "@/app/actions/checkout";
 import { EMPTY_ADDRESS, SUPPORTED_COUNTRIES, type AddressErrors } from "@/lib/checkout/address";
-import type { CartState, CheckoutAddress, ShippingOptionView } from "@/lib/cart/types";
+import type { CartState, CheckoutAddress } from "@/lib/cart/types";
 import { EMPTY_CART } from "@/lib/cart/types";
 import { formatPrice } from "@/lib/format";
 import styles from "./checkout.module.css";
 
-type Step = "address" | "shipping";
+type Step = "address" | "review";
 
 const STEP_LABELS: Record<Step, string> = {
   address: "Adresse",
-  shipping: "Versand & Kauf",
+  review: "Kaufen",
 };
 
-const STEP_ORDER: Step[] = ["address", "shipping"];
+const STEP_ORDER: Step[] = ["address", "review"];
+
+function isReadyToBuy(
+  cart: Pick<CartState, "count" | "email" | "hasShippingAddress" | "hasShippingMethod">,
+): boolean {
+  return cart.count > 0 && Boolean(cart.email) && cart.hasShippingAddress && cart.hasShippingMethod;
+}
 
 export function CheckoutFlow({
   initialCart,
@@ -68,7 +63,7 @@ export function CheckoutFlow({
   const cart = useCart();
   const router = useRouter();
 
-  const [step, setStep] = useState<Step>("address");
+  const [step, setStep] = useState<Step>(isReadyToBuy(initialCart) ? "review" : "address");
   // Was der Cart schon trägt, gewinnt: eine halb ausgefüllte Kasse darf das
   // Konto-Vorausfüllen nicht überschreiben.
   const [email, setEmail] = useState(initialCart.email ?? prefillEmail ?? "");
@@ -77,10 +72,7 @@ export function CheckoutFlow({
   );
   const [errors, setErrors] = useState<AddressErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
-  /** Non-blocking news, e.g. "item X is no longer available and was removed". */
   const [notice, setNotice] = useState<string | null>(null);
-  const [options, setOptions] = useState<ShippingOptionView[] | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
 
   /**
@@ -101,38 +93,6 @@ export function CheckoutFlow({
     if (!cartId) applyCart(initialCart);
   }, [applyCart, cartId, initialCart]);
 
-  const loadOptions = useCallback(() => {
-    startTransition(async () => {
-      const list = await listShippingOptionsAction();
-      setOptions(list);
-      // Exactly one option is the normal case for a Swiss-only shop. Selecting
-      // it right away is what makes the real shipping cost visible at all —
-      // see the header.
-      if (list.length === 1) {
-        const result = await selectShippingOptionAction(list[0].id);
-        if (result.ok) {
-          setSelectedOption(list[0].id);
-          cart.applyCart(result.cart);
-          if (result.notice) setNotice(result.notice);
-        } else {
-          // See adoptFailedCart below.
-          if (result.cart.id) cart.applyCart(result.cart);
-          setFormError(result.message);
-        }
-      }
-    });
-  }, [cart]);
-
-  /**
-   * A failed step can still hand back a DIFFERENT cart — a blocked cart that
-   * was rebuilt without its unavailable items. Show that one, or the summary
-   * keeps listing articles that are gone. A cart without id is a read that
-   * failed, not an empty basket; keep what is on screen then.
-   */
-  function adoptFailedCart(next: CartState | undefined) {
-    if (next?.id) cart.applyCart(next);
-  }
-
   function submitAddress(event: React.FormEvent) {
     event.preventDefault();
     setFormError(null);
@@ -140,7 +100,8 @@ export function CheckoutFlow({
     startTransition(async () => {
       const result = await saveAddressAction(email, address);
       if (!result.ok) {
-        adoptFailedCart(result.cart);
+        // A rebuilt cart (unavailable items dropped) replaces the stale summary.
+        if (result.cart?.id) cart.applyCart(result.cart);
         setErrors(result.errors);
         setFormError(result.message ?? null);
         return;
@@ -148,23 +109,7 @@ export function CheckoutFlow({
       setErrors({});
       cart.applyCart(result.cart);
       setNotice(result.notice ?? null);
-      setStep("shipping");
-      loadOptions();
-    });
-  }
-
-  function chooseOption(optionId: string) {
-    setFormError(null);
-    startTransition(async () => {
-      const result = await selectShippingOptionAction(optionId);
-      if (!result.ok) {
-        adoptFailedCart(result.cart);
-        setFormError(result.message);
-        return;
-      }
-      setSelectedOption(optionId);
-      cart.applyCart(result.cart);
-      if (result.notice) setNotice(result.notice);
+      setStep("review");
     });
   }
 
@@ -193,7 +138,6 @@ export function CheckoutFlow({
   }
 
   const addressComplete = cart.hasShippingAddress && Boolean(cart.email);
-  const shippingComplete = cart.hasShippingMethod;
 
   function field(
     name: keyof CheckoutAddress,
@@ -246,8 +190,6 @@ export function CheckoutFlow({
           {formError && (
             <p className={styles.error} role="alert">
               {formError}
-              {/* Never a dead end: with nothing left to order, the way out
-                  is the shop, not a disabled button. */}
               {cart.count === 0 && (
                 <>
                   {" "}
@@ -364,7 +306,7 @@ export function CheckoutFlow({
                 })}
 
                 <button type="submit" className={styles.primaryCta} disabled={busy}>
-                  {busy ? "Einen Moment …" : "Weiter zur Versandart"}
+                  {busy ? "Einen Moment …" : "Weiter"}
                 </button>
               </form>
             ) : (
@@ -383,85 +325,32 @@ export function CheckoutFlow({
             )}
           </section>
 
-          {/* ── Schritt 2 — Versandart ────────────────────────────────── */}
-          {step !== "address" && (
-            <section className={styles.card} aria-labelledby="step-shipping">
+          {/* ── Schritt 2 — Kaufen ─────────────────────────────────────── */}
+          {step === "review" && (
+            <section className={styles.card} aria-labelledby="step-review">
               <div className={styles.cardHead}>
-                <h2 id="step-shipping" className={styles.cardTitle}>
-                  2 · Versandart
+                <h2 id="step-review" className={styles.cardTitle}>
+                  2 · Kaufen
                 </h2>
               </div>
-
-              {options === null ? (
-                <p className={styles.muted}>Versandarten werden geladen …</p>
-              ) : options.length === 0 ? (
-                <p className={styles.muted}>
-                  Für diese Adresse ist derzeit keine Versandart verfügbar. Bitte
-                  prüfe die Adresse oder melde dich bei uns.
-                </p>
-              ) : (
-                <ul className={styles.options}>
-                  {options.map((option) => (
-                    <li key={option.id}>
-                      <label className={styles.option}>
-                        <input
-                          type="radio"
-                          name="shipping-option"
-                          value={option.id}
-                          checked={selectedOption === option.id}
-                          disabled={busy}
-                          onChange={() => chooseOption(option.id)}
-                        />
-                        <span className={styles.optionBody}>
-                          <span className={styles.optionName}>{option.name}</span>
-                          {option.description && (
-                            <span className={styles.optionDesc}>
-                              {option.description}
-                            </span>
-                          )}
-                        </span>
-                        <span className={`${styles.optionPrice} tnum`}>
-                          {/*
-                            The binding price is `cart.shipping_total`, available
-                            only once this option is on the cart. `option.amount`
-                            is filled in for flat-rate options; the Swiss one is
-                            calculated, so it stays null until selected.
-                          */}
-                          {selectedOption === option.id
-                            ? cart.shipping === 0
-                              ? "Gratis"
-                              : formatPrice(cart.shipping)
-                            : option.amount !== null
-                              ? formatPrice(option.amount)
-                              : "—"}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {step === "shipping" && (
-                <>
-                  <p className={styles.muted}>
-                    Mit dem Klick auf &laquo;Jetzt kaufen&raquo; gibst du eine
-                    verbindliche Bestellung ab. Es gelten unsere{" "}
-                    <Link href="/agb">AGB</Link>; zur Rückgabe siehe{" "}
-                    <Link href="/widerrufsrecht">Widerrufsrecht</Link>.
-                  </p>
-                  <button
-                    type="button"
-                    className={styles.primaryCta}
-                    disabled={busy || !shippingComplete || cart.count === 0}
-                    onClick={submitOrder}
-                  >
-                    {busy ? "Bestellung wird abgeschlossen …" : "Jetzt kaufen"}
-                  </button>
-                </>
-              )}
+              <p className={styles.muted}>
+                Mit dem Klick auf &laquo;Jetzt kaufen&raquo; gibst du eine
+                verbindliche Bestellung ab. Es gelten unsere{" "}
+                <Link href="/agb">AGB</Link>; zur Rückgabe siehe{" "}
+                <Link href="/widerrufsrecht">Widerrufsrecht</Link>.
+              </p>
+              <button
+                type="button"
+                className={styles.primaryCta}
+                disabled={busy || !isReadyToBuy(cart)}
+                onClick={submitOrder}
+              >
+                {busy
+                  ? "Bestellung wird abgeschlossen …"
+                  : `Jetzt kaufen · ${formatPrice(cart.total)}`}
+              </button>
             </section>
           )}
-
         </div>
 
         {/* ── Warenkorb-Übersicht ─────────────────────────────────────── */}
@@ -480,6 +369,8 @@ export function CheckoutFlow({
             ))}
           </ul>
 
+          <FreeShippingMeter />
+
           <dl className={styles.totals}>
             <div>
               <dt>Zwischensumme</dt>
@@ -493,7 +384,7 @@ export function CheckoutFlow({
                 )}
               </dt>
               <dd className="tnum">
-                {cart.shipping === 0 ? "Gratis" : formatPrice(cart.shipping)}
+                {cart.shipping === 0 ? "gratis" : formatPrice(cart.shipping)}
               </dd>
             </div>
             <div className={styles.grand}>
