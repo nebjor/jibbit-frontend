@@ -32,7 +32,6 @@ export function ProductCard({
           priority={priority}
         />
         <div className={styles.body}>
-          {product.brand && <p className="eyebrow">{product.brand}</p>}
           <h3 className={styles.title}>{product.title}</h3>
           <Price
             price={product.price}
@@ -48,6 +47,7 @@ export function ProductCard({
               </>
             )}
           </p>
+          {product.brand && <p className="eyebrow">{product.brand}</p>}
           {product.subtitle && <p className={styles.sub}>{product.subtitle}</p>}
         </div>
       </Link>
