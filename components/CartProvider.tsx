@@ -162,7 +162,9 @@ export function CartProvider({
         try {
           const result = await next;
           setCart(result.cart);
-          setError(result.ok ? null : result.message);
+          // A successful action can still carry news the customer must see —
+          // e.g. unavailable items dropped while rebuilding a blocked cart.
+          setError(result.ok ? (result.notice ?? null) : result.message);
         } catch {
           setError(
             "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.",

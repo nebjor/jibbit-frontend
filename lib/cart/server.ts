@@ -30,6 +30,13 @@ import {
   planSetQuantity,
   type CartMutation,
 } from "./plan";
+import {
+  NETWORK_ERROR,
+  describeCartFailure,
+  droppedNotice,
+  rebuildCart,
+  staleVariantIds,
+} from "./recover";
 import { EMPTY_CART, type CartActionResult, type CartState } from "./types";
 
 /**
@@ -44,8 +51,9 @@ import { EMPTY_CART, type CartActionResult, type CartState } from "./types";
 const CART_FIELDS =
   "+items.total,+items.original_total,*payment_collection,+customer_id";
 
-const NETWORK_ERROR =
-  "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.";
+/** Adding a variant that is no longer sold — the one stale case not rebuilt. */
+const UNAVAILABLE_ITEM =
+  "Dieser Artikel ist leider nicht mehr erhältlich. Lade die Seite neu, um das aktuelle Sortiment zu sehen.";
 
 function isNotFound(error: unknown): boolean {
   return (
@@ -173,6 +181,77 @@ async function getOrCreateCart(
 }
 
 // ---------------------------------------------------------------------------
+// Recovering a cart blocked by unavailable items
+// ---------------------------------------------------------------------------
+
+export interface RecoveredCart {
+  id: string;
+  state: CartState;
+  /** German, for the customer: what was dropped and what happens next. */
+  notice: string;
+}
+
+/**
+ * If `error` is Medusa refusing the cart because of dead line items, replace
+ * the cart with a fresh one holding only what is still orderable, point the
+ * cookie at it and return it. Otherwise — or if the rebuild itself fails —
+ * null, and the caller reports the original failure.
+ *
+ * Server Actions only (writes the cart cookie). See lib/cart/recover.ts for
+ * why the blocked cart cannot simply be repaired in place.
+ */
+export async function recoverStaleCart(
+  ctx: CartContext,
+  error: unknown,
+): Promise<RecoveredCart | null> {
+  const knownDead = staleVariantIds(error);
+  if (knownDead === null) return null;
+
+  const cartId = await readCartId();
+  if (!cartId) return null;
+
+  try {
+    const { cart: stale } = await ctx.sdk.store.cart.retrieve(cartId, {
+      fields: CART_FIELDS,
+    });
+    if (stale.completed_at) return null;
+
+    // Medusa named variants, but none of them is IN this cart: the request
+    // itself asked for a dead variant (an "add" from a stale product page).
+    // The cart is fine; rebuilding it would change nothing.
+    const inCart = new Set((stale.items ?? []).map((i) => i.variant_id));
+    if (knownDead.length > 0 && !knownDead.some((v) => inCart.has(v))) {
+      return null;
+    }
+
+    const regionId = await getCurrentRegionId();
+    const { cart, dropped } = await rebuildCart(ctx.sdk, stale, {
+      regionId,
+      knownDead,
+      fields: CART_FIELDS,
+    });
+    await writeCartId(cart.id);
+
+    console.warn(
+      `[cart] cart ${stale.id} was blocked by unavailable variants ` +
+        `(${knownDead.join(", ") || "unnamed"}) — rebuilt as ${cart.id}, ` +
+        `${dropped.length} line(s) dropped`,
+    );
+
+    const state = toCartState(cart);
+    return { id: cart.id, state, notice: droppedNotice(dropped, state.count) };
+  } catch (rebuildError) {
+    logCartError("recover", rebuildError);
+    return null;
+  }
+}
+
+/** The honest message for a failed cart write. */
+function failureMessage(error: unknown): string {
+  return staleVariantIds(error) !== null ? UNAVAILABLE_ITEM : describeCartFailure(error);
+}
+
+// ---------------------------------------------------------------------------
 // Mutating
 // ---------------------------------------------------------------------------
 
@@ -235,29 +314,57 @@ async function mutate(
 
   try {
     const { id, state } = await getOrCreateCart(ctx);
-    const mutation = plan(state);
-    const next = await applyMutation(ctx, id, mutation);
-    if (!next) return { ok: true, cart: state };
+    return { ok: true, cart: await applyPlan(ctx, id, state, plan) };
+  } catch (error) {
+    logCartError(where, error);
 
-    // See planCorrectionAfterCreate: a create that Medusa merged into an
-    // existing line keeps the price it calculated for the delta quantity.
-    if (mutation.kind === "create") {
-      const line = next.lines.find((l) => l.variantId === mutation.variantId);
-      const correction = planCorrectionAfterCreate(line, mutation.quantity);
-      if (correction.kind !== "noop") {
-        console.warn(
-          `[cart] line for variant ${mutation.variantId} was merged by Medusa — re-pricing at the merged quantity`,
-        );
-        const corrected = await applyMutation(ctx, id, correction);
-        if (corrected) return { ok: true, cart: corrected };
+    // A cart blocked by items that are no longer sold fails EVERY write, so
+    // "try again" would never work. Rebuild it and apply the change once more.
+    const recovered = await recoverStaleCart(ctx, error);
+    if (recovered) {
+      try {
+        const cart = await applyPlan(ctx, recovered.id, recovered.state, plan);
+        return { ok: true, cart, notice: recovered.notice };
+      } catch (retryError) {
+        logCartError(`${where}:after-recover`, retryError);
+        return {
+          ok: false,
+          message: `${recovered.notice} ${failureMessage(retryError)}`,
+          cart: recovered.state,
+        };
       }
     }
 
-    return { ok: true, cart: next };
-  } catch (error) {
-    logCartError(where, error);
-    return { ok: false, message: NETWORK_ERROR, cart: await readCartState() };
+    return { ok: false, message: failureMessage(error), cart: await readCartState() };
   }
+}
+
+/** Plan against `state`, apply, and re-price a merged line if needed. */
+async function applyPlan(
+  ctx: CartContext,
+  id: string,
+  state: CartState,
+  plan: (cart: CartState) => CartMutation,
+): Promise<CartState> {
+  const mutation = plan(state);
+  const next = await applyMutation(ctx, id, mutation);
+  if (!next) return state;
+
+  // See planCorrectionAfterCreate: a create that Medusa merged into an
+  // existing line keeps the price it calculated for the delta quantity.
+  if (mutation.kind === "create") {
+    const line = next.lines.find((l) => l.variantId === mutation.variantId);
+    const correction = planCorrectionAfterCreate(line, mutation.quantity);
+    if (correction.kind !== "noop") {
+      console.warn(
+        `[cart] line for variant ${mutation.variantId} was merged by Medusa — re-pricing at the merged quantity`,
+      );
+      const corrected = await applyMutation(ctx, id, correction);
+      if (corrected) return corrected;
+    }
+  }
+
+  return next;
 }
 
 export function addLineToCart(
@@ -305,7 +412,14 @@ export async function clearCart(): Promise<CartActionResult> {
     return { ok: true, cart: toCartState(cart) };
   } catch (error) {
     logCartError("clear", error);
-    return { ok: false, message: NETWORK_ERROR, cart: await readCartState() };
+    // A cart blocked by unavailable items cannot even be emptied line by line
+    // (every delete re-validates the remaining lines). The customer asked for
+    // an empty cart: forget this one, the next "add" starts a fresh one.
+    if (staleVariantIds(error) !== null) {
+      await clearCartId();
+      return { ok: true, cart: EMPTY_CART };
+    }
+    return { ok: false, message: describeCartFailure(error), cart: await readCartState() };
   }
 }
 
@@ -313,7 +427,14 @@ export async function clearCart(): Promise<CartActionResult> {
 // Shared with the checkout layer
 // ---------------------------------------------------------------------------
 
-export { CART_FIELDS, NETWORK_ERROR, cartContext, isNotFound, logCartError };
+export {
+  CART_FIELDS,
+  NETWORK_ERROR,
+  cartContext,
+  describeCartFailure,
+  isNotFound,
+  logCartError,
+};
 export type { CartContext };
 
 /** The cart id, or null. Checkout steps operate on an existing cart only. */

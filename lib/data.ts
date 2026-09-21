@@ -67,6 +67,16 @@ async function getRegionId(tenant: TenantConfig, sdk: Medusa): Promise<string | 
       }
     })();
     regionIdPromises.set(tenant.id, promise);
+    // Only a FOUND region is worth keeping for the process lifetime. A miss
+    // (backend still booting, network blip) cached forever would pin the
+    // tenant to the mock catalogue and create carts without a region until
+    // the next restart. Forget it so the next request asks again.
+    const pending = promise;
+    void pending.then((id) => {
+      if (!id && regionIdPromises.get(tenant.id) === pending) {
+        regionIdPromises.delete(tenant.id);
+      }
+    });
   }
   return promise;
 }
