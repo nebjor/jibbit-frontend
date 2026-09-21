@@ -23,9 +23,14 @@
   font-weight: 700;
 }
 
+.unit {
+  font-size: 0.7em;
+  font-weight: 400;
+}
+
 .was {
   color: var(--c-muted);
-  font-size: 0.62em;
+  font-size: max(12px, 0.62em);
   text-decoration-thickness: 1px;
 }
 
@@ -42,6 +47,9 @@
   white-space: nowrap;
 }
 
+.xs {
+  font-size: 17px;
+}
 .sm {
   font-size: 22px;
 }

@@ -11,11 +11,13 @@ export function Price({
   compareAt,
   size = "md",
   currency = "CHF",
+  unit,
 }: {
   price: number;
   compareAt?: number;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   currency?: string;
+  unit?: string;
 }) {
   const pct = discountPercent(price, compareAt);
   const onSale = pct > 0 && compareAt != null;
@@ -25,11 +27,12 @@ export function Price({
       <span className={`${styles.current} ${onSale ? styles.sale : ""} tnum`}>
         <span className={styles.cur}>{currency}</span>
         {formatAmount(price)}
+        {unit && <span className={styles.unit}> / {unit}</span>}
       </span>
       {onSale && (
         <>
           <s className={`${styles.was} tnum`}>{formatAmount(compareAt)}</s>
-          {size !== "sm" && <SaveBadge percent={pct} />}
+          {(size === "md" || size === "lg") && <SaveBadge percent={pct} />}
           <span className="srOnly">
             Reduziert von {formatAmount(compareAt)} Franken auf{" "}
             {formatAmount(price)} Franken
