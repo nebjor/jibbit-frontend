@@ -128,6 +128,9 @@ indexable goes unnoticed for weeks. The server therefore logs a loud
   image built with the wrong value would stay wrong whatever Compose says. The
   switch is read from `process.env` on every request (`lib/seo/indexing.ts`);
   all routes render dynamically, so restarting the container is enough.
+- **`robots.txt` disallows on staging.** Tradeoff: a blocked crawler no longer
+  sees the noindex, so staging URLs that are already indexed stay until removed
+  via Search Console.
 - **Not covered by the header:** `/_next/static/*`, `/favicon.ico` and
   `/healthz` (excluded from the proxy matcher). For airtight coverage — or to
   keep people out as well as crawlers — add the header or Basic Auth in the
