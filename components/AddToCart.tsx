@@ -9,6 +9,7 @@ import { Price, SaveBadge } from "./Price";
 import { PriceTable } from "./PriceTable";
 import { formatAmount, formatPrice } from "@/lib/format";
 import {
+  activeTier,
   defaultVariant,
   packAdvantagePercent,
   pricePerUnit,
@@ -140,9 +141,13 @@ export function AddToCart({ product }: { product: ProductView }) {
                 onClick={() => pickTier(c.minQuantity)}
               >
                 <span className={styles.chipLabel}>{c.label}</span>
-                <span className={`${styles.chipPrice} tnum`}>
-                  {product.currency} {formatAmount(c.price)} / Stk.
-                </span>
+                <Price
+                  price={c.price}
+                  compareAt={c.compareAt}
+                  currency={product.currency}
+                  size="xs"
+                  unit="Stk."
+                />
                 {c.savePercent > 0 ? (
                   <SaveBadge percent={c.savePercent} />
                 ) : (
@@ -212,7 +217,11 @@ export function AddToCart({ product }: { product: ProductView }) {
         <div className={styles.barPrice}>
           <Price
             price={unitPrice}
-            compareAt={selected?.compareAt ?? product.compareAt}
+            compareAt={
+              selected?.tiers.length
+                ? activeTier(selected.tiers, quantity)?.compareAt
+                : (selected?.compareAt ?? product.compareAt)
+            }
             currency={product.currency}
             size="md"
           />

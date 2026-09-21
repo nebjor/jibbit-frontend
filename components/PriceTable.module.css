@@ -59,15 +59,6 @@
   color: var(--c-ink);
 }
 
-.rate {
-  white-space: nowrap;
-}
-
-.per {
-  color: var(--c-muted);
-  font-weight: 400;
-}
-
 .off {
   text-align: right;
 }
