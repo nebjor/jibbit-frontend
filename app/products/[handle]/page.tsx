@@ -40,7 +40,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { handle } = await params;
   const product = await getProduct(handle);
-  if (!product) return { title: "Produkt nicht gefunden" };
+  if (!product) notFound();
   return {
     title: product.title,
     description: product.description.slice(0, 160),

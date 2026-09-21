@@ -34,7 +34,7 @@ vi.mock("@/lib/tenant/context", () => ({
   }),
 }));
 
-const { default: HomePage } = await import("./page");
+const { default: HomePage, generateMetadata } = await import("./page");
 const { CategoryComingSoon } = await import("./CategoryComingSoon");
 const { ProductCard } = await import("@/components/ProductCard");
 const { HomeIntro } = await import("@/components/intro/HomeIntro");
@@ -151,9 +151,23 @@ describe("Startseite — leere Kategorie (übernommen von /shop)", () => {
     expect(textOf(el)).toContain("Nichts gefunden");
   });
 
-  it("unbekannter Kategorie-Parameter fällt aufs ganze Sortiment zurück — keine Ankündigung", async () => {
-    const el = await render("gibts-nicht", [PRODUKT]);
-    expect(findAll(el, CategoryComingSoon)).toHaveLength(0);
-    expect(findAll(el, ProductCard)).toHaveLength(1);
+  it("unbekannter Kategorie-Parameter ist ein 404", async () => {
+    await expect(render("gibts-nicht", [PRODUKT])).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+  });
+});
+
+describe("Startseite — Canonical", () => {
+  const canonical = async (kategorie: string | undefined) => {
+    mocks.getCategories.mockResolvedValue([KRAEUTER, PAPERS]);
+    const meta = await generateMetadata({ searchParams: Promise.resolve({ kategorie }) });
+    return meta.alternates?.canonical;
+  };
+
+  it("zeigt ohne Filter auf «/»", async () => {
+    expect(await canonical(undefined)).toBe("/");
+  });
+
+  it("zeigt je Kategorie auf ihre eigene Adresse", async () => {
+    expect(await canonical("papers")).toBe("/?kategorie=papers");
   });
 });
