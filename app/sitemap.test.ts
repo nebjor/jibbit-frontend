@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CategoryView, ProductView } from "@/lib/types";
 
 /**
@@ -28,8 +28,19 @@ vi.mock("@/lib/tenant/context", () => ({
 }));
 
 const { default: sitemap } = await import("./sitemap");
+const { getProducts } = await import("@/lib/data");
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("sitemap", () => {
+  // Der Normalfall dieser Tests ist die indexierbare Produktion. Ohne die
+  // Variable wäre die Sitemap leer — das prüft der Block weiter unten.
+  beforeEach(() => {
+    vi.stubEnv("SITE_INDEXABLE", "true");
+  });
+
   it("führt keine /shop-Adresse mehr — die wäre nur noch eine Umleitung", async () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(
@@ -52,5 +63,28 @@ describe("sitemap", () => {
   it("führt die Produktseiten weiterhin", async () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls).toContain("https://test.jibbit.ch/products/elements-ultra-thin");
+  });
+});
+
+/**
+ * Gesperrtes Deployment (Staging): eine Sitemap ist eine Einladung zum
+ * Indexieren — sie bleibt leer. Schalter: lib/seo/indexing.ts.
+ */
+describe("sitemap (SITE_INDEXABLE nicht gesetzt)", () => {
+  it("ist leer, wenn der Schalter ausdrücklich aus ist", async () => {
+    vi.stubEnv("SITE_INDEXABLE", "false");
+    expect(await sitemap()).toEqual([]);
+  });
+
+  it("ist leer, wenn die Variable fehlt — sichere Voreinstellung", async () => {
+    vi.stubEnv("SITE_INDEXABLE", undefined);
+    expect(await sitemap()).toEqual([]);
+  });
+
+  it("fragt das Backend dafür gar nicht erst", async () => {
+    vi.stubEnv("SITE_INDEXABLE", "false");
+    vi.mocked(getProducts).mockClear();
+    await sitemap();
+    expect(getProducts).not.toHaveBeenCalled();
   });
 });
