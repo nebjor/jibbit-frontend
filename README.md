@@ -94,6 +94,53 @@ fetch — never from a default/hardcoded store.
 
 ---
 
+## Indexing switch (`SITE_INDEXABLE`) — read this before go-live
+
+One server-side env var decides whether a deployment may appear in search
+engines. It exists because the staging site (`test.jibbit.ch`) is a full copy
+of the shop and would otherwise be indexed as a duplicate of `jibbit.ch`.
+
+| `SITE_INDEXABLE` | Result |
+| --- | --- |
+| `true` (also `1`/`on`/`ja`/`yes`) | Indexable. Exactly the previous behaviour: `index, follow`, `robots.txt` with the sitemap, full `sitemap.xml`, no `X-Robots-Tag`. |
+| anything else — **unset, empty, a typo** | **Noindex.** `X-Robots-Tag: noindex, nofollow` on every response that passes `proxy.ts` (pages, `robots.txt`, `sitemap.xml`, 404s, `/media`, `/_next/image`, `/loader`), `<meta name="robots" content="noindex, nofollow">` on every page, a `robots.txt` without a sitemap line, and an empty `sitemap.xml`. |
+
+> **⚠️ GO-LIVE CHECKLIST: the safe default is NOINDEX.** Production must set
+> `SITE_INDEXABLE=true`, or it silently drops out of Google. The variable has
+> to be listed under `environment:` of the `storefront` service in
+> `medusa-ecom/docker-compose.yml` (`SITE_INDEXABLE: ${SITE_INDEXABLE:-}`) —
+> Compose passes on nothing that is not listed there — and set in the `.env`
+> next to it. Verify after every deploy:
+>
+> ```bash
+> docker compose logs storefront | grep "\[seo\]"   # one line per start
+> curl -sI https://jibbit.ch/ | grep -i x-robots    # production: no output
+> curl -s  https://jibbit.ch/robots.txt             # production: has "Sitemap:"
+> ```
+
+Why the default points this way: a production that is accidentally noindex
+is noticed and fixed within a day; a staging site that is accidentally
+indexable goes unnoticed for weeks. The server therefore logs a loud
+`[seo] ⚠️ NOINDEX AKTIV` warning at every start (`instrumentation.ts`).
+
+- **Runtime, not build time.** Deliberately not `NEXT_PUBLIC_*` and not
+  `headers()` in `next.config.ts` — both are frozen by `next build`, so an
+  image built with the wrong value would stay wrong whatever Compose says. The
+  switch is read from `process.env` on every request (`lib/seo/indexing.ts`);
+  all routes render dynamically, so restarting the container is enough.
+- **`robots.txt` does not `Disallow` on staging, on purpose.** A blocked
+  crawler never sees the noindex and keeps already-known URLs in the index.
+- **Not covered by the header:** `/_next/static/*`, `/favicon.ico` and
+  `/healthz` (excluded from the proxy matcher). For airtight coverage — or to
+  keep people out as well as crawlers — add the header or Basic Auth in the
+  reverse proxy in front.
+- A page that sets its own `robots` metadata **replaces** the layout's. Pages
+  that want `index: true` must go through `robotsMetadata()` (see
+  `app/impressum/page.tsx`).
+- The switch is per deployment, not per tenant.
+
+---
+
 ## Swapping the colorway
 
 **All colours, radii, fonts and spacing live in exactly one file:

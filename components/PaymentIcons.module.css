@@ -1,0 +1,30 @@
+.list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding: 0;
+  margin: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 36px;
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  color: var(--c-ink);
+}
+
+.svg {
+  width: 56px;
+  height: 22px;
+  display: block;
+}
+
+.svg text {
+  font-family: var(--font-display);
+}
