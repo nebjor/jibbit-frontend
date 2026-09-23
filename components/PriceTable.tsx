@@ -3,6 +3,7 @@
 import { formatAmount, formatPrice } from "@/lib/format";
 import { activeTier, upgradeHint } from "@/lib/pricing";
 import type { PriceTier } from "@/lib/types";
+import { Price, SaveBadge } from "./Price";
 import styles from "./PriceTable.module.css";
 
 /**
@@ -57,12 +58,15 @@ export function PriceTable({
                 onClick={() => onPick?.(tier.minQuantity)}
               >
                 <span className={styles.range}>{rangeLabel(tier)}</span>
-                <span className={`${styles.rate} tnum`}>
-                  {currency} {formatAmount(tier.price)}
-                  <span className={styles.per}> / Stk.</span>
-                </span>
+                <Price
+                  price={tier.price}
+                  compareAt={tier.compareAt}
+                  currency={currency}
+                  size="xs"
+                  unit="Stk."
+                />
                 <span className={styles.off}>
-                  {off > 0 ? `−${off}%` : ""}
+                  {off > 0 && <SaveBadge percent={off} />}
                 </span>
               </button>
             </li>

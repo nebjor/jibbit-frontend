@@ -59,20 +59,8 @@
   color: var(--c-ink);
 }
 
-.rate {
-  white-space: nowrap;
-}
-
-.per {
-  color: var(--c-muted);
-  font-weight: 400;
-}
-
 .off {
   text-align: right;
-  color: var(--c-success);
-  font-size: 13px;
-  font-weight: 600;
 }
 
 /*

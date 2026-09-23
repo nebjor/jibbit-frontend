@@ -5,13 +5,16 @@
   flex-wrap: wrap;
 }
 
-/* The accent colour is reserved for price + the single primary CTA. */
 .current {
   font-family: var(--font-display);
   font-weight: 700;
-  color: var(--c-accent);
+  color: var(--c-price);
   letter-spacing: var(--tracking-display);
   line-height: 1;
+}
+
+.sale {
+  color: var(--c-save);
 }
 
 .cur {
@@ -20,30 +23,38 @@
   font-weight: 700;
 }
 
+.unit {
+  font-size: 0.7em;
+  font-weight: 400;
+}
+
 .was {
   color: var(--c-muted);
-  font-size: 0.62em;
+  font-size: max(12px, 0.62em);
   text-decoration-thickness: 1px;
 }
 
 .badge {
   font-family: var(--font-display);
-  font-size: 0.5em;
+  font-size: max(11px, 0.5em);
   font-weight: 700;
   letter-spacing: var(--tracking-label);
   color: var(--c-on-accent);
-  background: var(--c-accent);
+  background: var(--c-save);
   padding: 0.28em 0.5em;
   border-radius: var(--radius);
   line-height: 1;
   white-space: nowrap;
 }
 
+.xs {
+  font-size: 17px;
+}
 .sm {
-  font-size: 20px;
+  font-size: 22px;
 }
 .md {
-  font-size: 26px;
+  font-size: 28px;
 }
 .lg {
   font-size: 40px;

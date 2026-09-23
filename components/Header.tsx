@@ -6,7 +6,7 @@ import { AccountLink } from "./AccountLink";
 import { CategoryNav } from "./CategoryNav";
 import { SearchBar } from "./search/SearchBar";
 import { getCategories } from "@/lib/data";
-import { SHIPPING } from "@/lib/config";
+import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import styles from "./Header.module.css";
 
@@ -36,12 +36,12 @@ export async function Header() {
 
   return (
     <>
-      {/* Utility-Streifen — das Versandversprechen, seitenweit. Die
+      {/* Utility-Streifen — Preis- und Versandversprechen, seitenweit. Die
           Zusatzargumente sind mobil ausgeblendet, damit der Streifen dort
           eine Zeile bleibt statt umzubrechen. */}
       <div className={styles.promo}>
         <p className="page">
-          Gratisversand ab{" "}
+          <strong>{PRICE_CLAIM.short}</strong> &middot; Gratisversand ab{" "}
           <strong className="tnum">
             {formatPrice(SHIPPING.freeThreshold)}
           </strong>
