@@ -1,9 +1,10 @@
 import styles from "./PaymentIcons.module.css";
 
 /**
- * Was zahls.ch für jibbit abwickelt: TWINT, Visa, Mastercard, PostFinance.
- * Vereinfachte Zeichen — die offiziellen Akzeptanzzeichen gibt es nur über
- * die Markenportale der Anbieter.
+ * Was zahls.ch für jibbit abwickelt: TWINT, Visa, Mastercard, PostFinance,
+ * Apple Pay und Google Pay. Vereinfachte Zeichen — die offiziellen
+ * Akzeptanzzeichen gibt es nur über die Markenportale der Anbieter, darum
+ * auch die Wallets als schlichte Wortmarken.
  */
 
 function Badge({
@@ -76,6 +77,16 @@ export function PaymentIcons() {
       <Badge label="PostFinance">
         <text x="30" y="15.5" fontSize="8.5" {...text}>
           PostFinance
+        </text>
+      </Badge>
+      <Badge label="Apple Pay">
+        <text x="30" y="15.5" fontSize="9" {...text}>
+          Apple Pay
+        </text>
+      </Badge>
+      <Badge label="Google Pay">
+        <text x="30" y="15.5" fontSize="8.5" {...text}>
+          Google Pay
         </text>
       </Badge>
     </ul>
