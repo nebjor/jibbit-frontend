@@ -233,7 +233,7 @@ async function ProductDetails({
 
             <ul className={styles.signals}>
               <li>
-                Versand ab {formatPrice(SHIPPING.letterRate)} — gratis ab{" "}
+                Versand {formatPrice(SHIPPING.rate)} — gratis ab{" "}
                 {formatPrice(SHIPPING.freeThreshold)}
               </li>
               <li>Versand ab Lager in der Schweiz, kein Zoll</li>
