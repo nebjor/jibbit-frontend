@@ -5,14 +5,14 @@ import { Prose } from "@/components/Prose";
 export const metadata: Metadata = {
   title: "Zahlungsarten",
   description:
-    "Bezahlen mit TWINT, Kreditkarte oder PostFinance. Abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch.",
+    "Bezahlen mit TWINT, Kreditkarte, PostFinance, Apple Pay oder Google Pay. Abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch.",
 };
 
 export default function ZahlungsartenPage() {
   return (
     <Prose
       title="Zahlungsarten"
-      intro="TWINT direkt vom Handy, Kreditkarte oder PostFinance — abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch."
+      intro="TWINT direkt vom Handy, Kreditkarte, PostFinance oder das Wallet auf deinem Handy (Apple Pay, Google Pay) — abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch."
     >
       <h2>TWINT</h2>
       <p>
@@ -28,9 +28,19 @@ export default function ZahlungsartenPage() {
 
       <h2>Kreditkarte und PostFinance</h2>
       <p>
-        Visa und Mastercard sowie PostFinance Card / PostFinance E-Finance.
-        Auch Apple&nbsp;Pay, Google&nbsp;Pay und Samsung&nbsp;Pay stehen auf
-        der Bezahlseite zur Verfügung, wenn dein Gerät sie unterstützt.
+        Visa und Mastercard sowie PostFinance Card / PostFinance E-Finance. Du
+        gibst deine Kartendaten auf der Bezahlseite von zahls.ch ein; bei uns
+        landen sie nie.
+      </p>
+
+      <h2>Apple Pay &amp; Google Pay</h2>
+      <p>
+        Auf der zahls.ch-Bezahlseite kannst du mit dem Wallet bezahlen, das auf
+        deinem Handy hinterlegt ist: Apple&nbsp;Pay auf iPhone und Mac mit
+        Safari, Google&nbsp;Pay auf Android und in Chrome. Die Option erscheint
+        automatisch, wenn dein Gerät sie unterstützt — bestätigt wird wie
+        gewohnt per Face&nbsp;ID, Fingerabdruck oder Gerätecode, ohne
+        Kartendaten abzutippen.
       </p>
 
       <h2>Kauf auf Rechnung</h2>
