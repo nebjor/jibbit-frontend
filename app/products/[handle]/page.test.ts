@@ -110,10 +110,12 @@ async function renderPage(
   query: Record<string, string | string[]> = {},
 ) {
   mocks.getProduct.mockResolvedValue(p);
-  return ProductPage({
+  const page = await ProductPage({
     params: Promise.resolve({ handle: p.handle }),
     searchParams: Promise.resolve(query),
   });
+  const details = page.props.children;
+  return details.type(details.props);
 }
 
 describe("Produktseite — Bild folgt der Variante", () => {
