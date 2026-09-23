@@ -71,6 +71,20 @@ export interface ProductVariantView {
    * zwei Nummern sind. Nicht gepflegt oder ungültig -> undefined.
    */
   gtin?: string;
+  /**
+   * Artikelnummer aus Medusa (`variant.sku`, vom Katalog-Import deterministisch
+   * vergeben). Stabil über Umbenennungen hinweg — deshalb die `id` im
+   * Merchant-Center-Feed (lib/seo/merchant-feed.ts). Nicht gepflegt -> undefined.
+   */
+  sku?: string;
+  /**
+   * Farbe aus einer Produktoption «Farbe»/«Color», falls das Produkt eine
+   * führt. Nur für den Merchant-Center-Feed; die Produktseite zeigt Optionen
+   * über den Variantentitel.
+   */
+  color?: string;
+  /** Material der Variante (Medusa `variant.material`), sonst undefined. */
+  material?: string;
 }
 
 export interface ProductView {
@@ -89,6 +103,8 @@ export interface ProductView {
   images: string[];
   /** Editorially featured on the landing page. */
   featured: boolean;
+  /** Material des Produkts (Medusa `product.material`), wenn gepflegt. */
+  material?: string;
   /**
    * Bezeichnung und Foto je Preisstufe aus dem Admin-Widget «Preistabelle»
    * (product.metadata.preistabelle), Schlüssel = «ab»-Menge. Leer, wenn nichts

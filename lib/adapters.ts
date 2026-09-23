@@ -88,11 +88,45 @@ function toGtin(
   return undefined;
 }
 
+/** Ein gepflegter, nicht leerer Text — sonst undefined. */
+function nonEmpty(raw: unknown): string | undefined {
+  return typeof raw === "string" && raw.trim() !== "" ? raw.trim() : undefined;
+}
+
+/** Optionsnamen, die als Farbe gelten (Admin: «Farbe», englisch «Color»). */
+const COLOR_OPTION = /^(farbe|colou?r)$/i;
+
+/**
+ * Die Farbe einer Variante aus den Produktoptionen.
+ *
+ * `variant.options` trägt nur `option_id` und `value`; den Namen der Option
+ * kennt `product.options`. Die Verpackungsoption («Packung»: Einzeln /
+ * Display) ist KEINE Farbe und fällt hier durch — nur eine Option, die im
+ * Admin «Farbe» heisst, zählt.
+ */
+function toColor(
+  v: Pick<StoreProductVariant, "options">,
+  productOptions: StoreProduct["options"],
+): string | undefined {
+  const colorIds = new Set(
+    (productOptions ?? [])
+      .filter((o) => COLOR_OPTION.test(o.title ?? ""))
+      .map((o) => o.id),
+  );
+  const hit = (v.options ?? []).find(
+    (ov) =>
+      (ov.option_id && colorIds.has(ov.option_id)) ||
+      COLOR_OPTION.test(ov.option?.title ?? ""),
+  );
+  return nonEmpty(hit?.value);
+}
+
 /** Exportiert fuer die Regressionstests der Verfuegbarkeit
  *  (lib/product-fields.test.ts) — sonst modulintern. */
 export function toVariantView(
   v: StoreProductVariant,
   tiers: PriceTier[] = [],
+  productOptions: StoreProduct["options"] = null,
 ): ProductVariantView {
   const calc = v.calculated_price;
   return {
@@ -117,6 +151,9 @@ export function toVariantView(
         ? v.thumbnail
         : undefined,
     gtin: toGtin(v),
+    sku: nonEmpty(v.sku),
+    color: toColor(v, productOptions),
+    material: nonEmpty(v.material),
     // A single tier is not a quantity discount — it is just the price. Drop it
     // so the product page renders no table instead of a one-row table.
     tiers: tiers.length > 1 ? tiers : [],
@@ -129,7 +166,7 @@ export function toProductView(
   tiersByVariant: TiersByVariant = {},
 ): ProductView {
   const variants = (p.variants ?? []).map((v) =>
-    toVariantView(v, tiersByVariant[v.id]),
+    toVariantView(v, tiersByVariant[v.id], p.options),
   );
   const cheapest = variants.reduce<ProductVariantView | undefined>(
     (min, v) => (!min || v.price < min.price ? v : min),
@@ -154,6 +191,7 @@ export function toProductView(
     variants,
     images: (p.images ?? []).map((i) => i.url).filter(Boolean),
     featured: p.tags?.some((t) => t.value === "featured") ?? false,
+    material: nonEmpty(p.material),
     tierExtras: toTierExtras(p),
   };
 }
