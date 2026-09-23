@@ -17,10 +17,9 @@
 /**
  * Welcher Navigationseintrag ist aktiv?
  *
- * @returns das aktive Kategorie-Handle; `""` für „Alles“ (Katalog ohne oder
- *   mit unbekanntem `kategorie`-Parameter — die Seite zeigt dann das ganze
- *   Sortiment, also ist „Alles“ der ehrliche Zustand); `null` ausserhalb
- *   des Katalogs (kein Eintrag aktiv).
+ * @returns das aktive Kategorie-Handle; `""` für „Alles“ (Katalog ohne
+ *   `kategorie`-Parameter); `null` ausserhalb des Katalogs und bei
+ *   unbekannter Kategorie (404, kein Eintrag aktiv).
  */
 export function activeCategory(
   pathname: string,
@@ -28,6 +27,6 @@ export function activeCategory(
   handles: readonly string[],
 ): string | null {
   if (pathname !== "/") return null;
-  if (kategorie !== null && handles.includes(kategorie)) return kategorie;
-  return "";
+  if (!kategorie) return "";
+  return handles.includes(kategorie) ? kategorie : null;
 }
