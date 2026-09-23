@@ -18,7 +18,7 @@ const FAQS = [
   },
   {
     q: "Wie kann ich bezahlen?",
-    a: "Mit TWINT, Kreditkarte (Visa/Mastercard) oder PostFinance. Die Zahlung läuft über den Schweizer Zahlungsdienstleister zahls.ch. Kauf auf Rechnung bieten wir derzeit nicht an.",
+    a: "Mit TWINT, Kreditkarte (Visa/Mastercard), PostFinance oder dem Wallet auf deinem Handy (Apple Pay, Google Pay). Die Zahlung läuft über den Schweizer Zahlungsdienstleister zahls.ch. Kauf auf Rechnung bieten wir derzeit nicht an.",
   },
   {
     q: "Ab welchem Alter kann ich bestellen?",

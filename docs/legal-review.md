@@ -181,6 +181,9 @@ vor Livegang beheben · **mittel** = Rechtsrisiko oder Unklarheit ·
 - **Grundlage:** UWG Art. 3 Abs. 1 lit. b
 - **Vorschlag:** Im zahls.ch-Backend prüfen. Sind die Wallets nicht aktiv,
   den Satz streichen.
+- **Stand 23.09.2026:** Apple Pay und Google Pay sind aktiv und werden auf
+  `/service/zahlungsarten`, in der FAQ und im Footer (`PaymentIcons`) genannt.
+  Samsung Pay ist gestrichen.
 
 ### B7 — Strukturierte Daten: `valueAddedTaxIncluded: true` — **tief**
 - **Ort:** `lib/seo/jsonld.ts` (Mengenpreise)
