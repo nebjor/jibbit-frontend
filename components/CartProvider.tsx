@@ -115,6 +115,12 @@ interface CartContextValue {
   closeCart: () => void;
   addLine: (line: AddLineInput, qty?: number) => void;
   setQuantity: (variantId: string, qty: number) => void;
+  /**
+   * Schrittweite der +/−-Knöpfe für diese Zeile: die Preisstufe, mit der sie
+   * in den Warenkorb kam (24er Display -> 24), sonst 1. Lebt nur im Browser
+   * (localStorage) — reine Bedienhilfe, der Preis kommt immer von Medusa.
+   */
+  stepFor: (variantId: string) => number;
   removeLine: (variantId: string) => void;
   clear: () => void;
   /** Replace the whole cart — used by the checkout steps. */
@@ -122,6 +128,9 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
+
+/** localStorage-Schlüssel für die Schrittweiten je Variante. */
+const STEPS_KEY = "jibbit-cart-steps";
 
 /** Round to rappen — guards against float drift in the shipping estimate. */
 function round2(n: number) {
@@ -144,6 +153,34 @@ export function CartProvider({
   const [notice, setNotice] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // Schrittweiten je Variante. Nur in Klick-Handlern gebraucht, deshalb ein
+  // Ref, der beim ersten Zugriff aus localStorage gelesen wird — kein State,
+  // kein Effekt, kein Hydration-Thema.
+  const steps = useRef<Record<string, number> | null>(null);
+  const loadSteps = useCallback((): Record<string, number> => {
+    if (steps.current) return steps.current;
+    try {
+      const raw = window.localStorage.getItem(STEPS_KEY);
+      steps.current = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    } catch {
+      // Kein Speicher (privates Fenster o.ä.) — dann eben Einerschritte.
+      steps.current = {};
+    }
+    return steps.current;
+  }, []);
+  const rememberStep = useCallback(
+    (variantId: string, step: number) => {
+      const next = { ...loadSteps(), [variantId]: step };
+      steps.current = next;
+      try {
+        window.localStorage.setItem(STEPS_KEY, JSON.stringify(next));
+      } catch {
+        // siehe oben
+      }
+    },
+    [loadSteps],
+  );
 
   /** Serialises mutations; see the header. */
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -209,10 +246,15 @@ export function CartProvider({
         // Open immediately rather than after the round trip: the drawer is how
         // the customer knows the click registered.
         setIsOpen(true);
+        rememberStep(
+          line.variantId,
+          Number.isInteger(line.step) && (line.step ?? 0) > 0 ? line.step! : 1,
+        );
         run(() => addLineAction(line.variantId, qty));
       },
       setQuantity: (variantId, qty) =>
         run(() => setQuantityAction(variantId, qty)),
+      stepFor: (variantId) => loadSteps()[variantId] ?? 1,
       removeLine: (variantId) => run(() => removeLineAction(variantId)),
       clear: () => run(() => clearCartAction()),
       applyCart: (next) => {
@@ -221,7 +263,7 @@ export function CartProvider({
         setNotice(null);
       },
     };
-  }, [cart, error, notice, isOpen, isPending, run]);
+  }, [cart, error, notice, isOpen, isPending, run, loadSteps, rememberStep]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

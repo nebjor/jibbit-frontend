@@ -198,3 +198,75 @@ export function pricePerUnit(
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
+
+/** Anzeige-Extras einer Preisstufe aus dem Admin (Bezeichnung, Foto). */
+export interface TierExtra {
+  label?: string;
+  image?: string;
+}
+
+export interface TierChip {
+  /** «ab»-Menge der Stufe — Tippen setzt genau diese Menge. */
+  minQuantity: number;
+  /** Stückpreis der Stufe. */
+  price: number;
+  /** «24er Display» aus dem Admin, sonst «24 Stück». */
+  label: string;
+  /** Ersparnis gegenüber dem Einzelpreis in ganzen Prozent, 0 bei Stufe 1. */
+  savePercent: number;
+  /** Regulärer Stückpreis (durchgestrichen), wenn höher als `price`. */
+  compareAt?: number;
+  image?: string;
+}
+
+/**
+ * Die Schnellwahl-Chips der Produktseite: eine je Preisstufe. Die erste Stufe
+ * (ab 1) ist immer dabei — sie ist die Vorauswahl «1 Stück».
+ */
+export function tierChips(
+  tiers: PriceTier[],
+  extras: Record<number, TierExtra> = {},
+): TierChip[] {
+  if (!tiers.length) return [];
+  const base = tiers[0].price;
+  return tiers.map((t) => ({
+    minQuantity: t.minQuantity,
+    price: t.price,
+    label:
+      extras[t.minQuantity]?.label ??
+      (t.minQuantity === 1 ? "1 Stück" : `${t.minQuantity} Stück`),
+    savePercent:
+      base > 0 ? Math.max(0, Math.floor(((base - t.price) / base) * 100)) : 0,
+    compareAt: t.compareAt,
+    image: extras[t.minQuantity]?.image,
+  }));
+}
+
+/**
+ * Was spart der Kunde bei `quantity` gegenüber dem Einzelpreis?
+ * `amount` in CHF (auf Rappen gerundet), `percent` ganzzahlig abgerundet.
+ */
+export function savingAt(
+  tiers: PriceTier[],
+  quantity: number,
+): { amount: number; percent: number } {
+  if (!tiers.length) return { amount: 0, percent: 0 };
+  const base = tiers[0].price;
+  const unit = unitPriceFor(tiers, quantity, base);
+  const amount = round2((base - unit) * quantity);
+  const percent = base > 0 ? Math.floor(((base - unit) / base) * 100) : 0;
+  return { amount: Math.max(0, amount), percent: Math.max(0, percent) };
+}
+
+/**
+ * Galerie-Reihenfolge: das Foto der gewählten Stufe nach vorn, alle übrigen
+ * in ihrer normalen Reihenfolge dahinter — nichts wird ausgeblendet. Ohne
+ * (gültiges) Stufenfoto bleibt die Reihenfolge unverändert.
+ */
+export function orderImagesForTier(
+  images: string[],
+  tierImage: string | undefined,
+): string[] {
+  if (!tierImage || !images.includes(tierImage)) return images;
+  return [tierImage, ...images.filter((src) => src !== tierImage)];
+}

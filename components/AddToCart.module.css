@@ -188,3 +188,94 @@
     font-size: 18px;
   }
 }
+
+/* ── Preisstufen-Chips (ein Produkt, Preistabelle) ─────────────────────
+   Mobile first: zwei grosse Tap-Flächen pro Zeile, jede mindestens 44px
+   hoch; ab Tablet so viele nebeneinander, wie Platz haben. Die Höhe hängt
+   nicht vom Zustand ab — die Auswahl ändert nur Rahmen und Gewicht, damit
+   nichts springt. */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
+@media (min-width: 600px) {
+  .chips {
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  }
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-surface);
+  border: 2px solid var(--c-line);
+  border-radius: var(--radius);
+  color: var(--c-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--c-ink);
+  box-shadow: inset 0 0 0 1px var(--c-ink);
+}
+
+.chipLabel {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chipPrice {
+  font-size: 13px;
+}
+
+.chipSave {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-success);
+}
+
+.qtyValue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  min-height: 44px;
+  padding: 0 var(--s-2);
+  border-left: var(--border-w) solid var(--c-line);
+  border-right: var(--border-w) solid var(--c-line);
+  background: var(--c-surface);
+  font-size: 16px;
+}
+
+.step {
+  touch-action: manipulation;
+}
+
+.cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  touch-action: manipulation;
+}
+
+.ctaSum {
+  font-family: var(--font-body, inherit);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
