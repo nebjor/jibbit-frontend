@@ -32,6 +32,7 @@ export function CartDrawer() {
     isOpen,
     closeCart,
     setQuantity,
+    stepFor,
     removeLine,
     count,
     isPending,
@@ -139,7 +140,14 @@ export function CartDrawer() {
                   <div className={styles.lineActions}>
                     <div className={styles.qty}>
                       <button
-                        onClick={() => setQuantity(l.variantId, l.quantity - 1)}
+                        // In Stufengrösse (24er Display: 48 -> 24 -> weg),
+                        // wie bisher beim Einzelstück (1 -> weg).
+                        onClick={() =>
+                          setQuantity(
+                            l.variantId,
+                            Math.max(0, l.quantity - stepFor(l.variantId)),
+                          )
+                        }
                         disabled={isPending}
                         aria-label={`Menge von ${l.title} verringern`}
                       >
@@ -149,7 +157,9 @@ export function CartDrawer() {
                         {l.quantity}
                       </span>
                       <button
-                        onClick={() => setQuantity(l.variantId, l.quantity + 1)}
+                        onClick={() =>
+                          setQuantity(l.variantId, l.quantity + stepFor(l.variantId))
+                        }
                         disabled={isPending}
                         aria-label={`Menge von ${l.title} erhöhen`}
                       >

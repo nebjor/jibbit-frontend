@@ -75,7 +75,12 @@ export function toCartLineView(item: MedusaLineItemLike): CartLineView {
     variantId: item.variant_id ?? "",
     productHandle: item.product_handle ?? "",
     title: item.product_title ?? item.title ?? "",
-    variantTitle: item.variant_title ?? "",
+    // «Default variant» ist Medusas Platzhalter bei Produkten mit nur einer
+    // Variante (Admin: «Erstellen» ohne Varianten) — im Warenkorb Rauschen.
+    variantTitle:
+      item.variant_title && item.variant_title !== "Default variant"
+        ? item.variant_title
+        : "",
     quantity: item.quantity,
     unitPrice,
     lineTotal:
