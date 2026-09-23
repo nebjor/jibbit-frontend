@@ -62,6 +62,7 @@ import {
   freeShippingProgress,
   remainingForFreeShipping,
 } from "@/lib/cart/shipping";
+import { NETWORK_ERROR } from "@/lib/cart/recover";
 import type {
   CartActionResult,
   CartLineView,
@@ -107,6 +108,8 @@ interface CartContextValue {
   isPending: boolean;
   /** Last failure, in German, or null. */
   error: string | null;
+  /** Non-failure news from the last mutation, e.g. items that were removed. */
+  notice: string | null;
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
@@ -138,6 +141,7 @@ export function CartProvider({
 }) {
   const [cart, setCart] = useState<CartState>(initialCart);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -163,10 +167,9 @@ export function CartProvider({
           const result = await next;
           setCart(result.cart);
           setError(result.ok ? null : result.message);
+          setNotice(result.ok ? (result.notice ?? null) : null);
         } catch {
-          setError(
-            "Der Warenkorb ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.",
-          );
+          setError(NETWORK_ERROR);
         }
       });
     },
@@ -198,6 +201,7 @@ export function CartProvider({
       freeShippingProgress: freeShippingProgress(cart.subtotal),
       isPending,
       error,
+      notice,
       isOpen,
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
@@ -214,9 +218,10 @@ export function CartProvider({
       applyCart: (next) => {
         setCart(next);
         setError(null);
+        setNotice(null);
       },
     };
-  }, [cart, error, isOpen, isPending, run]);
+  }, [cart, error, notice, isOpen, isPending, run]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
