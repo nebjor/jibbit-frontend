@@ -422,8 +422,12 @@ export function priceValidUntil(now: Date): string {
  * Die URL aus Medusa zeigt auf die Backend-Adresse des Mandanten, die von
  * aussen meist gar nicht erreichbar ist (im Compose `http://medusa:9000`).
  * Ein Crawler, der ihr folgt, bekommt nichts. Siehe lib/media.ts.
+ *
+ * Exportiert, weil der Merchant-Center-Feed (lib/seo/merchant-feed.ts)
+ * dieselben Adressen führen muss: Google gleicht `image_link` im Feed mit
+ * dem `image` der Landingpage ab.
  */
-function absoluteImages(
+export function absoluteImages(
   urls: string[],
   domain: string,
   host: string,
@@ -431,6 +435,32 @@ function absoluteImages(
   return urls
     .map((url) => toMediaSrc(url, host).src)
     .map((src) => (src.startsWith("/") ? `${origin(domain)}${src}` : src));
+}
+
+/**
+ * Die Bilder EINER Packung, noch relativ (Backend-URLs).
+ *
+ * Hat die Packung ein eigenes (Display -> die Box), steht NUR das da; das
+ * Bild des Einzelstücks am Display wäre das falsche Produktfoto. Ohne
+ * eigenes Bild: die Produktbilder — aber nicht die, die einer ANDEREN
+ * Packung gehören. Bleibt nichts übrig, dann lieber alle als keines
+ * (`image` ist für Händlereinträge Pflicht).
+ *
+ * Eine Funktion für JSON-LD und Feed, damit beide dasselbe Bild nennen.
+ */
+export function imagesForVariant(
+  product: ProductView,
+  variant: ProductVariantView,
+): string[] {
+  const foreign = new Set(
+    product.variants.filter((v) => v.id !== variant.id).map((v) => v.image),
+  );
+  const neutral = product.images.filter((src) => !foreign.has(src));
+  return variant.image
+    ? [variant.image]
+    : neutral.length
+      ? neutral
+      : product.images;
 }
 
 /** Was jeder Knoten einer Produktseite wissen muss. */
@@ -627,18 +657,7 @@ function variantNode(
 ): JsonLdObject {
   const { product } = ctx;
   const base = product.description || product.subtitle;
-  // Ohne eigenes Bild: die Produktbilder — aber nicht die, die einer ANDEREN
-  // Packung gehören. Bleibt nichts übrig, dann lieber alle als keines
-  // (`image` ist für Händlereinträge Pflicht).
-  const foreign = new Set(
-    product.variants.filter((v) => v.id !== variant.id).map((v) => v.image),
-  );
-  const neutral = product.images.filter((src) => !foreign.has(src));
-  const images = variant.image
-    ? [variant.image]
-    : neutral.length
-      ? neutral
-      : product.images;
+  const images = imagesForVariant(product, variant);
   return prune({
     "@type": "Product",
     "@id": variantNodeId(ctx, variant),
