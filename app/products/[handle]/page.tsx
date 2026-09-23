@@ -26,9 +26,9 @@ import { breadcrumbJsonLd, graph, productJsonLd } from "@/lib/seo/jsonld";
 import styles from "./product.module.css";
 
 /**
- * Handles come from the mock catalog, never from a live backend call — a build
- * must not depend on the backend being reachable. `dynamicParams` lets any
- * other handle render on demand once the backend is up.
+ * Never from a live backend call — a build must not depend on the backend
+ * being reachable (see getStaticProductHandles). `dynamicParams` renders
+ * every real handle on demand.
  */
 export function generateStaticParams() {
   return getStaticProductHandles().map((handle) => ({ handle }));
