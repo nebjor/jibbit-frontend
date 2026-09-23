@@ -73,6 +73,10 @@
   font-weight: 600;
 }
 
+.body address {
+  font-style: normal;
+}
+
 .body dd {
   margin: 0;
   color: var(--c-muted);

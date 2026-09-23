@@ -1,0 +1,10 @@
+.note {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--c-muted);
+}
+
+.note strong {
+  color: var(--c-ink);
+  font-weight: 600;
+}

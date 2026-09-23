@@ -120,7 +120,7 @@ export default async function RootLayout({
           </a>
           <Header />
           <main id="main">{children}</main>
-          <Footer />
+          <Footer domain={tenant.theme.domain} />
           <CartDrawer />
           <ConsentGate initialAge={age} initialConsent={consent} />
           <AnalyticsGate
