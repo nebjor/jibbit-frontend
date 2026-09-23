@@ -43,15 +43,15 @@ describe("activeCategory", () => {
     expect(activeEntries("/", null)).toEqual([""]);
   });
 
-  it("fällt bei unbekannter Kategorie auf Alles zurück — die Seite zeigt dann das ganze Sortiment", () => {
-    expect(activeCategory("/", "gibts-nicht", HANDLES)).toBe("");
+  it("markiert bei unbekannter Kategorie nichts — die Seite ist dann ein 404", () => {
+    expect(activeCategory("/", "gibts-nicht", HANDLES)).toBeNull();
   });
 
   it("vergleicht exakt, nie als Teilstring", () => {
-    expect(activeCategory("/", "filt", HANDLES)).toBe("");
-    expect(activeCategory("/", "ilter", HANDLES)).toBe("");
-    expect(activeCategory("/", "filter-", HANDLES)).toBe("");
-    expect(activeCategory("/", "filter-tips-extra", HANDLES)).toBe("");
+    expect(activeCategory("/", "filt", HANDLES)).toBeNull();
+    expect(activeCategory("/", "ilter", HANDLES)).toBeNull();
+    expect(activeCategory("/", "filter-", HANDLES)).toBeNull();
+    expect(activeCategory("/", "filter-tips-extra", HANDLES)).toBeNull();
   });
 
   it("markiert ausserhalb des Katalogs nichts", () => {

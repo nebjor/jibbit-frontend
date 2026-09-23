@@ -37,6 +37,7 @@ export function CartDrawer() {
     count,
     isPending,
     error,
+    notice,
   } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +93,11 @@ export function CartDrawer() {
         {error && (
           <p className={styles.error} role="alert">
             {error}
+          </p>
+        )}
+        {notice && (
+          <p className={styles.notice} role="status">
+            {notice}
           </p>
         )}
 

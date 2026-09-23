@@ -1,28 +1,29 @@
 import type { Metadata } from "next";
-import { Prose, Platzhalter } from "@/components/Prose";
-import { STORE } from "@/lib/config";
+import { Prose } from "@/components/Prose";
+import { STORE, BUSINESS } from "@/lib/config";
+import { robotsMetadata } from "@/lib/seo/indexing";
 
-export const metadata: Metadata = {
-  title: "Impressum",
-  description: `Impressum und Anbieterkennzeichnung von ${STORE.domain}.`,
-  robots: { index: true, follow: false },
-};
+/**
+ * Funktion statt `metadata`-Konstante: ein `robots` auf Seitenebene ersetzt
+ * das des Layouts, und das feste `index: true` hätte die Noindex-Sperre eines
+ * Staging-Deployments für genau diese Seite wieder aufgehoben. Der Schalter
+ * wird zur Laufzeit gelesen — lib/seo/indexing.ts.
+ */
+export function generateMetadata(): Metadata {
+  return {
+    title: "Impressum",
+    description: `Impressum und Anbieterkennzeichnung von ${STORE.domain}.`,
+    robots: robotsMetadata({ index: true, follow: false }),
+  };
+}
 
 export default function ImpressumPage() {
   return (
     <Prose
       title="Impressum"
       intro={`Angaben zum Betreiber von ${STORE.domain} gemäss Art. 3 Abs. 1 lit. s UWG (Anbieterkennzeichnung im elektronischen Geschäftsverkehr).`}
-      updated="Entwurf vom 21. August 2026 — offene Angaben sind markiert"
+      updated="21. September 2026"
     >
-      <p>
-        <strong>
-          Hinweis für den Betreiber: alle markierten Felder vor dem Livegang
-          durch die echten Angaben ersetzen. Es wurden bewusst keine Daten
-          erfunden — eine erkennbare Lücke ist besser als eine falsche Adresse.
-        </strong>
-      </p>
-
       <h2>Verantwortlich für diese Website</h2>
       <dl>
         <div>
@@ -31,8 +32,8 @@ export default function ImpressumPage() {
             Joris Neber
             <br />
             Neber Import
-              <br />
-              Einzelunternehmen
+            <br />
+            Einzelunternehmen
           </dd>
         </div>
         <div>
@@ -48,7 +49,7 @@ export default function ImpressumPage() {
         <div>
           <dt>E-Mail</dt>
           <dd>
-            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
+            <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </dd>
         </div>
         <div>
@@ -61,7 +62,7 @@ export default function ImpressumPage() {
           <dt>Mehrwertsteuer</dt>
           <dd>
             Nicht mehrwertsteuerpflichtig. Auf den Preisen wird keine
-              Mehrwertsteuer erhoben und keine ausgewiesen.
+            Mehrwertsteuer erhoben und keine ausgewiesen.
           </dd>
         </div>
       </dl>
