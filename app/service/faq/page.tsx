@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: "Was kostet der Versand?",
-    a: `Kleinsendungen im Briefformat kosten ${formatPrice(SHIPPING.letterRate)}, Pakete ${formatPrice(SHIPPING.parcelRate)} — zum Beispiel eine ganze Box Papers. Ab einem Bestellwert von ${formatPrice(SHIPPING.freeThreshold)} versenden wir gratis. Im Warenkorb siehst du laufend, wie viel dir noch bis zum Gratisversand fehlt.`,
+    a: `Jede Bestellung kostet ${formatPrice(SHIPPING.rate)} Versand, ab einem Bestellwert von ${formatPrice(SHIPPING.freeThreshold)} versenden wir gratis. Das Paketporto kostet uns ${formatPrice(SHIPPING.postage)}; die Hälfte davon übernehmen wir. Passt deine Bestellung in einen Brief, schicken wir sie als Brief und schreiben dir die Differenz als Gutscheincode für den Shop gut.`,
   },
   {
     q: "Wie kann ich bezahlen?",
@@ -38,7 +38,7 @@ const FAQS = [
   },
   {
     q: "Kann ich zurückgeben?",
-    a: "Bei blossem Sinneswandel nicht — in der Schweiz gibt es für Onlinebestellungen kein gesetzliches Widerrufsrecht, und wir gewähren auch kein freiwilliges. Ist etwas defekt, beschädigt angekommen oder falsch geliefert, nehmen wir es dagegen immer zurück, und der Rückversand geht auf uns.",
+    a: "Bei blossem Sinneswandel grundsätzlich nicht — in der Schweiz gibt es für Onlinebestellungen kein gesetzliches Widerrufsrecht, und wir gewähren auch kein freiwilliges. In besonderen Fällen kann der Inhaber ungeöffnete Ware aus Kulanz zurücknehmen, einen Anspruch darauf gibt es aber nicht. Ist etwas defekt, beschädigt angekommen oder falsch geliefert, nehmen wir es dagegen immer zurück, und der Rückversand geht auf uns.",
   },
   {
     q: "Ihr habt eine Marke nicht, die ich suche. Und jetzt?",
@@ -88,7 +88,7 @@ export default function FaqPage() {
             Details gibt es unter{" "}
             <Link href="/service/versand">Versand &amp; Lieferung</Link>,{" "}
             <Link href="/service/zahlungsarten">Zahlungsarten</Link> und{" "}
-            <Link href="/service/rueckgabe">Rückgabe &amp; Umtausch</Link>.
+            <Link href="/service/rueckgabe">Rückgaberecht &amp; Reklamation</Link>.
           </p>
         </section>
       </Prose>

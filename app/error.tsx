@@ -8,8 +8,8 @@ import styles from "./error.module.css";
 /**
  * Fehlergrenze für alle Seiten unterhalb des Root-Layouts (Next-Konvention;
  * muss eine Client Component sein). Greift, wenn ein Datenabruf oder das
- * Rendern einer Seite wirft — der Mock-Fallback in lib/data.ts fängt zwar
- * das nicht erreichbare Backend ab, aber nicht jeden Fehler dahinter.
+ * Rendern einer Seite wirft — in Produktion auch dann, wenn der Katalog
+ * nicht erreichbar ist (lib/data.ts, `CatalogUnavailableError`).
  *
  * Der Joint ist hier der AUSGEDRÜCKTE, statisch: nichts arbeitet mehr, und
  * genau das soll das Bild sagen. Eine Animation an dieser Stelle würde das

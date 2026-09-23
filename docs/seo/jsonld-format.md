@@ -602,10 +602,7 @@ Anbieterangaben (Adresse, Telefon …) hier gekürzt.
 - **`@id`s:** Gruppe/Produkt `…#product`, Packung `…#variant-<id>`, Angebot `…#offer-<id>`.
   `includesObject.typeOfGood` des Displays verweist auf das Einzelstück desselben Produkts (vorher: auf
   sich selbst).
-- **Versand am Angebot, je Packung:** Einzelstück → Briefsatz fest (`value` 3.75); Display/Box →
-  Paketsatz als Obergrenze (`maxValue` 9.00), weil Brief/Paket am Gewicht hängt (Backend: ≤ 1 kg = Brief)
-  und die Storefront das Gewicht nicht kennt; Packung ≥ CHF 69 → 0. Vorher stand auch am Display der
-  Briefsatz — im Zweifel zu tief, und zu tief ist der teure Fehler.
+- **Versand am Angebot, je Packung:** ein Versandpreis fest (`value`, `SHIPPING.rate`); Packung ≥ CHF 69 → 0.
 - **Welche Ebene gewinnt:** Angebot schlägt Organisation; Merchant Center/Search Console schlagen beide.
   Rückgabe: eine Regel an der Organisation, die Angebote verweisen. Versand: allgemeine Regel an der
   Organisation (mit Schwelle), genauerer Satz am Angebot.

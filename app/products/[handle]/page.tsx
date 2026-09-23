@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/PageLoading";
+import type { ProductView } from "@/lib/types";
 import {
   getProduct,
   getRelatedProducts,
@@ -25,9 +28,9 @@ import { breadcrumbJsonLd, graph, productJsonLd } from "@/lib/seo/jsonld";
 import styles from "./product.module.css";
 
 /**
- * Handles come from the mock catalog, never from a live backend call — a build
- * must not depend on the backend being reachable. `dynamicParams` lets any
- * other handle render on demand once the backend is up.
+ * Never from a live backend call — a build must not depend on the backend
+ * being reachable (see getStaticProductHandles). `dynamicParams` renders
+ * every real handle on demand.
  */
 export function generateStaticParams() {
   return getStaticProductHandles().map((handle) => ({ handle }));
@@ -42,7 +45,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { handle } = await params;
   const product = await getProduct(handle);
-  if (!product) return { title: "Produkt nicht gefunden" };
+  if (!product) notFound();
   return {
     title: product.title,
     description: product.description.slice(0, 160),
@@ -66,6 +69,21 @@ export default async function ProductPage({
   const product = await getProduct(handle);
   if (!product) notFound();
 
+  // Erst prüfen, dann streamen: ausserhalb der Grenze setzt notFound() noch ein 404.
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <ProductDetails product={product} query={query} />
+    </Suspense>
+  );
+}
+
+async function ProductDetails({
+  product,
+  query,
+}: {
+  product: ProductView;
+  query: { [key: string]: string | string[] | undefined };
+}) {
   /**
    * Vorauswahl: `?variant=<id>` gewinnt, sonst wie bisher das Einzelstück
    * (`defaultVariant`). Serverseitig gelesen, damit ein Crawler unter der
@@ -265,7 +283,7 @@ export default async function ProductPage({
 
             <ul className={styles.signals}>
               <li>
-                Versand ab {formatPrice(SHIPPING.letterRate)} — gratis ab{" "}
+                Versand {formatPrice(SHIPPING.rate)} — gratis ab{" "}
                 {formatPrice(SHIPPING.freeThreshold)}
               </li>
               <li>Versand ab Lager in der Schweiz, kein Zoll</li>

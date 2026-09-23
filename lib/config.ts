@@ -19,20 +19,16 @@ export const PRICE_CLAIM = {
 } as const;
 
 /**
- * Shipping rules. Used by the cart's free-shipping progress indicator and by
- * every piece of shipping copy in the shop.
- *
- * Muss mit den Optionen des swiss-shipping Providers im Backend
- * uebereinstimmen (medusa-config.ts: letterPrice / parcelPrice /
- * freeShippingThreshold) — hier stehen sie nur zur Anzeige, gerechnet wird
- * serverseitig. Brief oder Paket entscheidet dort das Variantengewicht.
+ * Versand — nur zur Anzeige, gerechnet wird im Backend. Muss mit den Optionen
+ * des swiss-shipping-Providers übereinstimmen (medusa-config.ts: `price`,
+ * `freeShippingThreshold`).
  */
 export const SHIPPING = {
-  /** Kleinsendung im Briefformat, in CHF. */
-  letterRate: 3.75,
-  /** Paket — z. B. eine ganze Box oder ein Display, in CHF. */
-  parcelRate: 9.0,
-  /** Order total (CHF) from which shipping is free. */
+  /** Der eine Versandpreis jeder Bestellung, in CHF. */
+  rate: 4.5,
+  /** Was das Paketporto jibbit kostet — nur für «Wir teilen das Paketporto». */
+  postage: 9.0,
+  /** Bestellwert (CHF), ab dem der Versand gratis ist. */
   freeThreshold: 69.0,
 } as const;
 
@@ -72,7 +68,7 @@ export const BUSINESS = {
   city: "Winterthur",
   /** ISO-3166-1 alpha-2. Steht auch in jeder Versand- und Rückgabeangabe. */
   countryCode: "CH",
-  email: "joris@jibbit.ch",
+  email: "info@jibbit.ch",
   /** E.164 — schema.org will eine international wählbare Nummer. */
   telephone: "+41764140890",
 } as const;

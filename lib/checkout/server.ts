@@ -4,10 +4,11 @@
  * The order Medusa requires, and the order the UI follows:
  *
  *   1. e-mail + delivery address   -> POST /store/carts/:id
- *   2. delivery method             -> GET  /store/shipping-options
- *                                     POST /store/carts/:id/shipping-methods
- *   3. payment                     -> lib/checkout/payment.ts   (SEAM)
- *   4. place order                 -> POST /store/carts/:id/complete
+ *      + delivery method, chosen    -> GET  /store/shipping-options
+ *        by us, not the customer       POST /store/carts/:id/shipping-methods
+ *        (./shipping-choice.ts)
+ *   2. payment                     -> lib/checkout/payment.ts   (SEAM)
+ *   3. place order                 -> POST /store/carts/:id/complete
  *
  * KONTO: Ob die Kasse eine Anmeldung VERLANGT, entscheidet allein
  * `lib/checkout/account-requirement.ts` — geprüft wird das in
@@ -25,15 +26,20 @@ import type { HttpTypes } from "@medusajs/types";
 import { toCartState } from "@/lib/cart/adapter";
 import {
   CART_FIELDS,
-  NETWORK_ERROR,
   cartContext,
   clearCartId,
   currentCartId,
+  describeCartFailure,
   logCartError,
-  readCartState,
+  recoverStaleCart,
+  type CartContext,
 } from "@/lib/cart/server";
-import { EMPTY_CART, type CartActionResult, type ShippingOptionView } from "@/lib/cart/types";
-import type { CheckoutAddress } from "@/lib/cart/types";
+import {
+  EMPTY_CART,
+  type CartActionResult,
+  type CartState,
+  type CheckoutAddress,
+} from "@/lib/cart/types";
 import { readSessionToken } from "@/lib/auth/session";
 import {
   hasErrors,
@@ -43,9 +49,15 @@ import {
 } from "./address";
 import { attachCartToCustomer, saveAddressToAccount } from "./customer";
 import { PaymentSetupError, preparePayment } from "./payment";
+import { pickShippingOption } from "./shipping-choice";
 
 const NO_CART =
   "Dein Warenkorb ist leer oder abgelaufen. Bitte lege die Artikel neu in den Warenkorb.";
+
+const NO_SHIPPING =
+  "An diese Adresse können wir gerade nicht liefern. Bitte prüfe die Adresse oder schreib uns — wir helfen weiter.";
+
+class NoShippingOptionError extends Error {}
 
 /** What placing an order can end in. */
 export type PlaceOrderResult =
@@ -57,6 +69,7 @@ export type PlaceOrderResult =
 interface LiveCart {
   cart: HttpTypes.StoreCart;
   sdk: Medusa;
+  ctx: CartContext;
 }
 
 /** The live Medusa cart, or null when there is none to check out. */
@@ -70,7 +83,7 @@ async function loadCart(): Promise<LiveCart | null> {
       fields: CART_FIELDS,
     });
     if (cart.completed_at) return null;
-    return { cart, sdk: ctx.sdk };
+    return { cart, sdk: ctx.sdk, ctx };
   } catch (error) {
     logCartError("checkout:retrieve", error);
     return null;
@@ -82,8 +95,9 @@ async function loadCart(): Promise<LiveCart | null> {
 // ---------------------------------------------------------------------------
 
 export type SaveAddressResult =
-  | { ok: true; cart: CartActionResult["cart"] }
-  | { ok: false; message?: string; errors: AddressErrors };
+  | { ok: true; cart: CartState; notice?: string }
+  /** `cart`: set when the cart was rebuilt while failing — show that one. */
+  | { ok: false; message?: string; errors: AddressErrors; cart?: CartState };
 
 export async function saveContactAndAddress(
   email: string,
@@ -117,9 +131,9 @@ export async function saveContactAndAddress(
     phone: normalized.phone,
   };
 
-  try {
-    const { cart } = await live.sdk.store.cart.update(
-      live.cart.id,
+  const writeAddressAndShipping = async (cartId: string) => {
+    await live.sdk.store.cart.update(
+      cartId,
       {
         email: email.trim(),
         shipping_address: medusaAddress,
@@ -128,77 +142,99 @@ export async function saveContactAndAddress(
         // it saves support tickets.
         billing_address: medusaAddress,
       },
-      { fields: CART_FIELDS },
+      { fields: "id" },
     );
-
     // Die Adresse ins Adressbuch, damit die nächste Bestellung sie kennt —
     // der eigentliche Zweck der Kontopflicht. Fehler dort bleiben dort.
     if (sessionToken) {
       await saveAddressToAccount(live.sdk, sessionToken, normalized);
     }
+    return applyShippingMethod(live.sdk, cartId);
+  };
 
-    return { ok: true, cart: toCartState(cart) };
+  try {
+    return { ok: true, cart: await writeAddressAndShipping(live.cart.id) };
   } catch (error) {
     logCartError("checkout:address", error);
-    return { ok: false, message: NETWORK_ERROR, errors: {} };
+    const recovered = await recoverStaleCart(live.ctx, error);
+    if (!recovered) {
+      return { ok: false, message: failureReason(error), errors: {} };
+    }
+    if (recovered.state.count === 0) {
+      return { ok: false, message: recovered.notice, errors: {}, cart: recovered.state };
+    }
+
+    try {
+      if (sessionToken) {
+        await attachCartToCustomer(live.sdk, { id: recovered.id }, sessionToken);
+      }
+      const cart = await writeAddressAndShipping(recovered.id);
+      return { ok: true, cart, notice: recovered.notice };
+    } catch (retryError) {
+      logCartError("checkout:address:after-recover", retryError);
+      return {
+        ok: false,
+        message: `${recovered.notice} ${failureReason(retryError)}`,
+        errors: {},
+        cart: recovered.state,
+      };
+    }
   }
 }
 
-// ---------------------------------------------------------------------------
-// Step 2 — delivery method
-// ---------------------------------------------------------------------------
-
-export async function listShippingOptions(): Promise<ShippingOptionView[]> {
-  const live = await loadCart();
-  if (!live) return [];
-
-  try {
-    const { shipping_options } = await live.sdk.store.fulfillment.listCartOptions({
-      cart_id: live.cart.id,
-      // `type.description` carries the operator's prose ("Schweizer Post,
-      // 2–3 Werktage"). It is NOT in the route's default field list.
-      fields: "+type.label,+type.description",
-    });
-
-    return (shipping_options ?? []).map((option) => ({
-      id: option.id,
-      name: option.name ?? "Versand",
-      description: option.type?.description ?? "",
-      // undefined for `price_type: "calculated"` options — see the doc comment
-      // on ShippingOptionView. The binding price appears as
-      // `cart.shipping_total` once the method is on the cart.
-      amount:
-        typeof option.amount === "number" && Number.isFinite(option.amount)
-          ? option.amount
-          : null,
-    }));
-  } catch (error) {
-    logCartError("checkout:shipping-options", error);
-    return [];
-  }
-}
-
-export async function selectShippingOption(
-  optionId: string,
-): Promise<CartActionResult> {
+/**
+ * Re-applies the automatic delivery method when it went missing after step 1
+ * (a drawer change can drop it), so "Kaufen" never dead-ends.
+ */
+export async function ensureShippingMethod(): Promise<CartActionResult> {
   const live = await loadCart();
   if (!live) return { ok: false, message: NO_CART, cart: EMPTY_CART };
-
+  if (live.cart.shipping_methods?.length || !live.cart.shipping_address?.country_code) {
+    return { ok: true, cart: toCartState(live.cart) };
+  }
   try {
-    const { cart } = await live.sdk.store.cart.addShippingMethod(
-      live.cart.id,
-      { option_id: optionId },
-      { fields: CART_FIELDS },
-    );
-    return { ok: true, cart: toCartState(cart) };
+    return { ok: true, cart: await applyShippingMethod(live.sdk, live.cart.id) };
   } catch (error) {
-    logCartError("checkout:shipping-method", error);
-    return { ok: false, message: NETWORK_ERROR, cart: await readCartState() };
+    logCartError("checkout:ensure-shipping", error);
+    return { ok: false, message: failureReason(error), cart: toCartState(live.cart) };
   }
 }
 
+function failureReason(error: unknown): string {
+  return error instanceof NoShippingOptionError ? NO_SHIPPING : describeCartFailure(error);
+}
+
+/** Puts the delivery method on the cart — see ./shipping-choice.ts. */
+async function applyShippingMethod(sdk: Medusa, cartId: string): Promise<CartState> {
+  const { shipping_options } = await sdk.store.fulfillment.listCartOptions({
+    cart_id: cartId,
+  });
+  const optionId = await pickShippingOption(
+    (shipping_options ?? []).map((o) => ({
+      id: o.id,
+      providerId: o.provider_id,
+      amount: o.amount,
+      insufficientInventory: o.insufficient_inventory,
+    })),
+    async (id) => {
+      const { shipping_option } = await sdk.store.fulfillment.calculate(id, {
+        cart_id: cartId,
+      });
+      return shipping_option.amount ?? null;
+    },
+  );
+  if (!optionId) throw new NoShippingOptionError();
+
+  const { cart } = await sdk.store.cart.addShippingMethod(
+    cartId,
+    { option_id: optionId },
+    { fields: CART_FIELDS },
+  );
+  return toCartState(cart);
+}
+
 // ---------------------------------------------------------------------------
-// Steps 3 + 4 — payment, then place the order
+// Steps 2 + 3 — payment, then place the order
 // ---------------------------------------------------------------------------
 
 export async function placeOrder(): Promise<PlaceOrderResult> {
@@ -217,7 +253,7 @@ export async function placeOrder(): Promise<PlaceOrderResult> {
     return { kind: "error", message: "Bitte zuerst die Lieferadresse angeben." };
   }
   if (!cart.shipping_methods?.length) {
-    return { kind: "error", message: "Bitte zuerst eine Versandart wählen." };
+    return { kind: "error", message: "Bitte die Lieferadresse nochmals bestätigen." };
   }
 
   let handoff;

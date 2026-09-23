@@ -12,8 +12,8 @@ export default function WiderrufsrechtPage() {
   return (
     <Prose
       title="Widerrufsrecht"
-      intro="Kurz gesagt: Ein gesetzliches Widerrufsrecht für Online-Bestellungen gibt es in der Schweiz nicht, und wir gewähren auch kein freiwilliges. Bei Mängeln und Falschlieferungen stehen wir dagegen vollumfänglich gerade."
-      updated="Stand: 22. August 2026"
+      intro="Kurz gesagt: Ein gesetzliches Widerrufsrecht für Online-Bestellungen gibt es in der Schweiz nicht, und wir gewähren auch kein freiwilliges — Kulanz im Einzelfall bleibt möglich. Bei Mängeln und Falschlieferungen stehen wir dagegen vollumfänglich gerade."
+      updated="21. September 2026"
     >
       <h2>1. Die Rechtslage in der Schweiz</h2>
       <p>
@@ -40,6 +40,13 @@ export default function WiderrufsrechtPage() {
         warum du hier bestellst.
       </p>
       <p>
+        In besonderen Fällen kann der Inhaber eine Rückgabe ungeöffneter,
+        unbenutzter Ware in der Originalverpackung aus Kulanz annehmen. Das
+        ist ein freiwilliges Entgegenkommen im Einzelfall, ohne Anspruch und
+        nur nach vorheriger Zustimmung; den Rückversand trägst du dann selbst.
+        Geöffnete oder benutzte Verbrauchsartikel sind davon ausgeschlossen.
+      </p>
+      <p>
         Bitte prüfe deine Bestellung deshalb vor dem Absenden. Im Warenkorb
         siehst du Artikel, Menge und Gesamtpreis, und bis zum letzten Schritt
         kannst du alles ändern.
@@ -49,7 +56,7 @@ export default function WiderrufsrechtPage() {
       <p>
         Davon unberührt bleibt die gesetzliche Sachgewährleistung nach Schweizer
         Obligationenrecht (Art. 197 ff. OR). Sie beträgt zwei Jahre ab
-        Ablieferung der Ware und lässt sich nicht wegbedingen.
+        Ablieferung der Ware (Art. 210 OR), und wir schränken sie nicht ein.
       </p>
       <p>
         Ist ein Artikel defekt, beschädigt angekommen oder falsch geliefert,
@@ -75,7 +82,7 @@ export default function WiderrufsrechtPage() {
       <h2>5. Weitere Informationen</h2>
       <p>
         Den praktischen Ablauf einer Reklamation findest du unter{" "}
-        <Link href="/service/rueckgabe">Rückgabe &amp; Reklamation</Link>. Die
+        <Link href="/service/rueckgabe">Rückgaberecht &amp; Reklamation</Link>. Die
         vertragliche Grundlage steht in Ziffer 9 und 10 unserer{" "}
         <Link href="/agb">AGB</Link>.
       </p>

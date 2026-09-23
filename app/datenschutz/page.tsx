@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Prose, Platzhalter } from "@/components/Prose";
+import { Prose } from "@/components/Prose";
 import { requiresAccount } from "@/lib/checkout/account-requirement";
-import { STORE } from "@/lib/config";
+import { STORE, BUSINESS } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung",
@@ -13,24 +13,15 @@ export default function DatenschutzPage() {
     <Prose
       title="Datenschutzerklärung"
       intro="Diese Erklärung beschreibt, welche Personendaten wir bearbeiten, zu welchem Zweck, und welche Rechte du hast. Sie richtet sich nach dem Schweizer Datenschutzgesetz (DSG, in Kraft seit 1. September 2023)."
-      updated="Entwurf vom 4. September 2026 — vor Livegang juristisch prüfen lassen"
+      updated="21. September 2026"
     >
-      <p>
-        <strong>
-          Hinweis für den Betreiber: Vorlage, keine Rechtsberatung. Die Liste
-          der eingesetzten Dienste muss vor dem Livegang mit dem tatsächlichen
-          Stand übereinstimmen — insbesondere Hosting, Analyse und
-          Zahlungsabwicklung.
-        </strong>
-      </p>
-
       <h2>1. Verantwortliche Stelle</h2>
       <p>
         Verantwortlich für die Bearbeitung von Personendaten auf {STORE.domain}{" "}
         ist Joris Neber,{" "}
         Neber Import, Unterwegli 1, 8404 Winterthur. Für Fragen zum
         Datenschutz erreichst du uns unter{" "}
-        <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>.
+        <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>.
       </p>
 
       <h2>2. Welches Recht gilt</h2>
@@ -229,7 +220,7 @@ export default function DatenschutzPage() {
       </ul>
       <p>
         Melde dich dafür unter{" "}
-        <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>. Die Auskunft ist in
+        <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>. Die Auskunft ist in
         der Regel kostenlos. Zuständige Aufsichtsbehörde ist der Eidgenössische
         Datenschutz- und Öffentlichkeitsbeauftragte (EDÖB).
       </p>
