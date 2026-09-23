@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Prose, Platzhalter } from "@/components/Prose";
+import { Prose } from "@/components/Prose";
+import { BUSINESS } from "@/lib/config";
+import { SUPPORT } from "@/lib/content/kundenservice";
+import { displayPhone } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Kontakt",
@@ -12,26 +15,28 @@ export default function KontaktPage() {
   return (
     <Prose
       title="Kontakt"
-      intro="Frage zur Bestellung, Produktwunsch, oder einfach eine Rückmeldung? Schreib uns — wir antworten in der Regel innerhalb eines Werktags."
+      intro={`Frage zur Bestellung, Produktwunsch, oder einfach eine Rückmeldung? Schreib uns — wir antworten ${SUPPORT.replyTime}.`}
     >
       <h2>Schreib uns</h2>
       <dl>
         <div>
-          <dt>Allgemeine Fragen</dt>
+          <dt>E-Mail — für Fragen, Bestellungen und Reklamationen</dt>
           <dd>
-            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
+            <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </dd>
         </div>
         <div>
-          <dt>Bestellungen und Retouren</dt>
+          <dt>Telefon</dt>
           <dd>
-            <a href="mailto:joris@jibbit.ch">joris@jibbit.ch</a>
+            <a href={`tel:${BUSINESS.telephone}`}>
+              {displayPhone(BUSINESS.telephone)}
+            </a>
           </dd>
         </div>
         <div>
           <dt>Erreichbarkeit</dt>
           <dd>
-            In der Regel innert zwei Stunden
+            {SUPPORT.hours}. Auf E-Mails antworten wir {SUPPORT.replyTime}.
           </dd>
         </div>
       </dl>
@@ -56,7 +61,7 @@ export default function KontaktPage() {
         <Link href="/service/faq">Häufige Fragen</Link>,{" "}
         <Link href="/service/versand">Versand &amp; Lieferung</Link>,{" "}
         <Link href="/service/zahlungsarten">Zahlungsarten</Link> und{" "}
-        <Link href="/service/rueckgabe">Rückgabe &amp; Umtausch</Link>.
+        <Link href="/service/rueckgabe">Rückgaberecht &amp; Reklamation</Link>.
       </p>
     </Prose>
   );

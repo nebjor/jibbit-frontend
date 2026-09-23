@@ -8,14 +8,12 @@
  * system provider settles inline. See lib/checkout/payment.ts.
  */
 
-import type { CheckoutAddress, ShippingOptionView } from "@/lib/cart/types";
-import type { CartActionResult } from "@/lib/cart/types";
+import type { CartActionResult, CheckoutAddress } from "@/lib/cart/types";
 import {
   completeCart,
-  listShippingOptions,
+  ensureShippingMethod,
   placeOrder,
   saveContactAndAddress,
-  selectShippingOption,
   type PlaceOrderResult,
   type SaveAddressResult,
 } from "@/lib/checkout/server";
@@ -31,14 +29,8 @@ export async function saveAddressAction(
   return saveContactAndAddress(email, address);
 }
 
-export async function listShippingOptionsAction(): Promise<ShippingOptionView[]> {
-  return listShippingOptions();
-}
-
-export async function selectShippingOptionAction(
-  optionId: string,
-): Promise<CartActionResult> {
-  return selectShippingOption(optionId);
+export async function ensureShippingAction(): Promise<CartActionResult> {
+  return ensureShippingMethod();
 }
 
 export async function placeOrderAction(): Promise<PlaceOrderResult> {
