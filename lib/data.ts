@@ -231,10 +231,15 @@ export async function getProducts(opts?: {
     });
     if (!products?.length) return mockAllowed() ? filterMock(MOCK_PRODUCTS) : [];
 
-    // Not `products.map(toProductView)` — map would hand the array index in as
-    // the tiers argument. The listing needs no tiers anyway: cards show the
-    // "from" price, and one extra request per product page is enough.
-    const views = products.map((p) => toProductView(p));
+    // Cards show the best quantity tier ("ab 24 Stk. 1.40/Stk."), so the
+    // listing needs the tiers too.
+    const tiers = await fetchPriceTiers(
+      tenant,
+      sdk,
+      products.flatMap((p) => (p.variants ?? []).map((v) => v.id)),
+      regionId,
+    );
+    const views = products.map((p) => toProductView(p, tiers));
     // Belt and braces: if the id lookup failed we still narrow client-side.
     return opts?.category && !categoryId
       ? views.filter((p) => p.categoryHandle === opts.category)
@@ -257,7 +262,12 @@ export async function getProducts(opts?: {
  * Failure is not fatal. An older backend without the route simply yields no
  * tiers, and the product page renders without a price table — same as any
  * product that has a single flat price.
+ *
+ * The route rejects more than 50 variants per request (`MAX_VARIANTS`), so a
+ * full listing is fetched in parallel batches.
  */
+const PRICE_TIERS_MAX_VARIANTS = 50;
+
 async function fetchPriceTiers(
   tenant: TenantConfig,
   sdk: Medusa,
@@ -266,23 +276,32 @@ async function fetchPriceTiers(
 ): Promise<TiersByVariant> {
   if (!variantIds.length) return {};
 
+  const chunks: string[][] = [];
+  for (let i = 0; i < variantIds.length; i += PRICE_TIERS_MAX_VARIANTS) {
+    chunks.push(variantIds.slice(i, i + PRICE_TIERS_MAX_VARIANTS));
+  }
+
   try {
-    const res = await sdk.client.fetch<{
-      tiers: Record<
-        string,
-        {
-          min_quantity: number;
-          max_quantity: number | null;
-          amount: number;
-          original_amount?: number;
-        }[]
-      >;
-    }>("/store/price-tiers", {
-      query: { variant_id: variantIds, region_id: regionId },
-    });
+    const responses = await Promise.all(
+      chunks.map((ids) =>
+        sdk.client.fetch<{
+          tiers: Record<
+            string,
+            {
+              min_quantity: number;
+              max_quantity: number | null;
+              amount: number;
+              original_amount?: number;
+            }[]
+          >;
+        }>("/store/price-tiers", {
+          query: { variant_id: ids, region_id: regionId },
+        }),
+      ),
+    );
 
     return Object.fromEntries(
-      Object.entries(res?.tiers ?? {}).map(([variantId, rows]) => [
+      responses.flatMap((res) => Object.entries(res?.tiers ?? {})).map(([variantId, rows]) => [
         variantId,
         rows.map((r) => ({
           minQuantity: r.min_quantity,

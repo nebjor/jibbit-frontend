@@ -188,7 +188,7 @@
 .optionPrice {
   font-size: 14px;
   font-weight: 700;
-  color: var(--c-accent);
+  color: var(--c-price);
   /* Align with the first title line, not the row centre. */
   padding-top: 15px;
 }

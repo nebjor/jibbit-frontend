@@ -82,7 +82,7 @@
   font-weight: 700;
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  color: var(--c-success);
+  color: var(--c-save);
 }
 
 .quantity {
@@ -232,18 +232,19 @@
 }
 
 .chipLabel {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.chipPrice {
   font-size: 13px;
+  font-weight: 600;
 }
 
-.chipSave {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--c-success);
+.chipBase {
+  font-size: 11px;
+  line-height: 17px;
+  color: var(--c-muted);
+}
+
+.saving {
+  color: var(--c-save);
+  font-weight: 600;
 }
 
 .qtyValue {

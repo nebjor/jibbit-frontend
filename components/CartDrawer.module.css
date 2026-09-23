@@ -139,10 +139,10 @@
 
 .linePrice {
   margin-top: var(--s-2);
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--c-accent);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-2);
 }
 
 /*

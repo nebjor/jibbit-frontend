@@ -14,6 +14,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  touch-action: manipulation;
 }
 
 .link:hover {
@@ -24,27 +25,44 @@
   padding: var(--s-3);
   display: flex;
   flex-direction: column;
-  gap: var(--s-1);
+  gap: var(--s-2);
   flex: 1;
 }
 
+/* Two lines reserved, so every price in a grid row sits on the same line. */
 .title {
-  font-size: 15px;
-  line-height: 1.15;
+  font-size: 14px;
+  line-height: 1.2;
+  min-height: 2.4em;
   text-transform: none;
   letter-spacing: 0;
   font-family: var(--font-body);
   font-weight: 600;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Reserved even when empty: tiles with and without tiers stay the same height.
+   Two lines in the 2-column grid, where the badge wraps under the text. */
+.tier {
+  min-height: 40px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--c-ink);
+}
+
+@media (min-width: 640px) {
+  .tier {
+    min-height: 20px;
+  }
 }
 
 .sub {
   font-size: 12px;
   color: var(--c-muted);
-  flex: 1;
-}
-
-.price {
-  margin-top: var(--s-3);
 }
 
 @media (min-width: 768px) {
@@ -52,6 +70,9 @@
     padding: var(--s-4);
   }
   .title {
-    font-size: 16px;
+    font-size: 15px;
+  }
+  .tier {
+    font-size: 13px;
   }
 }

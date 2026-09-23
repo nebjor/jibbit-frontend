@@ -9,6 +9,16 @@ export const STORE = {
 } as const;
 
 /**
+ * Discount positioning, shop-wide instead of per price. No superlatives
+ * ("günstigste der Schweiz", "Tiefstpreis-Garantie") without proof — UWG
+ * Art. 3 Abs. 1 lit. e.
+ */
+export const PRICE_CLAIM = {
+  short: "Dauertiefpreise",
+  full: "Dauertiefpreise · mit Mengenrabatt noch günstiger",
+} as const;
+
+/**
  * Versand — nur zur Anzeige, gerechnet wird im Backend. Muss mit den Optionen
  * des swiss-shipping-Providers übereinstimmen (medusa-config.ts: `price`,
  * `freeShippingThreshold`).
