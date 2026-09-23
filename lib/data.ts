@@ -141,7 +141,17 @@ async function fetchBackendCategories(
 }
 
 export async function getCategories(): Promise<CategoryView[]> {
-  const tenant = await getTenantContext();
+  return getCategoriesForTenant(await getTenantContext());
+}
+
+/**
+ * Wie `getCategories`, aber für einen BEREITS aufgelösten Mandanten — ohne
+ * `headers()`. Für Aufrufer in einem Cache-Scope (`unstable_cache`), in dem
+ * Request-APIs nicht erlaubt sind; siehe app/merchant-feed.tsv/route.ts.
+ */
+export async function getCategoriesForTenant(
+  tenant: TenantConfig,
+): Promise<CategoryView[]> {
   const sdk = getSdkForTenant(tenant);
   return (
     (await fetchBackendCategories(tenant, sdk)) ??
@@ -197,6 +207,22 @@ export async function getProducts(opts?: {
   category?: CategoryHandle;
   limit?: number;
 }): Promise<ProductView[]> {
+  return getProductsForTenant(await getTenantContext(), opts);
+}
+
+/**
+ * Wie `getProducts`, aber für einen BEREITS aufgelösten Mandanten — ohne
+ * `headers()`. Für Aufrufer in einem Cache-Scope (`unstable_cache`), in dem
+ * Request-APIs nicht erlaubt sind; siehe app/merchant-feed.tsv/route.ts.
+ * Das Mandantenobjekt kommt von `getTenantContext()` AUSSERHALB des Scopes.
+ */
+export async function getProductsForTenant(
+  tenant: TenantConfig,
+  opts?: {
+    category?: CategoryHandle;
+    limit?: number;
+  },
+): Promise<ProductView[]> {
   const filterMock = (list: ProductView[]) => {
     const scoped = opts?.category
       ? list.filter((p) => p.categoryHandle === opts.category)
@@ -204,7 +230,6 @@ export async function getProducts(opts?: {
     return opts?.limit ? scoped.slice(0, opts.limit) : scoped;
   };
 
-  const tenant = await getTenantContext();
   const sdk = getSdkForTenant(tenant);
 
   const regionId = await getRegionId(tenant, sdk);
