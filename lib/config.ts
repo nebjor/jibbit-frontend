@@ -42,6 +42,8 @@ export const PAYMENT_METHODS = [
   { id: "twint", label: "TWINT" },
   { id: "card", label: "Kreditkarte (Visa/Mastercard)" },
   { id: "postfinance", label: "PostFinance" },
+  { id: "apple-pay", label: "Apple Pay" },
+  { id: "google-pay", label: "Google Pay" },
 ] as const;
 
 /**
