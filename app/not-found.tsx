@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { PixelJoint } from "@/components/PixelJoint";
+import { getCategories } from "@/lib/data";
 import styles from "./not-found.module.css";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const categories = await getCategories();
   return (
     <div className={`page ${styles.wrap}`}>
       {/* Der ausgedrückte Joint — statisch: hier arbeitet nichts mehr, und
@@ -13,11 +15,30 @@ export default function NotFound() {
       <h1 className={styles.title}>Nichts zu holen hier</h1>
       <p className={styles.text}>
         Diese Seite gibt&rsquo;s nicht (mehr). Vielleicht ein alter Link oder ein
-        Tippfehler. Im Shop wirst du eher fündig.
+        Tippfehler. Such danach oder stöbere in einer Kategorie.
       </p>
-      <Link href="/" className={styles.cta}>
-        Zum Shop
-      </Link>
+      <form action="/suche" role="search" className={styles.search}>
+        <input
+          type="search"
+          name="q"
+          placeholder="Produkt suchen"
+          aria-label="Produkt suchen"
+          className={styles.input}
+        />
+        <button type="submit" className={styles.cta}>
+          Suchen
+        </button>
+      </form>
+      <ul className={styles.categories}>
+        {categories.map((c) => (
+          <li key={c.id}>
+            <Link href={`/?kategorie=${encodeURIComponent(c.handle)}`}>{c.name}</Link>
+          </li>
+        ))}
+        <li>
+          <Link href="/">Alles</Link>
+        </li>
+      </ul>
     </div>
   );
 }

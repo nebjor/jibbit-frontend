@@ -37,6 +37,7 @@ import { EMPTY_ADDRESS, SUPPORTED_COUNTRIES, type AddressErrors } from "@/lib/ch
 import type { CartState, CheckoutAddress } from "@/lib/cart/types";
 import { EMPTY_CART } from "@/lib/cart/types";
 import { formatPrice } from "@/lib/format";
+import { ShippingSplitNote } from "@/components/ShippingSplitNote";
 import styles from "./checkout.module.css";
 
 type Step = "address" | "review";
@@ -405,6 +406,9 @@ export function CheckoutFlow({
                 Versand
                 {cart.shippingIsEstimate && (
                   <span className={styles.estimate}> (geschätzt)</span>
+                )}
+                {cart.shipping !== 0 && (
+                  <ShippingSplitNote className={styles.splitNote} />
                 )}
               </dt>
               <dd className="tnum">

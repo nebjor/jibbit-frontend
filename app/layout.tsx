@@ -13,6 +13,7 @@ import { readConsentCookies } from "@/lib/consent/server";
 import { getAnalyticsRuntimeConfig } from "@/lib/analytics/server";
 import { JsonLd } from "@/components/JsonLd";
 import { graph, organizationJsonLd, webSiteJsonLd } from "@/lib/seo/jsonld";
+import { robotsMetadata } from "@/lib/seo/indexing";
 
 /**
  * MULTI-TENANT: metadataBase, title and OG siteName come from the resolved
@@ -24,6 +25,12 @@ import { graph, organizationJsonLd, webSiteJsonLd } from "@/lib/seo/jsonld";
  * per-tenant content theming (beyond name/domain/colour) is out of scope
  * here; see README's "Stubbed / pending" section for the same pattern
  * applied to the logo and product imagery.
+ *
+ * KANONISCHE BASIS: `metadataBase` ist die Domain des AUFGELÖSTEN Mandanten,
+ * nie eine feste. Relative Canonicals (app/products/[handle]/page.tsx)
+ * zeigen auf Staging also auf test.jibbit.ch und nicht auf die Produktion —
+ * ein domainfremdes Canonical neben `noindex` wären zwei widersprüchliche
+ * Signale. Abgesichert in app/layout.test.ts.
  */
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenantContext();
@@ -42,7 +49,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title: `${storeName} — Online Headshop Schweiz`,
       description: STORE.tagline,
     },
-    robots: { index: true, follow: true },
+    // Zur LAUFZEIT aus SITE_INDEXABLE: Staging bekommt `noindex, nofollow`,
+    // und zwar auch dann, wenn die Variable fehlt — lib/seo/indexing.ts.
+    robots: robotsMetadata(),
   };
 }
 
@@ -111,7 +120,7 @@ export default async function RootLayout({
           </a>
           <Header />
           <main id="main">{children}</main>
-          <Footer />
+          <Footer domain={tenant.theme.domain} />
           <CartDrawer />
           <ConsentGate initialAge={age} initialConsent={consent} />
           <AnalyticsGate
