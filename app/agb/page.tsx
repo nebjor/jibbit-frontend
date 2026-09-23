@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Prose, Platzhalter } from "@/components/Prose";
-import { STORE, SHIPPING, MIN_AGE } from "@/lib/config";
+import { Prose } from "@/components/Prose";
+import { STORE, SHIPPING, MIN_AGE, BUSINESS } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -14,23 +14,15 @@ export default function AgbPage() {
     <Prose
       title="Allgemeine Geschäftsbedingungen"
       intro={`Diese AGB regeln alle Bestellungen über ${STORE.domain}. Bitte lies sie durch, bevor du bestellst.`}
-      updated="Entwurf vom 21. August 2026 — vor Livegang juristisch prüfen lassen"
+      updated="21. September 2026"
     >
-      <p>
-        <strong>
-          Hinweis für den Betreiber: dieser Text ist eine inhaltlich
-          vollständige Vorlage, aber keine Rechtsberatung. Vor dem Livegang
-          durch eine juristische Fachperson prüfen lassen und die markierten
-          Felder füllen.
-        </strong>
-      </p>
-
       <h2>1. Geltungsbereich</h2>
       <p>
         Diese Allgemeinen Geschäftsbedingungen gelten für sämtliche
         Bestellungen, die über den Onlineshop {STORE.domain} getätigt werden.
         Betreiber ist Joris Neber,{" "}
-        Neber Import, Einzelunternehmen, Unterwegli 1, 8404 Winterthur{" "}
+        Neber Import, Einzelunternehmen, Unterwegli 1, 8404 Winterthur,{" "}
+        <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>{" "}
         (nachfolgend &laquo;wir&raquo;). Abweichende Bedingungen der Kundin
         oder des Kunden gelten nur, wenn wir ihnen ausdrücklich schriftlich
         zustimmen.
@@ -69,13 +61,16 @@ export default function AgbPage() {
       <p>
         Wir können Bestellungen ohne Angabe von Gründen ablehnen, etwa bei
         Nichtverfügbarkeit, offensichtlichen Preisfehlern oder begründeten
-        Zweifeln an der Altersangabe.
+        Zweifeln an der Altersangabe. Einen bereits bezahlten Betrag
+        erstatten wir in diesem Fall umgehend über die ursprüngliche
+        Zahlungsart.
       </p>
 
       <h2>5. Preise</h2>
       <p>
-        Alle Preise verstehen sich in Schweizer Franken (CHF) und inklusive
-        Endpreise; wir sind nicht mehrwertsteuerpflichtig. Massgeblich ist der Preis, der zum
+        Alle Preise verstehen sich in Schweizer Franken (CHF) als
+        Endpreise. Wir sind nicht mehrwertsteuerpflichtig; es wird keine
+        Mehrwertsteuer erhoben und keine ausgewiesen. Massgeblich ist der Preis, der zum
         Zeitpunkt der Bestellung im Shop angezeigt wird. Versandkosten werden
         im Warenkorb und vor Abschluss der Bestellung separat ausgewiesen.
       </p>
@@ -83,17 +78,19 @@ export default function AgbPage() {
       <h2>6. Versand und Lieferung</h2>
       <p>
         Wir liefern an Adressen in der Schweiz und versenden ab Lager in der
-        Schweiz. Eine Kleinsendung im Briefformat kostet{" "}
-        {formatPrice(SHIPPING.letterRate)}, ein Paket — etwa eine ganze Box
-        oder ein Display — {formatPrice(SHIPPING.parcelRate)}. Ab einem
-        Bestellwert von {formatPrice(SHIPPING.freeThreshold)} liefern wir
-        versandkostenfrei.
+        Schweiz. Der Versand kostet pro Bestellung{" "}
+        {formatPrice(SHIPPING.rate)}; ab einem Bestellwert von{" "}
+        {formatPrice(SHIPPING.freeThreshold)} liefern wir versandkostenfrei.
+        Können wir eine Bestellung als Brief versenden, schreiben wir dir die
+        Differenz als Gutscheincode für den Shop gut.
       </p>
       <p>
         Wir versenden in der Regel innerhalb von 1–3 Werktagen nach
         Bestelleingang. Angegebene Lieferfristen sind Richtwerte und nicht
-        verbindlich zugesagt; Verzögerungen beim Transport begründen keinen
-        Schadenersatzanspruch. Details unter{" "}
+        verbindlich zugesagt; Verzögerungen beim Transport begründen, soweit
+        gesetzlich zulässig, keinen Schadenersatzanspruch. Die Gefahr eines
+        Verlusts oder einer Beschädigung auf dem Transport tragen wir; sie
+        geht mit der Zustellung auf dich über. Details unter{" "}
         <Link href="/service/versand">Versand &amp; Lieferung</Link>.
       </p>
 
@@ -115,7 +112,12 @@ export default function AgbPage() {
       <p>
         Das schweizerische Recht kennt für Bestellungen im Onlinehandel kein
         gesetzliches Widerrufsrecht. Wir gewähren auch kein freiwilliges
-        Rückgabe- oder Umtauschrecht bei blossem Sinneswandel.
+        Rückgabe- oder Umtauschrecht bei blossem Sinneswandel. In besonderen
+        Fällen kann der Inhaber eine Rückgabe ungeöffneter, unbenutzter Ware
+        in der Originalverpackung aus Kulanz annehmen; ein Anspruch darauf
+        besteht nicht. Die Kosten der Rücksendung trägst in diesem Fall du.
+        Geöffnete oder benutzte Verbrauchsartikel (Papers, Filter, Tips) sind
+        davon ausgeschlossen.
       </p>
       <p>
         Der Grund: Unsere Artikel sind im Shop mit Bild, Marke, Format und Menge
@@ -126,7 +128,7 @@ export default function AgbPage() {
         Davon unberührt bleiben deine gesetzlichen Rechte bei Mängeln,
         beschädigter Ware und Falschlieferungen. Diese Fälle regelt Ziffer 10,
         und dort tragen wir die Kosten. Den praktischen Ablauf findest du unter{" "}
-        <Link href="/service/rueckgabe">Rückgabe &amp; Reklamation</Link>.
+        <Link href="/service/rueckgabe">Rückgaberecht &amp; Reklamation</Link>.
       </p>
 
       <h2>10. Gewährleistung</h2>
@@ -136,7 +138,8 @@ export default function AgbPage() {
         zwei Jahre nach Ablieferung der Ware. Bitte melde uns Mängel möglichst
         bald nach der Entdeckung. Bei berechtigten Mängelrügen ersetzen wir
         die Ware oder erstatten den Kaufpreis; die Rückversandkosten gehen in
-        diesem Fall auf uns.
+        diesem Fall auf uns. Erstattungen erfolgen über die ursprünglich
+        genutzte Zahlungsart.
       </p>
 
       <h2>11. Haftung</h2>
@@ -144,7 +147,8 @@ export default function AgbPage() {
         Unsere Haftung beschränkt sich auf Vorsatz und grobe Fahrlässigkeit,
         soweit gesetzlich zulässig. Eine Haftung für indirekte Schäden oder
         entgangenen Gewinn ist ausgeschlossen. Die Haftung für Personenschäden
-        bleibt in jedem Fall vorbehalten.
+        sowie die Haftung nach dem Produktehaftpflichtgesetz bleiben in jedem
+        Fall vorbehalten.
       </p>
 
       <h2>12. Datenschutz</h2>

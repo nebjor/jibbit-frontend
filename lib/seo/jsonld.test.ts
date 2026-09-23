@@ -289,25 +289,19 @@ describe("Produkt — Verfügbarkeit", () => {
 });
 
 describe("Produkt — Versand und Rückgabe", () => {
-  it("Einzelstück: fester Briefsatz in die Schweiz", () => {
-    const shipping = offer(build(), "v_single").shippingDetails;
-    expect(shipping.shippingRate).toEqual({
-      "@type": "MonetaryAmount",
-      value: "3.75",
-      currency: "CHF",
-    });
-    expect(shipping.shippingDestination.addressCountry).toBe("CH");
-    expect(shipping.deliveryTime.handlingTime).toMatchObject({
-      minValue: 1,
-      maxValue: 3,
-      unitCode: "DAY",
-    });
-  });
-
-  it("Display: Paketsatz als OBERGRENZE — das Gewicht entscheidet, nicht wir", () => {
-    const rate = offer(build(), "v_display").shippingDetails.shippingRate;
-    expect(rate.maxValue).toBe("9.00");
-    expect("value" in rate).toBe(false);
+  it("ein Versandpreis für jede Packung, in die Schweiz", () => {
+    for (const id of ["v_single", "v_display"]) {
+      const shipping = offer(build(), id).shippingDetails;
+      expect(shipping.shippingRate).toEqual({
+        "@type": "MonetaryAmount",
+        value: money(SHIPPING.rate),
+        currency: "CHF",
+      });
+      expect(shipping.shippingDestination.addressCountry).toBe("CH");
+    }
+    expect(
+      offer(build(), "v_single").shippingDetails.deliveryTime.handlingTime,
+    ).toMatchObject({ minValue: 1, maxValue: 3, unitCode: "DAY" });
   });
 
   it("eine Packung über der Gratisversand-Schwelle: Versand 0", () => {
@@ -318,8 +312,9 @@ describe("Produkt — Versand und Rückgabe", () => {
       ],
     });
     expect(offer(node, "v_display").shippingDetails.shippingRate.value).toBe("0.00");
-    // Das Einzelstück daneben bleibt beim Briefsatz.
-    expect(offer(node, "v_single").shippingDetails.shippingRate.value).toBe("3.75");
+    expect(offer(node, "v_single").shippingDetails.shippingRate.value).toBe(
+      money(SHIPPING.rate),
+    );
   });
 
   it("verspricht KEIN Rückgaberecht bei Sinneswandel", () => {
@@ -476,11 +471,10 @@ describe("Organisation", () => {
     expect(org.hasShippingService).toEqual(shippingServiceJsonLd(DOMAIN));
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     const [below, free] = (org.hasShippingService as any).shippingConditions;
-    // Unter der Schwelle: Paketsatz als Obergrenze (Brief oder Paket
-    // entscheidet das Gewicht). Google nimmt bei Überlappung das Günstigste —
-    // die Fenster dürfen sich deshalb nicht berühren.
+    // Google nimmt bei Überlappung das Günstigste — die Fenster dürfen sich
+    // deshalb nicht berühren.
     expect(below.orderValue.maxValue).toBe("68.99");
-    expect(below.shippingRate.maxValue).toBe(money(SHIPPING.parcelRate));
+    expect(below.shippingRate.value).toBe(money(SHIPPING.rate));
     expect(free.orderValue.minValue).toBe(money(SHIPPING.freeThreshold));
     expect("maxValue" in free.orderValue).toBe(false);
     expect(free.shippingRate.value).toBe("0.00");

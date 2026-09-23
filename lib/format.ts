@@ -66,3 +66,9 @@ export function discountPercent(price: number, compareAt?: number): number {
   if (!compareAt || compareAt <= price) return 0;
   return Math.floor(((compareAt - price) / compareAt) * 100);
 }
+
+/** «+41764140890» -> «076 414 08 90» (Schweizer Schreibweise). */
+export function displayPhone(e164: string): string {
+  const national = e164.replace(/^\+41/, "0");
+  return national.replace(/^(\d{3})(\d{3})(\d{2})(\d{2})$/, "$1 $2 $3 $4");
+}

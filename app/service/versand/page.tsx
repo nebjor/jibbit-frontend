@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Prose, Platzhalter } from "@/components/Prose";
+import { Prose } from "@/components/Prose";
 import { SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 
@@ -13,18 +13,13 @@ export default function VersandPage() {
   return (
     <Prose
       title="Versand & Lieferung"
-      intro={`Kleinsendungen ${formatPrice(SHIPPING.letterRate)}, Pakete ${formatPrice(SHIPPING.parcelRate)} — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Keine versteckten Zuschläge an der Kasse.`}
-      updated="Entwurf vom 21. August 2026"
+      intro={`Ein Preis für jede Bestellung: ${formatPrice(SHIPPING.rate)} — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Keine versteckten Zuschläge an der Kasse.`}
+      updated="21. September 2026"
     >
       <h2>Versandkosten</h2>
       <ul>
         <li>
-          Kleinsendung im Briefformat:{" "}
-          <strong>{formatPrice(SHIPPING.letterRate)}</strong>
-        </li>
-        <li>
-          Paket, zum Beispiel eine ganze Box oder ein Display:{" "}
-          <strong>{formatPrice(SHIPPING.parcelRate)}</strong>
+          Jede Bestellung: <strong>{formatPrice(SHIPPING.rate)}</strong>
         </li>
         <li>
           Bestellwert ab {formatPrice(SHIPPING.freeThreshold)}:{" "}
@@ -32,9 +27,19 @@ export default function VersandPage() {
         </li>
       </ul>
       <p>
-        Die Pauschale gilt pro Bestellung, unabhängig von Anzahl und Gewicht
-        der Artikel. Im Warenkorb siehst du jederzeit, wie viel dir noch bis
-        zum Gratisversand fehlt.
+        Das Paketporto kostet uns {formatPrice(SHIPPING.postage)} — die Hälfte
+        davon übernehmen wir. Der Preis gilt pro Bestellung, unabhängig von
+        Anzahl und Gewicht der Artikel. Im Warenkorb siehst du jederzeit, wie
+        viel dir noch bis zum Gratisversand fehlt.
+      </p>
+
+      <h2>Passt es in einen Brief? Dann bekommst du Geld zurück</h2>
+      <p>
+        Ob deine Bestellung als Brief oder als Paket reist, sehen wir erst beim
+        Packen. Passt sie in einen Brief, schicken wir sie als Brief und
+        schreiben dir die Differenz gut: Du bekommst per E-Mail einen
+        Gutscheincode, den du bei deiner nächsten Bestellung im Shop einlösen
+        kannst.
       </p>
 
       <h2>Versandgebiet</h2>
@@ -59,9 +64,7 @@ export default function VersandPage() {
 
       <h2>Versandart</h2>
       <p>
-        Wir versenden mit{" "}
-        Die Schweizerische Post
-        . Die Sendungen sind neutral verpackt — von aussen ist nicht
+        Wir versenden mit der Schweizerischen Post. Die Sendungen sind neutral verpackt — von aussen ist nicht
         ersichtlich, was drin ist.
       </p>
 

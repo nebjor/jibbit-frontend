@@ -23,6 +23,37 @@
   max-width: 34ch;
 }
 
+.contact {
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin-top: var(--s-2);
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+.contact a {
+  color: var(--c-ink);
+  display: inline-block;
+  padding: var(--s-1) 0;
+  min-height: 32px;
+  align-self: flex-start;
+}
+
+.contact a:hover {
+  text-decoration: underline;
+}
+
+.contactTitle {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-ink);
+}
+
 .col ul {
   list-style: none;
   padding: 0;
@@ -57,52 +88,47 @@
 
 .bottom {
   border-top: var(--border-w) solid var(--c-line);
-  padding-block: var(--s-4);
+  padding-block: var(--s-5);
 }
 
 .bottomInner {
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
+  gap: var(--s-4);
   align-items: flex-start;
   justify-content: space-between;
 }
 
-.pay {
-  list-style: none;
+.notes {
   display: flex;
-  gap: var(--s-2);
-  padding: 0;
-  margin: 0;
-}
-
-.pay li {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  border: var(--border-w) solid var(--c-line);
-  border-radius: var(--radius);
-  padding: var(--s-1) var(--s-2);
-  color: var(--c-muted);
+  flex-direction: column;
+  gap: var(--s-1);
 }
 
 @media (min-width: 640px) {
   .grid {
     grid-template-columns: 1fr 1fr;
   }
-  .bottomInner {
-    flex-direction: row;
-    align-items: center;
+  .brandCol {
+    grid-column: 1 / -1;
   }
 }
 
 @media (min-width: 1000px) {
   .grid {
-    /* Drei Spalten seit dem Wegfall der Kategorieliste (Duplikat der
-       Header-Navigation): Marke, Kundenservice, Rechtliches. */
-    grid-template-columns: 2fr 1fr 1fr;
+    /* Marke/Kontakt, Kundenservice, Shop, Rechtliches. */
+    grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: var(--s-7);
+  }
+  .brandCol {
+    grid-column: auto;
+  }
+  .bottomInner {
+    flex-direction: row;
+    align-items: center;
+  }
+  .notes {
+    text-align: right;
+    max-width: 48ch;
   }
 }

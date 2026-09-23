@@ -157,7 +157,7 @@ export function returnPolicyJsonLd(domain: string): JsonLdObject {
   return {
     "@type": "MerchantReturnPolicy",
     "@id": returnPolicyId(domain),
-    name: "Rückgabe & Reklamation",
+    name: "Rückgaberecht & Reklamation",
     applicableCountry: BUSINESS.countryCode,
     returnPolicyCountry: BUSINESS.countryCode,
     returnPolicyCategory: `${SCHEMA}/${RETURNS.category}`,
@@ -170,48 +170,21 @@ const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
   (d) => `${SCHEMA}/${d}`,
 );
 
-/** Was der Versandsatz über die Packung wissen muss. */
-export interface ShippedItem {
-  /** Preis für EIN Stück dieser Packung. */
-  unitPrice: number;
-  /** 1 = Einzelstück, 34 = Display. */
-  unitsPerPack: number;
-}
-
 /**
- * Versandangaben je Angebot — der Satz für EINE Packung, allein bestellt.
- *
- * Seit jede Packung ihr eigenes `Offer` hat, lässt sich das genauer sagen als
- * «überall der Briefsatz»:
- *
- *   - Kostet die Packung allein schon den Gratisversand-Betrag (ab CHF 69),
- *     ist der Versand 0 — das hält an der Kasse.
- *   - Ein Einzelstück geht als Brief: fester Satz (`value`).
- *   - Ein Display/eine Box geht je nach GEWICHT als Brief oder Paket (Grenze
- *     im Backend: 1 kg, swiss-shipping). Das Gewicht kennt die Storefront
- *     nicht, also steht dort der Paketsatz als OBERGRENZE (`maxValue`; Google
- *     erlaubt ausdrücklich `value` ODER `maxValue`). Bisher stand auch am
- *     Display der Briefsatz — das war im Zweifel zu tief.
- *
- * Zu hoch angeben ist hier der sichere Fehler, zu tief der teure: eine
- * Versandangabe, die an der Kasse nicht hält, ist genau die Abweichung, die
- * Merchant Center abstraft. Die Regel für den ganzen Warenkorb (Schwelle für
- * Gratisversand) steht auf Organisationsebene, siehe `shippingServiceJsonLd`.
+ * Versandangaben je Angebot: der eine Versandpreis, oder 0, wenn die Packung
+ * allein schon den Gratisversand-Betrag erreicht. Die Schwelle für den ganzen
+ * Warenkorb steht auf Organisationsebene (`shippingServiceJsonLd`).
  *
  * Google liest auf Angebotsebene nur `shippingRate`, `shippingDestination`
- * und `deliveryTime` (handling/transit, je min+max in Tagen); das Angebot
- * schlägt die Organisationsebene.
+ * und `deliveryTime`; das Angebot schlägt die Organisationsebene.
  */
 export function shippingDetailsJsonLd(
   currency: string,
-  item: ShippedItem = { unitPrice: 0, unitsPerPack: 1 },
+  unitPrice = 0,
 ): JsonLdObject {
-  const rate =
-    item.unitPrice >= SHIPPING.freeThreshold
-      ? { value: money(0) }
-      : item.unitsPerPack > 1
-        ? { maxValue: money(SHIPPING.parcelRate) }
-        : { value: money(SHIPPING.letterRate) };
+  const rate = {
+    value: money(unitPrice >= SHIPPING.freeThreshold ? 0 : SHIPPING.rate),
+  };
 
   return {
     "@type": "OfferShippingDetails",
@@ -249,10 +222,8 @@ export function shippingDetailsJsonLd(
  * `ShippingService` unter `Organization.hasShippingService` zu führen und
  * `Offer.shippingDetails` nur für Abweichungen zu nutzen. Hier steht, was
  * sich am einzelnen Angebot NICHT sagen lässt: die Schwelle für den
- * Gratisversand (`orderValue`). Unterhalb der Schwelle steht der Paketsatz
- * als Obergrenze — Brief oder Paket entscheidet das Gewicht, und Gewichte
- * stehen nicht im Markup. Treffen mehrere Bedingungen zu, nimmt Google die
- * günstigste; deshalb überlappen die beiden Fenster nicht.
+ * Gratisversand (`orderValue`). Treffen mehrere Bedingungen zu, nimmt Google
+ * die günstigste; deshalb überlappen die beiden Fenster nicht.
  *
  * Rangfolge bei Google (stark -> schwach): Merchant-Center-Feed, Content API,
  * Einstellungen in Merchant Center/Search Console, Markup am Angebot, Markup
@@ -280,8 +251,7 @@ export function shippingServiceJsonLd(
     "@id": shippingServiceId(domain),
     name: "Versand Schweiz",
     description:
-      `Brief CHF ${money(SHIPPING.letterRate)}, Paket CHF ${money(SHIPPING.parcelRate)}, ` +
-      `gratis ab CHF ${money(SHIPPING.freeThreshold)} Bestellwert. Versand nur in die Schweiz.`,
+      `CHF ${money(SHIPPING.rate)}, gratis ab CHF ${money(SHIPPING.freeThreshold)} Bestellwert. Versand nur in die Schweiz.`,
     fulfillmentType: `${SCHEMA}/FulfillmentTypeDelivery`,
     handlingTime: {
       "@type": "ServicePeriod",
@@ -304,7 +274,7 @@ export function shippingServiceJsonLd(
         },
         shippingRate: {
           "@type": "MonetaryAmount",
-          maxValue: money(SHIPPING.parcelRate),
+          value: money(SHIPPING.rate),
           currency,
         },
         transitTime,
@@ -609,10 +579,7 @@ function offerFor(
               : { "@type": "Product", name: ctx.product.title },
           }
         : undefined,
-    shippingDetails: shippingDetailsJsonLd(ctx.currency, {
-      unitPrice: unit,
-      unitsPerPack: variant.unitsPerPack,
-    }),
+    shippingDetails: shippingDetailsJsonLd(ctx.currency, unit),
     // Nur der Verweis — die Regel selbst hängt an der Organisation. Genau
     // diese Form («using only the @id keyword») beschreibt Google.
     hasMerchantReturnPolicy: { "@id": returnPolicyId(ctx.domain) },

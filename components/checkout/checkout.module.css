@@ -351,3 +351,8 @@
   line-height: 1.6;
   margin: 0;
 }
+
+.splitNote {
+  margin-top: 2px;
+  max-width: 30ch;
+}

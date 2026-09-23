@@ -31,7 +31,7 @@
  *
  * The one number that IS derived locally is shipping BEFORE a delivery method
  * exists — Medusa reports 0 until then, and showing "Versand: gratis" to
- * someone who will be charged CHF 9.00 is not an option. It is flagged as an
+ * someone who will be charged CHF 4.50 is not an option. It is flagged as an
  * estimate (`shippingIsEstimate`) and uses the same rule as the backend
  * provider; see lib/cart/shipping.ts.
  *
