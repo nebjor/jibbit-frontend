@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { HttpTypes } from "@medusajs/types";
 import type Medusa from "@medusajs/js-sdk";
 import {
+  PAYMENT_UNAVAILABLE,
   SYSTEM_DEFAULT_PROVIDER_ID,
   ZAHLS_PROVIDER_ID,
   PaymentSetupError,
   choosePaymentProvider,
+  describeInitiateFailure,
   handoffFromSession,
   preparePayment,
   systemDefaultAllowed,
@@ -215,18 +217,87 @@ describe("preparePayment", () => {
   });
 
   it("does NOT fall back when the system provider is blocked (production)", async () => {
-    const sdk = fakeSdk({
-      providers: [
-        { id: ZAHLS_PROVIDER_ID },
-        { id: SYSTEM_DEFAULT_PROVIDER_ID },
-      ],
-      initiate: async () => {
-        throw new Error("credentials missing");
-      },
-    });
-    await expect(preparePayment(sdk, CART, false)).rejects.toThrow(
-      "credentials missing",
-    );
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const sdk = fakeSdk({
+        providers: [
+          { id: ZAHLS_PROVIDER_ID },
+          { id: SYSTEM_DEFAULT_PROVIDER_ID },
+        ],
+        initiate: async () => {
+          throw new Error("credentials missing");
+        },
+      });
+
+      // The customer gets an actionable message, not `placeOrder`'s catch-all
+      // "please try again" — retrying a misconfigured backend never helps.
+      await expect(preparePayment(sdk, CART, false)).rejects.toThrow(
+        PaymentSetupError,
+      );
+
+      // …and the REAL reason ends up in the server log, with the context that
+      // separates "provider not registered" from "the PSP refused".
+      const logged = spy.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(logged).toContain("credentials missing");
+      expect(logged).toContain(`provider=${ZAHLS_PROVIDER_ID}`);
+      expect(logged).toContain("region=reg_1");
+      expect(logged).toContain("check-payment-setup.ts");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  /**
+   * The failure this whole change exists for: the region still offers
+   * pp_zahls_zahls, the backend no longer registers it, and Medusa answers
+   * with a bare 500 `unknown_error`. Nothing about that belongs on a
+   * customer's screen — but all of it belongs in the log.
+   */
+  it("keeps the backend's wording out of the checkout and in the log", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const sdk = fakeSdk({
+        providers: [{ id: ZAHLS_PROVIDER_ID }],
+        initiate: async () => {
+          throw Object.assign(
+            new Error(
+              "Unable to retrieve the payment provider with id: pp_zahls_zahls",
+            ),
+            { status: 500, type: "unknown_error" },
+          );
+        },
+      });
+
+      await expect(preparePayment(sdk, CART, false)).rejects.toThrow(
+        PAYMENT_UNAVAILABLE,
+      );
+
+      const logged = spy.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(logged).toContain("status=500");
+      expect(logged).toContain("type=unknown_error");
+      expect(logged).toContain("Unable to retrieve the payment provider");
+      expect(logged).toContain(`region_offers=[${ZAHLS_PROVIDER_ID}]`);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("names region and offer list when the region has no usable provider", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const sdk = fakeSdk({
+        providers: [{ id: SYSTEM_DEFAULT_PROVIDER_ID }],
+        initiate: async () => ({}),
+      });
+      await expect(preparePayment(sdk, CART, false)).rejects.toThrow(
+        PaymentSetupError,
+      );
+      const logged = spy.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(logged).toContain("no usable payment provider");
+      expect(logged).toContain(`region_offers=[${SYSTEM_DEFAULT_PROVIDER_ID}]`);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("does NOT fall back when the PSP session exists but has no link", async () => {
@@ -245,12 +316,49 @@ describe("preparePayment", () => {
   });
 
   it("refuses to check out when only the blocked system provider remains", async () => {
-    const sdk = fakeSdk({
-      providers: [{ id: SYSTEM_DEFAULT_PROVIDER_ID }],
-      initiate: async () => ({}),
-    });
-    await expect(preparePayment(sdk, CART, false)).rejects.toThrow(
-      PaymentSetupError,
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const sdk = fakeSdk({
+        providers: [{ id: SYSTEM_DEFAULT_PROVIDER_ID }],
+        initiate: async () => ({}),
+      });
+      await expect(preparePayment(sdk, CART, false)).rejects.toThrow(
+        PaymentSetupError,
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+/**
+ * The log line is the deliverable here — it is what turns "the checkout said
+ * no" into a diagnosis, so its contents are pinned.
+ */
+describe("describeInitiateFailure", () => {
+  it("carries provider, region, the region's offer list and the backend answer", () => {
+    const line = describeInitiateFailure(
+      ZAHLS_PROVIDER_ID,
+      "reg_1",
+      [{ id: ZAHLS_PROVIDER_ID }, { id: SYSTEM_DEFAULT_PROVIDER_ID }],
+      Object.assign(new Error("boom"), { status: 500, type: "unknown_error" }),
     );
+
+    expect(line).toContain(`provider=${ZAHLS_PROVIDER_ID}`);
+    expect(line).toContain("region=reg_1");
+    expect(line).toContain(
+      `region_offers=[${ZAHLS_PROVIDER_ID},${SYSTEM_DEFAULT_PROVIDER_ID}]`,
+    );
+    expect(line).toContain("status=500");
+    expect(line).toContain("type=unknown_error");
+    expect(line).toContain("message=boom");
+    expect(line).toContain("check-payment-setup.ts");
+  });
+
+  it("survives an error that is not an Error and a region that is missing", () => {
+    const line = describeInitiateFailure(ZAHLS_PROVIDER_ID, null, [], "kaputt");
+    expect(line).toContain("region=?");
+    expect(line).toContain("region_offers=[-]");
+    expect(line).toContain("message=kaputt");
   });
 });
