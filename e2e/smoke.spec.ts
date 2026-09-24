@@ -1,0 +1,28 @@
+import { execFile } from "node:child_process";
+import path from "node:path";
+import { promisify } from "node:util";
+import { test, expect } from "./fixtures";
+
+const run = promisify(execFile);
+
+/**
+ * The environment health check, run against the stack under test.
+ *
+ * `tools/smoke.mjs` is the tool that gets pointed at a real environment;
+ * running it here means CI catches a broken health check before anyone relies
+ * on it. `--require-sitemap` turns the "empty sitemap" warning into a failure,
+ * which is the right reading for a deployment configured as indexable.
+ */
+test("Der Smoke-Test läuft gegen den Teststack durch", async ({ baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "Einmal pro Lauf genügt.");
+  test.setTimeout(90_000);
+
+  const repoRoot = path.dirname(testInfo.config.configFile ?? process.cwd());
+  const { stdout } = await run(
+    process.execPath,
+    ["tools/smoke.mjs", `--base-url=${baseURL}`, "--require-sitemap"],
+    { cwd: repoRoot, encoding: "utf-8" },
+  );
+
+  expect(stdout).toContain("0 fehlgeschlagen");
+});

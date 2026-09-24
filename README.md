@@ -59,6 +59,38 @@ npm install @medusajs/js-sdk@latest @medusajs/types@latest
 
 ---
 
+## Tests, smoke check and CI
+
+```bash
+npm test                     # vitest — pure logic, no server
+npm run build && npm run test:e2e   # Playwright, mobile 375×812 and desktop
+npm run smoke -- --base-url=https://test.jibbit.ch   # any environment, read-only
+```
+
+`npm run test:e2e` starts two servers itself: `e2e/mock-backend` (a stand-in
+Medusa store API with a fixed catalogue) and the **production** build via
+`e2e/start-app.mjs`. Production mode is the point — under `next dev` an
+unreachable backend silently serves `lib/mock-catalog.ts`, so a broken data
+layer would still look green. The build must exist first; the tenant is
+`STATIC_TENANTS` on loopback with domain `test.jibbit.ch`, which is what makes
+the Odoo 301s testable without touching the live site. The suite covers age
+gate and cookie banner, catalogue and category filter, product page with price
+tiers and tier photo, cart drawer maths, checkout up to (never including)
+payment, register/login, legal pages, 404 and 301.
+
+`npm run smoke` is the read-only subset as a plain Node script — no browser, no
+orders, no registrations, safe against production. It checks `/healthz`, the
+legal and service pages, crawls every URL in `sitemap.xml`, verifies the two
+known 301s and a 404, and prints a pass/fail table. Exit code 1 on any failure.
+
+**CI** (`.github/workflows/ci.yml`, on pull requests and pushes to `main`):
+typecheck, lint, unit tests, build, then the Playwright suite against that
+build. npm and the Chromium download are cached; a run takes about five
+minutes. Locally Chromium needs its system libraries once:
+`sudo npx playwright install --with-deps chromium`.
+
+---
+
 ## Multi-tenancy
 
 This deployment serves **many tenants from one Next.js instance**, each with
