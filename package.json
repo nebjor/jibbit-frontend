@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seo:probe": "node tools/seo/probe-jsonld.mjs"
+    "seo:probe": "node tools/seo/probe-jsonld.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "smoke": "node tools/smoke.mjs"
   },
   "dependencies": {
     "@medusajs/js-sdk": "https://registry.npmjs.org/@medusajs/js-sdk/-/js-sdk-2.18.0.tgz",
@@ -22,6 +25,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
