@@ -4,12 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageLoading } from "@/components/PageLoading";
 import type { ProductView } from "@/lib/types";
-import {
-  getProduct,
-  getRelatedProducts,
-  getCategory,
-  getStaticProductHandles,
-} from "@/lib/data";
+import { getProduct, getRelatedProducts, getCategory } from "@/lib/data";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { AddToCart } from "@/components/AddToCart";
@@ -28,15 +23,39 @@ import { breadcrumbJsonLd, graph, productJsonLd } from "@/lib/seo/jsonld";
 import styles from "./product.module.css";
 
 /**
- * Never from a live backend call — a build must not depend on the backend
- * being reachable (see getStaticProductHandles). `dynamicParams` renders
- * every real handle on demand.
+ * DIESE SEITE WIRD IMMER JE ANFRAGE GERENDERT — und das ist kein Feintuning,
+ * sondern der Unterschied zwischen «Produktseite» und «500».
+ *
+ * Hier stand ein `generateStaticParams()` (plus `dynamicParams = true`), das
+ * seine Handles aus dem Mock-Katalog nahm, damit der Build nie das Backend
+ * fragen muss. In PRODUKTION liefert diese Liste bewusst NICHTS — es wurde
+ * also ohnehin keine einzige Produktseite vorgerendert. Trotzdem stellte
+ * allein die EXISTENZ der Funktion das Segment auf statische Erzeugung (im
+ * Build-Protokoll: «● /products/[handle]»), und dann rendert Next auch die
+ * erst bei der Anfrage erzeugten Adressen im statischen Modus. Dort ist
+ * `headers()` verboten — und genau das ruft die Mandantenauflösung
+ * (`getTenantContext()`) auf. Next bricht mit
+ * `digest: "DYNAMIC_SERVER_USAGE"` ab, der Server antwortet mit einem
+ * nackten 500 «Internal Server Error», BEVOR irgendetwas gerendert ist.
+ *
+ * Wirkung auf test.jibbit.ch: JEDE Produktseite tot — auch ein unbekannter
+ * Handle, der ein 404 liefern müsste, denn der Abbruch passiert schon vor
+ * `notFound()`. Die Startseite blieb heil, weil sie kein
+ * `generateStaticParams` hat und deshalb ohnehin dynamisch ist.
+ *
+ * Der Schalter `dynamic = "force-dynamic"` unten sagt aus, was ohnehin gilt.
+ * Er allein hat im Versuch aber nicht gereicht: solange das
+ * `generateStaticParams` danebenstand, wies das Build-Protokoll die Route
+ * weiter als «●» aus. Deshalb ist die Funktion ENTFERNT und nicht nur der
+ * Schalter gesetzt. Das kostet nichts — sie war in Produktion leer, und die
+ * Seite ist wegen `headers()` sowieso nicht statisch (siehe den Kommentar in
+ * `ProductDetails`). Ein Build fragt das Backend weiterhin nie.
+ *
+ * Wer hier wieder ein `generateStaticParams` einsetzen will, muss zuerst die
+ * Mandantenauflösung aus dem statischen Pfad holen — sonst kommt genau dieses
+ * 500 zurück.
  */
-export function generateStaticParams() {
-  return getStaticProductHandles().map((handle) => ({ handle }));
-}
-
-export const dynamicParams = true;
+export const dynamic = "force-dynamic";
 
 /**
  * ⚠️ OHNE DIESE ZEILE ANTWORTET IN PRODUKTION JEDE PRODUKTSEITE MIT 500.
