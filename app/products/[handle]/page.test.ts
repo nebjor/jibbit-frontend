@@ -46,7 +46,8 @@ vi.mock("@/components/analytics/TrackProductView", () => ({
   TrackProductView: () => null,
 }));
 
-const { default: ProductPage } = await import("./page");
+const pageModule = await import("./page");
+const { default: ProductPage } = pageModule;
 const { VariantHero } = await import("@/components/VariantHero");
 const { VariantSelectionProvider } = await import(
   "@/components/VariantSelection"
@@ -117,6 +118,29 @@ async function renderPage(
   const details = page.props.children;
   return details.type(details.props);
 }
+
+/**
+ * REGRESSION: jede Produktseite lieferte auf test.jibbit.ch ein 500.
+ *
+ * Ursache war nicht die Ware, sondern der Rendermodus: mit einem
+ * `generateStaticParams` gilt das Segment als statisch erzeugt, und im
+ * statischen Modus ist `headers()` verboten — genau das braucht die
+ * Mandantenauflösung. Next brach mit `DYNAMIC_SERVER_USAGE` ab, noch bevor
+ * ein Produkt geladen war; deshalb traf es auch unbekannte Handles, die ein
+ * 404 liefern müssten.
+ *
+ * Die Zusicherung hier ist bewusst grob — sie prüft die Segment-Optionen,
+ * nicht die Ausgabe: genau diese Exporte entscheiden über den Modus. Der
+ * Schalter `force-dynamic` allein genügte im Versuch nicht, solange das
+ * `generateStaticParams` danebenstand; deshalb steht hier beides.
+ */
+describe("Produktseite — Rendermodus", () => {
+  it("rendert je Anfrage: force-dynamic und KEIN generateStaticParams", () => {
+    expect(pageModule.dynamic).toBe("force-dynamic");
+    expect("generateStaticParams" in pageModule).toBe(false);
+    expect("dynamicParams" in pageModule).toBe(false);
+  });
+});
 
 describe("Produktseite — Bild folgt der Variante", () => {
   it("rendert den Umschalter mit der Zuordnung Display -> Box, Heftchen -> Einzelstück", async () => {
