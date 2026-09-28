@@ -408,6 +408,13 @@ export async function getRelatedProducts(
 /**
  * Handles for prerendering. Derived from mocks so the build never hits the
  * network — and none in production, where mock pages must not exist.
+ *
+ * NICHT MEHR VERDRAHTET. Die Produktseite hat ihr `generateStaticParams`
+ * verloren: dessen blosse Existenz stellte das Segment auf statische
+ * Erzeugung, und dort ist das `headers()` der Mandantenauflösung verboten —
+ * jede Produktseite antwortete mit 500. Die Begründung steht ausführlich in
+ * app/products/[handle]/page.tsx. Wer diese Funktion wieder anschliessen
+ * will, muss zuerst dort nachlesen.
  */
 export function getStaticProductHandles(): string[] {
   return mockAllowed() ? MOCK_PRODUCTS.map((p) => p.handle) : [];

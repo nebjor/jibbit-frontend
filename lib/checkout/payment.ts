@@ -136,10 +136,78 @@ export function handoffFromSession(
   const link = session?.data?.link;
   if (typeof link !== "string" || !link) {
     throw new PaymentSetupError(
-      "Die Weiterleitung zur Bezahlseite konnte nicht erstellt werden. Bitte nochmals versuchen.",
+      "Die Weiterleitung zur Bezahlseite konnte nicht erstellt werden. Dein " +
+        "Warenkorb bleibt erhalten — bitte in ein paar Minuten nochmals " +
+        "versuchen oder uns kurz schreiben.",
     );
   }
   return { kind: "redirect", providerId, url: link };
+}
+
+/**
+ * What the customer reads when the PSP session could not be created.
+ *
+ * NOT "Bitte nochmals versuchen": by far the most common cause is a backend
+ * that offers a provider it cannot serve (see `describeInitiateFailure`), and
+ * retrying that never helps. The message says what is true — it is not the
+ * cart, it is our side — and offers the one action that does help.
+ */
+export const PAYMENT_UNAVAILABLE =
+  "Die Bezahlung lässt sich gerade nicht starten — an deinem Warenkorb liegt " +
+  "es nicht. Dein Warenkorb bleibt erhalten: bitte in ein paar Minuten " +
+  "nochmals versuchen oder uns kurz schreiben, dann klären wir das.";
+
+/**
+ * The one line that has to end up in the server log when payment setup fails.
+ *
+ * ─── WHY THIS IS WORTH ITS OWN FUNCTION ───────────────────────────────────
+ * `POST /store/payment-collections/:id/payment-sessions` answers with a bare
+ * 500 `unknown_error` for BOTH of the realistic causes, so the response body
+ * alone never says which one it was:
+ *
+ *   1. The region offers a provider the running backend does not register
+ *      (a `ZAHLS_*` value missing from its environment). Medusa's payment
+ *      module throws "Unable to retrieve the payment provider with id: …"
+ *      and turns it into `unknown_error`. Note that the store route
+ *      `GET /store/payment-providers` still lists such a provider, and its
+ *      `is_enabled` stays `true` forever — Medusa 2.13.6 never flips it
+ *      (`@medusajs/payment/dist/loaders/providers.js` filters the existing
+ *      rows by the very list it then compares against, so the disable branch
+ *      is unreachable). The storefront therefore CANNOT detect this case.
+ *   2. The PSP itself refused (bad key, gateway rejected, network).
+ *
+ * So the storefront logs everything it knows — which provider it picked, what
+ * the region offered, and the backend's status/type/message — and names the
+ * command that settles it on the backend side. Without that line, the next
+ * person starts this investigation from zero.
+ */
+export function describeInitiateFailure(
+  providerId: string,
+  regionId: string | null | undefined,
+  available: readonly { id: string }[],
+  error: unknown,
+): string {
+  const e = (error ?? {}) as Record<string, unknown>;
+  const status = e.status ?? e.statusCode;
+  const type = e.type ?? e.code;
+  const message = error instanceof Error ? error.message : String(error);
+
+  const parts = [
+    `provider=${providerId}`,
+    `region=${regionId ?? "?"}`,
+    `region_offers=[${available.map((p) => p.id).join(",") || "-"}]`,
+  ];
+  if (status != null) parts.push(`status=${String(status)}`);
+  if (type != null) parts.push(`type=${String(type)}`);
+  parts.push(`message=${message}`);
+
+  return (
+    `[checkout] could not create a payment session — ${parts.join(" | ")} | ` +
+    `a bare 500/unknown_error here usually means the backend offers this ` +
+    `provider but does not register it (missing ZAHLS_* in its environment). ` +
+    `Settle it on the backend: ` +
+    `docker compose exec medusa npx medusa exec ./src/scripts/check-payment-setup.ts`
+  );
 }
 
 /**
@@ -162,8 +230,15 @@ export async function preparePayment(
   const available = providers ?? [];
   const providerId = choosePaymentProvider(available, allowSystemDefault);
   if (!providerId) {
+    console.error(
+      `[checkout] no usable payment provider — region=${cart.region_id ?? "?"} | ` +
+        `region_offers=[${available.map((p) => p.id).join(",") || "-"}] | ` +
+        `system_default_allowed=${allowSystemDefault} | ` +
+        `fix: Admin → Einstellungen → Regionen → Zahlungsanbieter → zahls.ch`,
+    );
     throw new PaymentSetupError(
-      "Für diese Region ist keine Zahlungsart hinterlegt.",
+      "Für diese Region ist gerade keine Zahlungsart freigeschaltet. Schreib " +
+        "uns kurz — wir schalten sie frei und melden uns bei dir.",
     );
   }
 
@@ -182,16 +257,26 @@ export async function preparePayment(
     // still offers it AND this environment permits it — loudly, because in
     // production this line must never appear once `pp_system_default` is
     // removed from the region.
+    // Log BEFORE deciding what to do with it: this is the only place that
+    // still holds the provider, the region and the region's offer list
+    // together with the backend's answer.
+    console.error(describeInitiateFailure(providerId, cart.region_id, available, error));
+
     const fallback = allowSystemDefault
       ? available.find(
           (p) => p.id === SYSTEM_DEFAULT_PROVIDER_ID && p.id !== providerId,
         )
       : undefined;
-    if (!fallback) throw error;
+    if (!fallback) {
+      // Turn it into a PaymentSetupError so the customer gets a message that
+      // says something true, instead of `placeOrder`'s catch-all "please try
+      // again" — which is wrong advice for a misconfigured backend.
+      throw new PaymentSetupError(PAYMENT_UNAVAILABLE);
+    }
 
     console.error(
-      `[checkout] payment session with ${providerId} failed — falling back to ` +
-        `pp_system_default (authorises WITHOUT moving money): ${String(error)}`,
+      `[checkout] falling back to pp_system_default for ${providerId} ` +
+        `(authorises WITHOUT moving money)`,
     );
     await initiateSession(sdk, cart, fallback.id);
     return { kind: "inline", providerId: fallback.id };
