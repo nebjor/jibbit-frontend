@@ -57,25 +57,6 @@ import styles from "./product.module.css";
  */
 export const dynamic = "force-dynamic";
 
-/**
- * ⚠️ OHNE DIESE ZEILE ANTWORTET IN PRODUKTION JEDE PRODUKTSEITE MIT 500.
- *
- * `generateStaticParams` macht aus dieser Route eine statisch erzeugte — und
- * in Produktion gibt `getStaticProductHandles()` absichtlich eine LEERE Liste
- * zurück. Next rendert einen unbekannten Handle deshalb beim ersten Aufruf im
- * STATISCHEN Kontext und legt das Ergebnis ab. Dort sind Request-APIs
- * verboten, und diese Seite braucht zwingend eine: die Mandantenauflösung
- * liest `headers()` (lib/tenant/context.ts). Das Ergebnis ist ein
- * `DYNAMIC_SERVER_USAGE`-Fehler und eine 500 statt der Produktseite — im
- * `next dev` nicht zu sehen, weil dort echte Handles vorgerendert werden.
- *
- * Die Route ist ohnehin nie statisch cachebar: jeder Mandant bekommt unter
- * derselben Adresse einen anderen Shop. `force-dynamic` schreibt nur hin, was
- * schon gilt. `generateStaticParams` bleibt stehen, weil es im `next dev` die
- * bekannten Handles vorwärmt.
- */
-export const dynamic = "force-dynamic";
-
 export async function generateMetadata({
   params,
 }: {
