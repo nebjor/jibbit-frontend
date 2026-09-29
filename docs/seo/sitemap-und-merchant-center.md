@@ -96,16 +96,17 @@ er steht nur in der Serverkonfiguration (`STATIC_TENANTS`) und war nicht zugäng
 
 ### Produkte
 
-25 veröffentlichte Produkte, 34 Varianten. Die vier umbenannten Handles sind
+25 veröffentlichte Produkte, 34 Varianten. Die umbenannten Handles sind
 `raw-black-classic-king-size-slim`, `purize-super-slim-white-5mm`,
-`dubi-aktivkohlefilter-7mm` und die Kategorie `filter-tips`. Die vollständige Liste steht
+`dubi-aktivkohlefilter-7mm`, `purize-aktivkohlefilter-9mm` und die Kategorie
+`filter-tips`. Die vollständige Liste steht
 in `lib/seo/staging-handles.fixture.json`.
 
 ### Auffälligkeiten
 
 | Produkt | Befund | Folge |
 |---|---|---|
-| `purize-aktivkohlefilter-6mm` | Titel «PURIZE Aktivkohlefilter 9 mm», Artikelnummern `PUR-AK6-50`, `-100`, `-250`. Handle und Artikelnummer sagen 6, der Titel sagt 9. Ein zweites Produkt dieser Reihe gibt es nicht. | Entweder der Titel oder Handle und Artikelnummer sind falsch. Nicht geändert. |
+| `purize-aktivkohlefilter-9mm` | Hiess bis 2026-09-29 `purize-aktivkohlefilter-6mm`, bei Titel «PURIZE Aktivkohlefilter 9 mm». Der Betreiber hat den Handle umbenannt; der alte antwortet mit 404. Die Artikelnummern lauteten `PUR-AK6-50`, `-100`, `-250`; ob sie mit umbenannt wurden, ist nicht geprüft. | Handle und Titel stimmen überein. Odoo 60 zeigt auf den neuen Handle. |
 | `silikon-dose-22-mm` | Preis 0.00 CHF, keine Artikelnummer, keine Kategorie. | Die Seite zeichnet das Produkt für CHF 0 aus. Google lehnt die Zeile ab. |
 | `raw-black-classic-king-size-slim` | Variante «Box (50 Heftchen)» hat `pack_type` `single`. | `custom_label_1` ist `einzeln` statt `box`. |
 | alle 25 | `metadata.brand` ist leer. | Siehe «Feed». |
@@ -167,7 +168,7 @@ Funktion laufen wie der Proxy.
 | 40 | Kategorie Papers | `ocb-bio-slim-organic-hemp-rolls` (Entwurf) |
 | 5 | fehlte, landete auf der Startseite | Kategorie Papers |
 | 7 | Kategorie Papers | unverändert, das Produkt wird nicht mehr geführt |
-| 60 | `purize-aktivkohlefilter-6mm` | unverändert, siehe «Auffälligkeiten» |
+| 60 | `purize-aktivkohlefilter-6mm` | `purize-aktivkohlefilter-9mm` (im Admin umbenannt, siehe «Auffälligkeiten») |
 
 ### Antwort je Muster
 
@@ -293,16 +294,17 @@ deshalb Abweichungen bei den Weiterleitungen, bis neu ausgeliefert ist.
 ### Vor dem Go-live
 
 1. **Zwei Produkte veröffentlichen:** `black-leaf-el-humeros-konische-huelsen-ks-100x`
-   (Kategorie Papers zuweisen) und `ocb-bio-slim-organic-hemp-rolls`. Bis dahin enden
+   (Kategorie Papers ist zugewiesen) und `ocb-bio-slim-organic-hemp-rolls`. Bis dahin enden
    die Odoo-IDs 23, 40 und 47 auf einem 404. Danach beide Handles in
    `lib/seo/legacy-redirects.data.json` aus `unveroeffentlicht` streichen und in
    `lib/seo/staging-handles.fixture.json` unter `produkte` eintragen.
-2. **Entwurf `ocb-premium-kss-papers-mit-filter` löschen**, wie vorgesehen. Die
-   Odoo-IDs 5 und 7 zeigen auf die Kategorie Papers.
+2. ~~Entwurf `ocb-premium-kss-papers-mit-filter` löschen.~~ Erledigt, der Entwurf ist
+   gelöscht. Die Odoo-IDs 5 und 7 zeigen auf die Kategorie Papers.
 3. **`silikon-dose-22-mm`:** Preis eintragen, Artikelnummer und Kategorie vergeben, oder
    das Produkt auf Entwurf setzen.
-4. **`purize-aktivkohlefilter-6mm`:** klären, ob 6 oder 9 mm. Dann Titel oder Handle
-   angleichen. Bei geändertem Handle die Odoo-ID 60 in der Datendatei nachziehen.
+4. ~~`purize-aktivkohlefilter-6mm`: klären, ob 6 oder 9 mm.~~ Erledigt: es ist das
+   9-mm-Produkt, der Handle heisst jetzt `purize-aktivkohlefilter-9mm`, die Odoo-ID 60
+   ist in der Datendatei nachgezogen.
 5. **Marke, Beschreibung, GTIN im Admin pflegen.** Die Rückfälle im Feed sind ein
    Notbehelf.
 6. **Bilder mit Leerzeichen oder Klammern im Dateinamen** neu hochladen, mit Namen aus

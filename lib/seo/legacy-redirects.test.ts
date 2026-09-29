@@ -46,7 +46,7 @@ const SITEMAP: Record<string, string | null> = {
   "/shop/7-ocb-premium-rolls-slim-3": "/products/ocb-black-premium-rolls-slim",
   "/shop/5-ocb-premium-kurz-9": "/products/ocb-premium-kurz",
   "/shop/ocb-slim-filter-bio-120-tips-41": "/products/ocb-slim-filter-bio-120-tips",
-  "/shop/purize-aktivkohlefilter-9mm-60": "/products/purize-aktivkohlefilter-6mm",
+  "/shop/purize-aktivkohlefilter-9mm-60": "/products/purize-aktivkohlefilter-9mm",
   "/shop/purize-xtra-slim-xmas-6mm-54": "/products/purize-xtra-slim-6mm",
   "/shop/purize-super-slim-white-5mm-48": "/products/purize-super-slim-white-5mm",
   "/shop/6-purize-xtra-slim-white-50er-pack-5-9mm-10": "/products/purize-xtra-slim-white-50er-pack-5-9mm",
