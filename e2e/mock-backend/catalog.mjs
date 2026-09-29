@@ -35,22 +35,40 @@ export const CATEGORIES = [
   },
 ];
 
+/**
+ * File names as the admin really produces them: Medusa keeps the name of the
+ * upload, so spaces, brackets, commas and umlauts end up on disk. The image
+ * proxy used to reject those, and the storefront then emitted the backend
+ * address instead. Keyed by the PLAIN name — what the file is called on disk.
+ */
+export const SPECIAL_IMAGE_NAMES = {
+  brackets: "1789907393708-[6] PURIZE White, 50er Pack.png",
+  spaces: "1789906967215-Kailar Filter 9mm BIG  100 stk weiß (Kopie).png",
+};
+
 /** 64×64 PNGs in the shop's own colours — enough for next/image to optimise. */
 export const IMAGE_FILES = {
   "ocb-heftchen.png":
     "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAUUlEQVR42u3PQQkAAAgEsOvhz/6lbGIE38JgBZapfi0CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAldgAWbv4QBl6HJtAAAAAElFTkSuQmCC",
   "ocb-display.png":
     "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAATElEQVR42u3PMQ0AAAwDoCqof7mVsHsJOCB9LgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICV2DmWaAfXIWmPgAAAABJRU5ErkJggg==",
-  "purize-white.png":
+  [SPECIAL_IMAGE_NAMES.brackets]:
     "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAT0lEQVR42u3PQQkAAAgEsEvsR+xvBN/CYAWW6XotAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJXYAHZFmE8kKEmUQAAAABJRU5ErkJggg==",
   "raw-ruby.png":
     "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAUUlEQVR42u3PQQkAAAgEsOvhz/6lbGIE38JgBZapfi0CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAldgAWbv4QBl6HJtAAAAAElFTkSuQmCC",
-  "kailar-weiss.png":
+  [SPECIAL_IMAGE_NAMES.spaces]:
     "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAT0lEQVR42u3PQQkAAAgEsEvsR+xvBN/CYAWW6XotAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJXYAHZFmE8kKEmUQAAAABJRU5ErkJggg==",
 };
 
-/** Medusa writes absolute URLs; `lib/media.ts` keys off the `/static/` segment. */
-const staticUrl = (backendUrl, file) => `${backendUrl}/static/${file}`;
+/**
+ * Medusa writes absolute URLs; `lib/media.ts` keys off the `/static/` segment.
+ *
+ * Encoded the way Medusa stores them: spaces and umlauts percent-encoded,
+ * brackets, parentheses and commas left alone — which is what the URL parser
+ * does, and what `https://api-test.jibbit.ch/static/…-[6]%20PURIZE%20White,…`
+ * looks like in the database.
+ */
+const staticUrl = (backendUrl, file) => new URL(`${backendUrl}/static/${file}`).href;
 
 function variant(id, title, amount, originalAmount, extra = {}) {
   return {
@@ -118,7 +136,7 @@ export function buildProducts(backendUrl) {
       tags: [],
       options: [],
       images: [
-        { id: "img_purize_1", url: staticUrl(backendUrl, "purize-white.png") },
+        { id: "img_purize_1", url: staticUrl(backendUrl, SPECIAL_IMAGE_NAMES.brackets) },
       ],
       metadata: { brand: "PURIZE" },
       variants: [variant("var_purize_xtra", "50er Pack", 4.5)],
@@ -136,7 +154,7 @@ export function buildProducts(backendUrl) {
       tags: [],
       options: [],
       images: [
-        { id: "img_kailar_1", url: staticUrl(backendUrl, "kailar-weiss.png") },
+        { id: "img_kailar_1", url: staticUrl(backendUrl, SPECIAL_IMAGE_NAMES.spaces) },
       ],
       metadata: { brand: "Kailar" },
       variants: [variant("var_kailar_weiss", "Döschen", 3.9)],

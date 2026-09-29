@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { resolveTenantForHost } from "@/lib/tenant/resolve-tenant";
-import { parseMediaPath, resolveImageContentType } from "@/lib/media";
+import {
+  encodeMediaKey,
+  parseMediaPath,
+  resolveImageContentType,
+} from "@/lib/media";
 
 /**
  * Bildproxy: `/media/<host>/<key>` -> `<tenant.backendUrl>/static/<key>`.
@@ -68,7 +72,20 @@ export async function GET(
   const tenant = await resolveTenantForHost(parsed.host);
   if (!tenant) return notFound();
 
-  const upstream = `${tenant.backendUrl.replace(/\/+$/, "")}/static/${parsed.key}`;
+  // `parsed.key` ist geprüfter KLARTEXT (`[6] PURIZE White.avif`). Kodiert
+  // wird genau hier, genau einmal — das Backend (express.static) dekodiert
+  // ebenfalls genau einmal und landet wieder beim Dateinamen.
+  const staticPath = `/static/${encodeMediaKey(parsed.key)}`;
+  const upstream = `${tenant.backendUrl.replace(/\/+$/, "")}${staticPath}`;
+
+  // Gürtel zum Hosenträger: `fetch` normalisiert Adressen (`/a/../b` -> `/b`).
+  // Nach der Prüfung in lib/media.ts kann das nichts mehr verändern — täte es
+  // das doch, zeigte die Anfrage nicht mehr dorthin, wo sie hin soll.
+  try {
+    if (!new URL(upstream).pathname.endsWith(staticPath)) return notFound();
+  } catch {
+    return notFound();
+  }
 
   let response: Response;
   try {

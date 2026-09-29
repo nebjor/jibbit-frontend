@@ -566,7 +566,14 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, BACKEND_URL);
 
   if (url.pathname.startsWith("/static/")) {
-    const file = IMAGE_FILES[url.pathname.slice("/static/".length)];
+    // Decoded exactly once, like express.static does for the real backend.
+    let name = null;
+    try {
+      name = decodeURIComponent(url.pathname.slice("/static/".length));
+    } catch {
+      // Malformed encoding: no such file.
+    }
+    const file = name === null ? undefined : IMAGE_FILES[name];
     if (!file) return sendJson(response, 404, { message: "Not Found" });
     const bytes = Buffer.from(file, "base64");
     response.writeHead(200, {
