@@ -180,6 +180,14 @@ export const PAYMENT_UNAVAILABLE =
  * the region offered, and the backend's status/type/message — and names the
  * command that settles it on the backend side. Without that line, the next
  * person starts this investigation from zero.
+ *
+ * ─── THE HINT FOLLOWS THE FAILURE ─────────────────────────────────────────
+ * Not every failure is a bare 500. When zahls.ch itself refuses, its answer
+ * comes through as a 4xx WITH a message — on staging that was `status=400 |
+ * message=An error occurred: API is not included in your license.` (trial
+ * expired). Appending the "provider not registered" hint to such a line sends
+ * the reader to the wrong place, so `initiateFailureHint` chooses the hint
+ * from what the backend actually answered.
  */
 export function describeInitiateFailure(
   providerId: string,
@@ -203,10 +211,83 @@ export function describeInitiateFailure(
 
   return (
     `[checkout] could not create a payment session — ${parts.join(" | ")} | ` +
+    initiateFailureHint(status, type, message)
+  );
+}
+
+/**
+ * The diagnosis script, as it has to be called INSIDE the container: the
+ * runtime image only holds the output of `medusa build`, so the file is
+ * `.js` there. The `.ts` path exists only in the source tree.
+ */
+const CHECK_PAYMENT_SETUP =
+  "docker compose exec medusa npx medusa exec ./src/scripts/check-payment-setup.js " +
+  "(.js inside the container, which only holds compiled code; " +
+  "locally / with `medusa develop` it is ./src/scripts/check-payment-setup.ts)";
+
+/**
+ * Pick the hint that matches the failure.
+ *
+ *   - "zahls.ch network error"      → the backend cannot reach zahls.ch
+ *   - 4xx WITH a message            → zahls.ch refused; the message is its
+ *                                     answer (license / credentials / other)
+ *   - 500, `unknown_error`, nothing → provider offered but not registered
+ */
+export function initiateFailureHint(
+  status: unknown,
+  type: unknown,
+  message: string,
+): string {
+  const text = message.trim();
+
+  if (/zahls\.ch network error/i.test(text)) {
+    return (
+      `the backend cannot reach zahls.ch (network error) — nothing is wrong ` +
+      `with the provider setup or the cart. Check outbound connectivity/DNS ` +
+      `of the medusa container and the zahls.ch status, then retry.`
+    );
+  }
+
+  const code = Number(status);
+  const rejected =
+    status != null &&
+    Number.isFinite(code) &&
+    code >= 400 &&
+    code < 500 &&
+    text !== "" &&
+    String(type ?? "") !== "unknown_error";
+
+  if (rejected) {
+    const head =
+      `the payment provider rejected the call — the message above is its ` +
+      `answer, the provider IS registered. `;
+    if (/licen[sc]e|lizenz/i.test(text)) {
+      return (
+        head +
+        `Check the zahls.ch subscription (trial expired or plan without API ` +
+        `access) in the zahls.ch backend; no deploy needed.`
+      );
+    }
+    if (
+      code === 401 ||
+      code === 403 ||
+      /api[\s_-]?(key|secret)|instance|unauthori[sz]ed|forbidden/i.test(text)
+    ) {
+      return (
+        head +
+        `Check ZAHLS_API_KEY / ZAHLS_INSTANCE in the backend's environment ` +
+        `against the zahls.ch backend.`
+      );
+    }
+    return (
+      head + `Check account, license and credentials in the zahls.ch backend.`
+    );
+  }
+
+  return (
     `a bare 500/unknown_error here usually means the backend offers this ` +
     `provider but does not register it (missing ZAHLS_* in its environment). ` +
-    `Settle it on the backend: ` +
-    `docker compose exec medusa npx medusa exec ./src/scripts/check-payment-setup.ts`
+    `Settle it on the backend: ${CHECK_PAYMENT_SETUP}`
   );
 }
 
