@@ -125,9 +125,9 @@ export function buildProducts(backendUrl) {
     },
     {
       id: "prod_purize_xtra",
-      handle: "purize-xtra-slim-white-50er-pack-5-9mm",
-      title: "PURIZE Xtra Slim White 50er Pack",
-      subtitle: "Aktivkohlefilter, 5.9 mm",
+      handle: "purize-xtra-slim-6mm",
+      title: "PURIZE XTRA Slim Aktivkohlefilter 6 mm",
+      subtitle: "Aktivkohlefilter, 50er Pack",
       description:
         "Aktivkohlefilter im 50er Beutel. Hält den Zug kühl und filtert, ohne zu ziehen wie ein Strohhalm.",
       material: null,

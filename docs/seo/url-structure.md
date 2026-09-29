@@ -10,7 +10,7 @@ Referenzdaten: `medusa-ecom/data/odoo-redirects.json`.
 > [`sitemap-und-merchant-center.md`](sitemap-und-merchant-center.md). Wo die beiden
 > Dokumente sich widersprechen, gilt jenes. Überholt sind hier: die Tabelle
 > «Empfohlene Handle-Änderungen» (Stand je Zeile dort nachgetragen), die Ziele der
-> Odoo-IDs 2, 23, 36, 40, 47, 48, 49, 60 und die Punkte «Sitemap über 100 Produkte»
+> Odoo-IDs 2, 10, 23, 36, 40, 47, 48, 49, 60 und die Punkte «Sitemap über 100 Produkte»
 > und «Echtes `lastmod`» unter «Nicht umgesetzt».
 
 ## Kurzfassung
@@ -171,8 +171,12 @@ dasselbe meinen, eine davon auflösen.
 `lib/seo/legacy-redirects.data.json` (dazu `lib/seo/staging-handles.fixture.json`) und
 `medusa-ecom/data/odoo-redirects.json` (betroffen waren die IDs 60, 2, 36, 48, 49; alle
 nachgezogen). Die Tests nennen die Handles ebenfalls. Medusa legt beim
-Umbenennen keine Weiterleitung an; nach dem Go-live braucht jede Umbenennung
-zusätzlich ein 301 vom alten Handle.
+Umbenennen keine Weiterleitung an; jede Umbenennung und jedes gelöschte Produkt
+braucht zusätzlich ein 301 vom alten Handle. Dafür gibt es
+`lib/seo/handle-redirects.data.json` (alter Handle → heutiger Handle): die vier
+Umbenennungen oben und die am 2026-09-29 gelöschte Dublette
+`purize-xtra-slim-white-50er-pack-5-9mm` → `purize-xtra-slim-6mm` (Odoo 10 zeigt
+ebenfalls dorthin) stehen drin.
 
 ## Nicht umgesetzt — und warum
 

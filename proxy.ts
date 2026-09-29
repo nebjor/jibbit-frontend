@@ -86,8 +86,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   const { domain } = tenant.theme;
   const { pathname, search } = request.nextUrl;
-  // Alte Odoo-Adressen: EIN Sprung aufs Ziel, Odoos Parameter (?search=,
-  // ?order=) fallen weg — Begründung in lib/seo/legacy-redirects.ts. Das
+  // Alte Odoo-Adressen und alte Handles des neuen Shops (umbenannt oder als
+  // Dublette gelöscht): EIN Sprung aufs Ziel, Odoos Parameter (?search=,
+  // ?order=) und `?variant=` fallen weg — Begründung in
+  // lib/seo/legacy-redirects.ts. Das
   // Ziel ist absolut und liegt auf der Hauptdomain: auch von www. aus bleibt
   // es bei einem Sprung.
   const legacy = legacyAnswer(domain, pathname, search);

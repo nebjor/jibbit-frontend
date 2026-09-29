@@ -15,8 +15,8 @@ import { SPECIAL_IMAGE_NAMES } from "./mock-backend/catalog.mjs";
 const HOST = "127.0.0.1";
 
 const BRACKETS = {
-  handle: "purize-xtra-slim-white-50er-pack-5-9mm",
-  title: "PURIZE Xtra Slim White 50er Pack",
+  handle: "purize-xtra-slim-6mm",
+  title: "PURIZE XTRA Slim Aktivkohlefilter 6 mm",
   path: `/media/${HOST}/1789907393708-%5B6%5D%20PURIZE%20White%2C%2050er%20Pack.png`,
 };
 
