@@ -34,15 +34,35 @@
  * «… 9 mm»; der Betreiber hat den Handle auf `purize-aktivkohlefilter-9mm`
  * umbenannt. Den alten Handle gibt es nicht mehr. Das 6-mm-Produkt ist
  * `purize-xtra-slim-6mm` (Odoo 54).
+ *
+ * Zu ID 10: «Purize Xtra SLIM White, 50er Pack, 5.9mm»
+ * (`purize-xtra-slim-white-50er-pack-5-9mm`) war eine Dublette von
+ * `purize-xtra-slim-6mm` und wird laut Betreiber (2026-09-29) gelöscht.
+ * Odoo 10 zeigt deshalb wie Odoo 54 auf `purize-xtra-slim-6mm`.
+ *
+ * ALTE HANDLES DES NEUEN SHOPS stehen in handle-redirects.data.json:
+ * /products/<alt> -> /products/<neu>, siehe `RENAMED_HANDLES`.
  */
 
 import data from "./legacy-redirects.data.json";
+import handleData from "./handle-redirects.data.json";
 
 /** Odoo-ID -> Handle, oder (mit führendem Schrägstrich) ein Pfad. */
 export const ODOO_PRODUCTS: Readonly<Record<string, string>> = data.produkte;
 
 /** Ziele, die es im Admin gibt, die aber noch nicht veröffentlicht sind. */
 export const UNPUBLISHED_TARGETS: readonly string[] = data.unveroeffentlicht;
+
+/**
+ * Alter Handle -> heutiger Handle, für umbenannte oder als Dublette
+ * gelöschte Produkte des NEUEN Shops. Die alten Adressen standen auf
+ * Staging, in Sitemap und Feed. Parameter fallen weg wie bei den
+ * Odoo-Adressen — allen voran `?variant=`: die Varianten-IDs des alten
+ * Produkts gibt es am Ziel nicht.
+ */
+export const RENAMED_HANDLES: Readonly<Record<string, string>> = handleData.handles;
+
+const RENAMED = new Map(Object.entries(RENAMED_HANDLES));
 
 /**
  * Seiten mit Entsprechung. `/about-us` hat keine eigene Nachfolgeseite; wer
@@ -94,6 +114,7 @@ const GONE = [
 export const LANGUAGE_PREFIX = /^\/[a-z]{2}(?:_[A-Z]{2})?(?=\/|$)/;
 
 const PRODUCT_PATH = /^\/shop\/[^/]+-(\d+)$/;
+const HANDLE_PATH = /^\/products\/([^/]+)$/;
 const LEGACY_DOMAIN = /(?:^|\.)jibbit\.ch$/;
 
 /**
@@ -124,6 +145,12 @@ function resolve(pathname: string): string | typeof GONE_MARK | null {
     const target = ODOO_PRODUCTS[product[1]];
     if (!target) return "/";
     return target.startsWith("/") ? target : `/products/${target}`;
+  }
+  // Gross geschriebene alte Handles gleich mit: ein Sprung, nicht zwei.
+  const handle = HANDLE_PATH.exec(pathname);
+  if (handle) {
+    const renamed = RENAMED.get(handle[1].toLowerCase());
+    return renamed ? `/products/${renamed}` : null;
   }
   const page = PAGES[pathname];
   if (page) return page;
