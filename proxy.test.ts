@@ -278,6 +278,43 @@ describe("proxy (Schreibweise der Produktadressen)", () => {
   });
 });
 
+describe("proxy (umbenannte und gelöschte Handles)", () => {
+  const respond = async (host: string, path: string, domain = host) => {
+    vi.mocked(resolveTenantConfig).mockResolvedValue({
+      ...makeConfig("jibbit", host),
+      theme: { storeName: "jibbit", domain, themeColor: "#fff" },
+    });
+    const req = new NextRequest(`https://${host}${path}`, { headers: new Headers({ host }) });
+    return proxy(req, makeEvent());
+  };
+
+  it("leitet die gelöschte Dublette in einem Sprung um, ohne `variant`", async () => {
+    const res = await respond(
+      "www.jibbit.ch",
+      "/products/purize-xtra-slim-white-50er-pack-5-9mm?variant=variant_01ABC",
+      "jibbit.ch",
+    );
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe(
+      "https://jibbit.ch/products/purize-xtra-slim-6mm",
+    );
+  });
+
+  it("reicht das Ziel selbst durch", async () => {
+    const res = await respond("jibbit.ch", "/products/purize-xtra-slim-6mm?variant=v1");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("lässt andere Mandanten unberührt", async () => {
+    const res = await respond(
+      "a.jibbit.app",
+      "/products/purize-xtra-slim-white-50er-pack-5-9mm",
+    );
+    expect(res.status).toBe(200);
+  });
+});
+
 describe("proxy (Odoo-Adressen ohne Entsprechung)", () => {
   const respond = async (host: string, path: string) => {
     vi.mocked(resolveTenantConfig).mockResolvedValue(makeConfig("jibbit", host));

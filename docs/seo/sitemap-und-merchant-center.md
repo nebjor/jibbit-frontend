@@ -96,7 +96,9 @@ er steht nur in der Serverkonfiguration (`STATIC_TENANTS`) und war nicht zugäng
 
 ### Produkte
 
-25 veröffentlichte Produkte, 34 Varianten. Die umbenannten Handles sind
+25 veröffentlichte Produkte, 34 Varianten (gezählt vor dem Löschen der Dublette
+`purize-xtra-slim-white-50er-pack-5-9mm`, siehe «Auffälligkeiten»; die Zahlen hier und
+unten sind danach nicht neu erhoben). Die umbenannten Handles sind
 `raw-black-classic-king-size-slim`, `purize-super-slim-white-5mm`,
 `dubi-aktivkohlefilter-7mm`, `purize-aktivkohlefilter-9mm` und die Kategorie
 `filter-tips`. Die vollständige Liste steht
@@ -107,6 +109,7 @@ in `lib/seo/staging-handles.fixture.json`.
 | Produkt | Befund | Folge |
 |---|---|---|
 | `purize-aktivkohlefilter-9mm` | Hiess bis 2026-09-29 `purize-aktivkohlefilter-6mm`, bei Titel «PURIZE Aktivkohlefilter 9 mm». Der Betreiber hat den Handle umbenannt; der alte antwortet mit 404. Die Artikelnummern lauteten `PUR-AK6-50`, `-100`, `-250`; ob sie mit umbenannt wurden, ist nicht geprüft. | Handle und Titel stimmen überein. Odoo 60 zeigt auf den neuen Handle. |
+| `purize-xtra-slim-white-50er-pack-5-9mm` | «Purize Xtra SLIM White, 50er Pack, 5.9mm» ist eine Dublette von `purize-xtra-slim-6mm` («PURIZE XTRA Slim Aktivkohlefilter 6 mm»). Entscheid des Betreibers vom 2026-09-29: die Dublette wird gelöscht, `purize-xtra-slim-6mm` bleibt. | Odoo 10 zeigt auf `purize-xtra-slim-6mm`. `/products/purize-xtra-slim-white-50er-pack-5-9mm` antwortet mit 301 dorthin, siehe «Alte Handles des neuen Shops». Aus `staging-handles.fixture.json` gestrichen. |
 | `silikon-dose-22-mm` | Preis 0.00 CHF, keine Artikelnummer, keine Kategorie. | Die Seite zeichnet das Produkt für CHF 0 aus. Google lehnt die Zeile ab. |
 | `raw-black-classic-king-size-slim` | Variante «Box (50 Heftchen)» hat `pack_type` `single`. | `custom_label_1` ist `einzeln` statt `box`. |
 | alle 25 | `metadata.brand` ist leer. | Siehe «Feed». |
@@ -169,6 +172,27 @@ Funktion laufen wie der Proxy.
 | 5 | fehlte, landete auf der Startseite | Kategorie Papers |
 | 7 | Kategorie Papers | unverändert, das Produkt wird nicht mehr geführt |
 | 60 | `purize-aktivkohlefilter-6mm` | `purize-aktivkohlefilter-9mm` (im Admin umbenannt, siehe «Auffälligkeiten») |
+| 10 | `purize-xtra-slim-white-50er-pack-5-9mm` | `purize-xtra-slim-6mm` (Dublette gelöscht, siehe «Auffälligkeiten») |
+
+### Alte Handles des neuen Shops
+
+Medusa legt beim Umbenennen oder Löschen keine Weiterleitung an. Die alten Adressen
+standen auf Staging, in der Sitemap und im Feed. `lib/seo/handle-redirects.data.json`
+führt sie; `lib/seo/legacy-redirects.ts` beantwortet sie an derselben Stelle wie die
+Odoo-Adressen mit 301, in einem Sprung, nur für jibbit.ch. `?variant=` fällt weg, weil
+es die Varianten-IDs des alten Produkts am Ziel nicht gibt; Kampagnenparameter bleiben.
+
+| Alte Adresse | Ziel | Grund |
+|---|---|---|
+| `/products/purize-xtra-slim-white-50er-pack-5-9mm` | `/products/purize-xtra-slim-6mm` | Dublette gelöscht |
+| `/products/raw-classic-king-size-slim` | `/products/raw-black-classic-king-size-slim` | umbenannt |
+| `/products/purize-super-slim-white-o5mm` | `/products/purize-super-slim-white-5mm` | umbenannt |
+| `/products/dubi-aktivkohlefilter-o7mm` | `/products/dubi-aktivkohlefilter-7mm` | umbenannt |
+| `/products/purize-aktivkohlefilter-6mm` | `/products/purize-aktivkohlefilter-9mm` | umbenannt |
+
+Wird ein alter Handle im Admin neu vergeben (etwa `raw-classic-king-size-slim` für ein
+echtes RAW Classic), muss seine Zeile aus der Datendatei, sonst ist das neue Produkt
+nicht erreichbar. `tools/smoke.mjs` prüft diese Liste nicht.
 
 ### Antwort je Muster
 
