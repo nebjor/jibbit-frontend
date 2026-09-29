@@ -4,6 +4,7 @@ import {
   KEPT_PATHS,
   LANGUAGE_PREFIX,
   ODOO_PRODUCTS,
+  RENAMED_HANDLES,
   UNPUBLISHED_TARGETS,
   legacyAnswer,
   legacyGone,
@@ -49,7 +50,8 @@ const SITEMAP: Record<string, string | null> = {
   "/shop/purize-aktivkohlefilter-9mm-60": "/products/purize-aktivkohlefilter-9mm",
   "/shop/purize-xtra-slim-xmas-6mm-54": "/products/purize-xtra-slim-6mm",
   "/shop/purize-super-slim-white-5mm-48": "/products/purize-super-slim-white-5mm",
-  "/shop/6-purize-xtra-slim-white-50er-pack-5-9mm-10": "/products/purize-xtra-slim-white-50er-pack-5-9mm",
+  // Dublette, im neuen Shop gelöscht: dasselbe Ziel wie ID 54.
+  "/shop/6-purize-xtra-slim-white-50er-pack-5-9mm-10": "/products/purize-xtra-slim-6mm",
   "/shop/raw-black-kss-papers-2": "/products/raw-black-classic-king-size-slim",
   "/shop/4-raw-classic-rolls-slim-8": "/products/raw-classic-rolls-slim",
   "/shop/raw-kristallglas-aschenbecher-darkside-52": "/products/raw-kristallglas-aschenbecher-darkside",
@@ -335,6 +337,75 @@ describe("Ziele der Odoo-Weiterleitungen", () => {
         .filter(([, handle]) => UNPUBLISHED_TARGETS.includes(handle))
         .map(([id]) => id),
     ).toEqual(["23", "40", "47"]);
+  });
+});
+
+/**
+ * ALTE HANDLES DES NEUEN SHOPS (handle-redirects.data.json): umbenannte
+ * Produkte und die gelöschte Dublette.
+ */
+describe("umbenannte und gelöschte Handles", () => {
+  const published = new Set(staging.produkte);
+  const location = (path: string, search = "") =>
+    legacyRedirectLocation("jibbit.ch", path, search);
+
+  it.each([
+    ["purize-xtra-slim-white-50er-pack-5-9mm", "purize-xtra-slim-6mm"],
+    ["raw-classic-king-size-slim", "raw-black-classic-king-size-slim"],
+    ["purize-super-slim-white-o5mm", "purize-super-slim-white-5mm"],
+    ["dubi-aktivkohlefilter-o7mm", "dubi-aktivkohlefilter-7mm"],
+    ["purize-aktivkohlefilter-6mm", "purize-aktivkohlefilter-9mm"],
+  ])("/products/%s -> /products/%s", (old, current) => {
+    expect(location(`/products/${old}`)).toBe(`/products/${current}`);
+  });
+
+  it("kennt genau diese fünf", () => {
+    expect(Object.keys(RENAMED_HANDLES)).toHaveLength(5);
+  });
+
+  it("lässt `variant` fallen, Kampagnenparameter bleiben", () => {
+    expect(
+      location(
+        "/products/purize-xtra-slim-white-50er-pack-5-9mm",
+        "?variant=variant_01ABC&utm_source=feed",
+      ),
+    ).toBe("/products/purize-xtra-slim-6mm?utm_source=feed");
+  });
+
+  it("nimmt die Grossschreibung im selben Sprung mit", () => {
+    expect(location("/products/Dubi-Aktivkohlefilter-O7mm")).toBe(
+      "/products/dubi-aktivkohlefilter-7mm",
+    );
+  });
+
+  it("lässt heutige und unbekannte Handles in Ruhe", () => {
+    expect(location("/products/purize-xtra-slim-6mm", "?variant=v1")).toBeNull();
+    expect(location("/products/dieses-produkt-gibt-es-nicht")).toBeNull();
+    expect(location("/products/constructor")).toBeNull();
+    expect(legacyAnswer("jibbit.ch", "/products/purize-xtra-slim-6mm", "")).toBeNull();
+  });
+
+  it("gilt nur für jibbit.ch", () => {
+    expect(
+      legacyRedirectLocation("anderer-shop.ch", "/products/raw-classic-king-size-slim", ""),
+    ).toBeNull();
+  });
+
+  it("jedes Ziel ist veröffentlicht, kein alter Handle ist es noch", () => {
+    for (const [old, current] of Object.entries(RENAMED_HANDLES)) {
+      expect(published.has(current), current).toBe(true);
+      expect(published.has(old), old).toBe(false);
+    }
+  });
+
+  it("baut keine Ketten, auch nicht über die Odoo-Zuordnung", () => {
+    const old = new Set(Object.keys(RENAMED_HANDLES));
+    for (const target of Object.values(RENAMED_HANDLES)) {
+      expect(old.has(target), target).toBe(false);
+    }
+    for (const target of Object.values(ODOO_PRODUCTS)) {
+      expect(old.has(target), target).toBe(false);
+    }
   });
 });
 

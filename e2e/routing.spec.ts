@@ -40,6 +40,23 @@ test.describe("Adressen", () => {
   });
 });
 
+test.describe("Alte Handles des neuen Shops", () => {
+  test("Die gelöschte Dublette leitet in einem Sprung auf das Produkt, das bleibt", async ({
+    request,
+  }) => {
+    const response = await request.get(
+      "/products/purize-xtra-slim-white-50er-pack-5-9mm?variant=variant_alt",
+      { maxRedirects: 0 },
+    );
+
+    expect(response.status()).toBe(301);
+    const target = new URL(response.headers().location);
+    expect(target.pathname).toBe("/products/purize-xtra-slim-6mm");
+    expect(target.search).toBe("");
+    expect((await request.get(target.pathname)).status()).toBe(200);
+  });
+});
+
 test.describe("Alte Adressen ohne Weiterleitung", () => {
   test("/terms antwortet selbst — mit dem Inhalt und dem Canonical von /agb", async ({
     page,
