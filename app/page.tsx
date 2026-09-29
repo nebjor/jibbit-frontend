@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageLoading } from "@/components/PageLoading";
@@ -11,6 +12,7 @@ import { CategoryComingSoon } from "./CategoryComingSoon";
 import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { breadcrumbJsonLd, graph, itemListJsonLd } from "@/lib/seo/jsonld";
+import { relatedCategories } from "@/lib/related-categories";
 import { getTenantContext } from "@/lib/tenant/context";
 import styles from "./page.module.css";
 
@@ -89,6 +91,12 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
   const products = await getProducts({ category: activeCat?.handle });
   const tenant = await getTenantContext();
 
+  // «Filter» und «Filter & Tips» gehören zusammen (lib/related-categories.ts):
+  // die Kategorieansicht verweist auf ihre Schwester.
+  const related = activeCat
+    ? relatedCategories(activeCat.handle, await getCategories())
+    : [];
+
   /**
    * Eine LEERE KATEGORIE ist kein Fehlschlag: der Betreiber hat sie angelegt,
    * die Ware kommt. Sie sagt deshalb «bald verfügbar» (CategoryComingSoon) —
@@ -148,6 +156,20 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
             )}
           </div>
           {description ? <p className={styles.desc}>{description}</p> : null}
+          {related.length > 0 && (
+            <p className={styles.related}>
+              Passt dazu:{" "}
+              {related.map((c, i) => (
+                <span key={c.id}>
+                  {i > 0 && ", "}
+                  {/* Kodiert: Handles können `&` oder Umlaute enthalten. */}
+                  <Link href={`/?kategorie=${encodeURIComponent(c.handle)}`}>
+                    {c.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          )}
         </header>
 
         {comingSoon && activeCat ? (

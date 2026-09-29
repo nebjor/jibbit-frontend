@@ -79,7 +79,7 @@ describe("GET /merchant-feed.tsv", () => {
     );
     const body = await res.text();
     const [header, row] = body.split("\n");
-    expect(header.startsWith("id\ttitle\tdescription\tlink\timage_link")).toBe(true);
+    expect(header.startsWith("id\ttitle\tdescription\tlink\tcanonical_link\timage_link")).toBe(true);
     expect(row.split("\t")).toEqual(
       expect.arrayContaining([
         "RAW-CLA-ROL-SLI-EA",
@@ -87,6 +87,9 @@ describe("GET /merchant-feed.tsv", () => {
         "https://test.jibbit.ch/media/test.jibbit.ch/raw-rolls.jpg",
         "1.95 CHF",
         "716165280293",
+        "RAW",
+        "CH:4.50 CHF:1:3:1:3",
+        "CH:69.00 CHF",
         "in_stock",
         "600",
         "Papers",

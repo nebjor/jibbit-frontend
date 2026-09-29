@@ -25,6 +25,7 @@ import type { CategoryHandle } from "./types";
  * „Bio Slim von OCB" hiesse, wäre das erste Wort falsch.
  */
 const BRANDS = [
+  "Black Leaf",
   "Zig Zag",
   "Greengo",
   "Elements",
@@ -65,6 +66,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   filter: "Filter",
   zubehoer: "Zubehör",
 };
+
+/**
+ * Der Hersteller aus der Liste oben, mit dem der Titel BEGINNT — sonst
+ * `undefined`.
+ *
+ * Strenger als `brandLabel`: dieser Wert geht als `brand` an Google
+ * (JSON-LD und Merchant-Feed, lib/seo/jsonld.ts `brandOf`). Dort ist eine
+ * fehlende Marke ein Hinweis, eine falsche eine Falschangabe — also weder
+ * «irgendwo im Titel» noch «das erste Wort».
+ */
+export function knownBrand(title: string): string | undefined {
+  const start = title.trim();
+  return BRANDS.find((b) =>
+    new RegExp(`^${b.replace(/\s+/g, "[\\s-]*")}(\\W|$)`, "i").test(start),
+  );
+}
 
 /**
  * Markenname für die Platzhalterkachel.

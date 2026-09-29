@@ -12,6 +12,8 @@ import { robotsMetadata } from "@/lib/seo/indexing";
 export function generateMetadata(): Metadata {
   return {
     title: "Impressum",
+    // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+    alternates: { canonical: "/impressum" },
     description: `Impressum und Anbieterkennzeichnung von ${STORE.domain}.`,
     robots: robotsMetadata({ index: true, follow: false }),
   };

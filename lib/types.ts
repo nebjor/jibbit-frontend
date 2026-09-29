@@ -112,6 +112,11 @@ export interface ProductView {
    * in ihrer normalen Reihenfolge.
    */
   tierExtras?: Record<number, { label?: string; image?: string }>;
+  /**
+   * Letzte Änderung (ISO 8601) aus Medusa `updated_at` von Produkt und
+   * Varianten — für `<lastmod>` in der Sitemap. Unbekannt -> undefined.
+   */
+  updatedAt?: string;
 }
 
 /** A line in the local (pre-backend) cart. */

@@ -6,6 +6,8 @@ import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Versand & Lieferung",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/service/versand" },
   description: `Versandkosten, Lieferfristen und Versandgebiet. Gratisversand ab ${formatPrice(SHIPPING.freeThreshold)}.`,
 };
 

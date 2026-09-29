@@ -193,7 +193,31 @@ export function toProductView(
     featured: p.tags?.some((t) => t.value === "featured") ?? false,
     material: nonEmpty(p.material),
     tierExtras: toTierExtras(p),
+    updatedAt: toUpdatedAt(p),
   };
+}
+
+/**
+ * Letzte Änderung für `<lastmod>` der Sitemap: der jüngste Zeitstempel aus
+ * Produkt und Varianten (Medusa `updated_at`), als ISO-Zeichenkette.
+ *
+ * Unlesbare Werte fallen weg; fehlt alles, bleibt das Feld leer und die
+ * Sitemap nennt für diese Adresse kein Datum — Google wertet `<lastmod>` nur,
+ * wenn es stimmt, ein geratenes Datum entwertet die Angabe für alle.
+ *
+ * GRENZE: Preise und Bestand liegen in eigenen Modulen; ändern sie sich,
+ * bewegt sich `updated_at` nicht. Das Datum sagt also «Inhalt mindestens so
+ * neu», nie zu neu — die harmlose Richtung.
+ */
+function toUpdatedAt(
+  p: Pick<StoreProduct, "updated_at" | "variants">,
+): string | undefined {
+  const stamps = [p.updated_at, ...(p.variants ?? []).map((v) => v.updated_at)]
+    .map((raw) => (raw ? new Date(raw).getTime() : NaN))
+    .filter((t) => Number.isFinite(t));
+  return stamps.length
+    ? new Date(Math.max(...stamps)).toISOString()
+    : undefined;
 }
 
 /**
