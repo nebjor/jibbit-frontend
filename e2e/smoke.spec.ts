@@ -20,7 +20,9 @@ test("Der Smoke-Test läuft gegen den Teststack durch", async ({ baseURL }, test
   const repoRoot = path.dirname(testInfo.config.configFile ?? process.cwd());
   const { stdout } = await run(
     process.execPath,
-    ["tools/smoke.mjs", `--base-url=${baseURL}`, "--require-sitemap"],
+    // Der Katalog hier ist eine Fixture: die Odoo-Weiterleitungen werden
+    // geprüft, die Produktseiten dahinter gibt es nur auf einer echten Umgebung.
+    ["tools/smoke.mjs", `--base-url=${baseURL}`, "--require-sitemap", "--skip-target-pages"],
     { cwd: repoRoot, encoding: "utf-8" },
   );
 

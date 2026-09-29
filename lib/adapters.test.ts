@@ -117,3 +117,33 @@ describe("toVariantView: SKU, Farbe, Material", () => {
     expect(view.variants[0].color).toBe("Hellgrün");
   });
 });
+
+/**
+ * `updatedAt` wird zu `<lastmod>` in der Sitemap. Google wertet die Angabe
+ * nur, wenn sie stimmt — also nie ein geratenes Datum.
+ */
+describe("toProductView: updatedAt", () => {
+  const build = (updated_at: string | null, variants: (string | undefined)[] = []) =>
+    toProductView({
+      id: "prod_1",
+      handle: "ocb-premium-kurz",
+      title: "OCB Premium kurz",
+      updated_at,
+      variants: variants.map((stamp, i) => ({ id: `v${i}`, updated_at: stamp })),
+    } as unknown as StoreProduct).updatedAt;
+
+  it("übernimmt das Änderungsdatum des Produkts", () => {
+    expect(build("2026-09-20T08:30:00.000Z")).toBe("2026-09-20T08:30:00.000Z");
+  });
+
+  it("nimmt den jüngsten Zeitstempel aus Produkt und Varianten", () => {
+    expect(
+      build("2026-09-20T08:30:00.000Z", ["2026-09-25T10:00:00.000Z", "2026-09-01T00:00:00.000Z"]),
+    ).toBe("2026-09-25T10:00:00.000Z");
+  });
+
+  it("bleibt leer, wenn nichts Lesbares da ist", () => {
+    expect(build(null)).toBeUndefined();
+    expect(build("kein Datum", [undefined])).toBeUndefined();
+  });
+});

@@ -8,8 +8,8 @@ import {
   applyIndexingHeader,
   isTenantlessAssetPath,
 } from "@/lib/seo/indexing";
-import { legacyRedirectLocation } from "@/lib/seo/legacy-redirects";
-import { lowercaseProductPath } from "@/lib/seo/canonical-path";
+import { legacyAnswer } from "@/lib/seo/legacy-redirects";
+import { canonicalHostRedirect } from "@/lib/seo/canonical-path";
 
 /**
  * Host-based tenant resolution — the front door of multi-tenancy.
@@ -87,17 +87,28 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const { domain } = tenant.theme;
   const { pathname, search } = request.nextUrl;
   // Alte Odoo-Adressen: EIN Sprung aufs Ziel, Odoos Parameter (?search=,
-  // ?order=) fallen weg — Begründung in lib/seo/legacy-redirects.ts.
-  const legacyTarget = legacyRedirectLocation(domain, pathname, search);
-  if (legacyTarget) {
+  // ?order=) fallen weg — Begründung in lib/seo/legacy-redirects.ts. Das
+  // Ziel ist absolut und liegt auf der Hauptdomain: auch von www. aus bleibt
+  // es bei einem Sprung.
+  const legacy = legacyAnswer(domain, pathname, search);
+  if (legacy?.kind === "redirect") {
     // Nicht request.nextUrl als Basis: hinter nginx trägt sie die interne Adresse.
-    return NextResponse.redirect(new URL(legacyTarget, `https://${domain}`), 301);
+    return NextResponse.redirect(new URL(legacy.location, `https://${domain}`), 301);
+  }
+  if (legacy?.kind === "gone") {
+    return new NextResponse("Gone", {
+      status: 410,
+      headers: applyIndexingHeader(
+        new Headers({ "content-type": "text/plain; charset=utf-8" }),
+      ),
+    });
   }
 
-  // Gross geschriebene Produktadressen: eine Schreibweise je Produkt.
-  const lowercased = lowercaseProductPath(pathname);
-  if (lowercased) {
-    return NextResponse.redirect(new URL(lowercased + search, `https://${domain}`), 301);
+  // EINE Adresse je Seite: www. -> Hauptdomain, gross geschriebene
+  // Produktadressen -> klein. Beides zusammen in einem Sprung.
+  const canonical = canonicalHostRedirect(tenant.host, domain, pathname);
+  if (canonical) {
+    return NextResponse.redirect(new URL(canonical + search, `https://${domain}`), 301);
   }
 
   const requestHeaders = new Headers(request.headers);

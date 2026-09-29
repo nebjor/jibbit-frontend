@@ -5,6 +5,8 @@ import { STORE, BUSINESS } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/datenschutz" },
   description: `Wie ${STORE.domain} Personendaten bearbeitet — nach dem Schweizer Datenschutzgesetz (DSG).`,
 };
 

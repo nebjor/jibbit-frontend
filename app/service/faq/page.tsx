@@ -7,6 +7,8 @@ import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Häufige Fragen",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/service/faq" },
   description:
     "Antworten zu Versand, Bezahlung, Mindestalter, Mengenrabatten und Rückgabe bei jibbit.",
 };

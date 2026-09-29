@@ -1,6 +1,7 @@
 # Google-Merchant-Center-Feed — `/merchant-feed.tsv`
 
-Stand: 2026-09-23. Umsetzung: `app/merchant-feed.tsv/route.ts` (Handler) und
+Stand: 2026-09-29 (Spalten ergänzt, Befund und Begründung in
+[`sitemap-und-merchant-center.md`](sitemap-und-merchant-center.md)). Umsetzung: `app/merchant-feed.tsv/route.ts` (Handler) und
 `lib/seo/merchant-feed.ts` (Zeilenlogik, Tests in `lib/seo/merchant-feed.test.ts`).
 Vorlage und Begründungen der Spaltenwahl: `medusa-ecom/export/merchant-center/README.md`
 (Stand Odoo-Shop, 2026-09-20).
@@ -26,27 +27,32 @@ Das Merchant Center respektiert `robots.txt` — dort darf der Pfad also nie blo
 
 | Attribut | Quelle in Medusa / Regel |
 |---|---|
-| `id` | `variant.sku` (deterministisch aus dem Katalog-Import). Ohne SKU die Medusa-Varianten-ID |
+| `id` | `variant.sku`, ohne SKU die Medusa-Varianten-ID. Derselbe Wert wie `sku` im JSON-LD (`offerId` in `lib/seo/jsonld.ts`) |
 | `title` | `product.title`; bei mehreren Varianten `Titel – Variantentitel` (wie `name` im JSON-LD), ≤ 150 Zeichen |
-| `description` | `product.description`, sonst `subtitle`; bei mehreren Varianten mit Variantentitel davor, ≤ 5000 Zeichen |
+| `description` | `product.description`, sonst `subtitle`, sonst der Titel; bei mehreren Varianten mit Variantentitel davor, ≤ 5000 Zeichen |
 | `link` | eine Variante: `https://<domain>/products/<handle>` (kanonisch); mehrere: `…?variant=<id>` — dieselbe URL wie `Offer.url` im JSON-LD |
+| `canonical_link` | immer `https://<domain>/products/<handle>`, ohne Parameter |
 | `image_link` | erstes Bild der Variante über den eigenen Bildproxy (`/media/<host>/<key>`), identisch mit `image` im JSON-LD. Kein Bild → leer (Zeile bleibt, Google meldet «Bild fehlt») |
 | `availability` | `in_stock` / `out_of_stock` nach derselben Regel wie die Produktseite (`manage_inventory`, `allow_backorder`, `inventory_quantity`) |
 | `price` | Preis für Menge 1 (erste Preisstufe aus `/store/price-tiers`, sonst `calculated_price`), Endpreis, `12.34 CHF` |
-| `brand` | `product.metadata.brand`; leer, wenn nicht gepflegt |
+| `brand` | `product.metadata.brand`; nicht gepflegt: der Hersteller aus der Liste in `lib/placeholder.ts`, mit dem der Titel beginnt; sonst leer |
 | `gtin` | `variant.ean` (ersatzweise `upc`/`barcode`), nur mit gültiger Prüfziffer |
 | `identifier_exists` | `yes`, sobald Marke oder GTIN vorhanden; sonst leer. **Nie `no`** (Markenartikel haben eine GTIN, auch wenn sie noch nicht gepflegt ist) |
 | `condition` | `new` |
-| `google_product_category` | nach Kategorie-Handle: `papers`, `filter` → 600 (Rauchzubehör); `aschenbecher` (oder «Aschenbecher» im Titel) → 4082; alles andere leer — Google ordnet dann selbst zu |
+| `item_group_id` | Handle des Produkts, nur bei mehreren Varianten. Derselbe Wert wie `productGroupID` im JSON-LD |
+| `size` | Titel der Variante («Einzeln», «Display (24 Stk.)»), nur bei mehreren Varianten |
+| `shipping` | `CH:4.50 CHF:1:3:1:3` (Land, Preis, Bearbeitung min/max, Transport min/max in Werktagen); kostet die Packung allein CHF 69 oder mehr, `CH:0.00 CHF:…`. Die Kopfzeile nennt die Unterattribute in Klammern |
+| `free_shipping_threshold` | `CH:69.00 CHF` |
+| `google_product_category` | nach Kategorie-Handle: `papers`, `filter`, `filter-tips` → 600 (Rauchzubehör); `aschenbecher` (oder «Aschenbecher» im Titel) → 4082; alles andere leer — Google ordnet dann selbst zu |
 | `product_type` | Name der Shop-Kategorie (`Papers`, `Filter`, `Aschenbecher`, `Zubehör`) |
 | `color` | Wert einer Produktoption, die im Admin «Farbe»/«Color» heisst; sonst leer |
 | `material` | `variant.material`, sonst `product.material`; sonst leer |
 | `custom_label_0` | erwartete Richtlinien-Einordnung: `tabakzubehoer-papers`, `tabakzubehoer-filter`, `zubehoer-unkritisch` (Aschenbecher); sonst leer |
 | `custom_label_1` | Packungsart aus `variant.metadata.pack_type`: `einzeln` / `display` / `box` |
 
-Bewusst **nicht** im Feed: `shipping` und `shipping_label` (ein Versandpreis, siehe unten),
-`sale_price` (Streichpreise sind nicht im Sinn der Google-Regeln belegt), `item_group_id` und
-`multipack` (Einzelstück und Display sind Herstellergebinde mit eigener GTIN),
+Bewusst **nicht** im Feed: `shipping_label` (ein Versandpreis), `sale_price` (Streichpreise
+sind nicht im Sinn der Google-Regeln belegt), `multipack` (nur für vom Händler gebündelte
+Packungen; Display und Box sind Herstellergebinde mit eigener GTIN),
 `unit_pricing_measure`/`unit_pricing_base_measure` (Medusa kennt die Inhaltsmenge nicht).
 
 Alle Produkte kommen in den Feed — auch die, die Google nach der Tabakzubehör-Richtlinie
@@ -69,7 +75,8 @@ Filtern im Merchant Center.
    | sonst | CHF 4.50 |
 
    Werte müssen mit `lib/config.ts` (`SHIPPING`) und dem Backend
-   (`swiss-shipping`-Provider) übereinstimmen.
+   (`swiss-shipping`-Provider) übereinstimmen. Der Feed führt dieselben Werte in
+   `shipping` und `free_shipping_threshold`; die Angabe im Feed schlägt die des Kontos.
 4. **Rückgabe**: Rückgaberichtlinie für die Schweiz mit «Keine Rückgabe / Rückgaben werden
    nicht akzeptiert» und der URL `https://jibbit.ch/agb` (Rückgabe- und Mängelregelung;
    menschenlesbar auch unter `/service/rueckgabe`). Die gesetzliche Sachgewährleistung ist
@@ -86,5 +93,5 @@ Kontakt und Zahlungsarten sind im Shop verlinkt (`/impressum`, `/agb`, `/service
 Im Merchant Center «Automatische Artikelaktualisierungen» (Preis, Verfügbarkeit) aktiviert
 lassen. Google liest dafür die strukturierten Daten der Landingpage — das JSON-LD aus
 `lib/seo/jsonld.ts` (`Offer.price`, `availability`, `image`, `sku`, `gtin`). Der Feed nutzt
-dieselben Helfer für URL, Bild und Preis; weichen Seite und Feed ab, ist das ein Fehler in
+dieselben Helfer für Kennung, URL, Bild, Marke und Preis; weichen Seite und Feed ab, ist das ein Fehler in
 einem der beiden und nicht Absicht.

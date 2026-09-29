@@ -250,7 +250,7 @@ describe("proxy (alte Odoo-URLs)", () => {
   });
 
   it("lässt andere Mandanten unberührt", async () => {
-    const res = await redirectFor("a.jibbit.app", "/terms");
+    const res = await redirectFor("a.jibbit.app", "/contactus");
     expect(res.status).not.toBe(301);
   });
 });
@@ -275,5 +275,121 @@ describe("proxy (Schreibweise der Produktadressen)", () => {
     const res = await respond("/products/gizeh-dw-extra-fine");
     expect(res.status).toBe(200);
     expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+});
+
+describe("proxy (Odoo-Adressen ohne Entsprechung)", () => {
+  const respond = async (host: string, path: string) => {
+    vi.mocked(resolveTenantConfig).mockResolvedValue(makeConfig("jibbit", host));
+    const req = new NextRequest(`https://${host}${path}`, { headers: new Headers({ host }) });
+    return proxy(req, makeEvent());
+  };
+
+  it.each([
+    "/shop/cart",
+    "/fr_CH/shop/change_pricelist/1",
+    "/website/translations",
+    "/web/image/product.template/10/image_1920?unique=8d486df",
+    "/en/blog",
+  ])("%s -> 410, nicht die Startseite", async (path) => {
+    const res = await respond("jibbit.ch", path);
+    expect(res.status).toBe(410);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("andere Mandanten dürfen unter diesen Pfaden eigene Seiten haben", async () => {
+    const res = await respond("a.jibbit.app", "/blog");
+    expect(res.status).toBe(200);
+  });
+});
+
+/**
+ * https://jibbit.ch/terms ist im Merchant Center als URL der
+ * Rückgaberichtlinie hinterlegt — die Adresse antwortet selbst.
+ */
+describe("proxy (/terms)", () => {
+  const respond = async (host: string, path: string) => {
+    vi.mocked(resolveTenantConfig).mockResolvedValue({
+      ...makeConfig("jibbit", host),
+      theme: { storeName: "jibbit", domain: "jibbit.ch", themeColor: "#fff" },
+    });
+    const req = new NextRequest(`https://${host}${path}`, { headers: new Headers({ host }) });
+    return proxy(req, makeEvent());
+  };
+
+  it("wird durchgereicht, nicht umgeleitet — die Seite ist app/terms", async () => {
+    const res = await respond("jibbit.ch", "/terms");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("reicht dabei den Mandanten weiter wie bei jeder Seite", async () => {
+    const res = await respond("jibbit.ch", "/terms");
+    const forwarded = res.headers.get(`x-middleware-request-${TENANT_CONFIG_HEADER}`);
+    expect(decodeTenantHeader(forwarded ?? "")?.id).toBe("jibbit");
+  });
+
+  it("mit Sprachpfad: ein 301 auf /agb", async () => {
+    const res = await respond("jibbit.ch", "/fr_CH/terms");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://jibbit.ch/agb");
+  });
+
+  it("von www. aus: erst auf die Hauptdomain, dieselbe Adresse", async () => {
+    const res = await respond("www.jibbit.ch", "/terms");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://jibbit.ch/terms");
+  });
+});
+
+describe("proxy (www. -> Hauptdomain)", () => {
+  const respond = async (host: string, domain: string, path: string) => {
+    vi.mocked(resolveTenantConfig).mockResolvedValue({
+      ...makeConfig("jibbit", host),
+      theme: { storeName: "jibbit", domain, themeColor: "#fff" },
+    });
+    const req = new NextRequest(`https://${host}${path}`, { headers: new Headers({ host }) });
+    return proxy(req, makeEvent());
+  };
+
+  it("leitet jede Seite dauerhaft um, Pfad und Parameter bleiben", async () => {
+    const res = await respond("www.jibbit.ch", "jibbit.ch", "/service/versand?utm_source=x");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://jibbit.ch/service/versand?utm_source=x");
+  });
+
+  it("auch die Startseite", async () => {
+    const res = await respond("www.jibbit.ch", "jibbit.ch", "/");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://jibbit.ch/");
+  });
+
+  it("alte Odoo-Adresse unter www.: EIN Sprung bis zum Produkt", async () => {
+    const res = await respond(
+      "www.jibbit.ch",
+      "jibbit.ch",
+      "/shop/raw-classic-rolls-slim-2?order=list_price+desc",
+    );
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe(
+      "https://jibbit.ch/products/raw-black-classic-king-size-slim",
+    );
+  });
+
+  it("www. und Grossschreibung zusammen: ein Sprung", async () => {
+    const res = await respond("www.jibbit.ch", "jibbit.ch", "/products/OCB-Premium-Kurz");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("https://jibbit.ch/products/ocb-premium-kurz");
+  });
+
+  it("die Hauptdomain selbst wird nicht umgeleitet", async () => {
+    const res = await respond("jibbit.ch", "jibbit.ch", "/service/versand");
+    expect(res.status).toBe(200);
+  });
+
+  it("ein Host, der nur anders heisst als die Domain, bleibt unberührt", async () => {
+    const res = await respond("shop.jibbit.app", "meinshop.ch", "/service/versand");
+    expect(res.status).toBe(200);
   });
 });
