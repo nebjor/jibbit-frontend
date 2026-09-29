@@ -6,6 +6,9 @@ import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "AGB",
+  // Eine Adresse je Seite, ohne Parameter. Hier zusätzlich nötig: /terms
+  // liefert denselben Inhalt aus (lib/seo/legacy-redirects.ts).
+  alternates: { canonical: "/agb" },
   description: `Allgemeine Geschäftsbedingungen von ${STORE.domain}.`,
 };
 

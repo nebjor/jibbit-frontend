@@ -131,6 +131,8 @@ async function fetchBackendCategories(
   try {
     const { product_categories } = await sdk.store.category.list({
       fields: "id,name,handle,description",
+      // Ohne Angabe liefert die Store-API nur die ersten 50.
+      limit: 200,
     });
     if (!product_categories?.length) return null;
     return product_categories.map(toCategoryView);
@@ -248,13 +250,16 @@ export async function getProductsForTenant(
       )?.id;
     }
 
-    const { products } = await sdk.store.product.list({
+    const query = {
       region_id: regionId,
-      limit: opts?.limit ?? 100,
       fields: PRODUCT_FIELDS,
       ...(categoryId ? { category_id: [categoryId] } : {}),
-    });
-    if (!products?.length) return mockAllowed() ? filterMock(MOCK_PRODUCTS) : [];
+    };
+    const products = opts?.limit
+      ? ((await sdk.store.product.list({ ...query, limit: opts.limit }))
+          .products ?? [])
+      : await listAllProducts(tenant, sdk, query);
+    if (!products.length) return mockAllowed() ? filterMock(MOCK_PRODUCTS) : [];
 
     // Cards show the best quantity tier ("ab 24 Stk. 1.40/Stk."), so the
     // listing needs the tiers too.
@@ -273,6 +278,54 @@ export async function getProductsForTenant(
     warnFallback(tenant, "products", err);
     return mockOrThrow(filterMock(MOCK_PRODUCTS), "products");
   }
+}
+
+/**
+ * ALLE Produkte, seitenweise.
+ *
+ * Die Store-API liefert höchstens eine Seite je Anfrage. Wer ohne `limit`
+ * fragt (Katalog, Sitemap, Merchant-Feed), will das ganze Sortiment — die
+ * frühere feste Obergrenze von 100 hätte das 101. Produkt still aus Sitemap
+ * und Feed fallen lassen, ohne Fehler und ohne Warnung.
+ *
+ * Abbruch über `count` der Antwort, ersatzweise über eine nicht volle Seite.
+ * `PRODUCT_MAX_PAGES` ist nur die Notbremse gegen ein Backend, das endlos
+ * volle Seiten liefert; wird sie erreicht, steht das im Log.
+ */
+const PRODUCT_PAGE_SIZE = 100;
+const PRODUCT_MAX_PAGES = 100;
+
+type ProductListQuery = NonNullable<
+  Parameters<Medusa["store"]["product"]["list"]>[0]
+>;
+type ProductListPage = Awaited<ReturnType<Medusa["store"]["product"]["list"]>>;
+
+async function listAllProducts(
+  tenant: TenantConfig,
+  sdk: Medusa,
+  query: Omit<ProductListQuery, "limit" | "offset">,
+): Promise<ProductListPage["products"]> {
+  const all: ProductListPage["products"] = [];
+
+  for (let page = 0; page < PRODUCT_MAX_PAGES; page++) {
+    const { products, count } = await sdk.store.product.list({
+      ...query,
+      limit: PRODUCT_PAGE_SIZE,
+      offset: page * PRODUCT_PAGE_SIZE,
+    });
+    all.push(...(products ?? []));
+    const complete =
+      !products?.length ||
+      products.length < PRODUCT_PAGE_SIZE ||
+      (typeof count === "number" && all.length >= count);
+    if (complete) return all;
+  }
+
+  console.error(
+    `[jibbit:${tenant.id}] Produktliste nach ${PRODUCT_MAX_PAGES} Seiten ` +
+      `(${all.length} Produkte) abgebrochen — Sitemap und Feed sind unvollständig.`,
+  );
+  return all;
 }
 
 /**

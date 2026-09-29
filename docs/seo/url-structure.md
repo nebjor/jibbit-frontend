@@ -4,6 +4,16 @@ Stand: 2026-09-29. Umsetzung: `lib/seo/legacy-redirects.ts`, `lib/seo/canonical-
 `proxy.ts`, `app/sitemap.ts` (Tests jeweils daneben, dazu `e2e/routing.spec.ts`).
 Referenzdaten: `medusa-ecom/data/odoo-redirects.json`.
 
+> **Nachtrag vom selben Tag.** Die Handles sind im Admin umbenannt, die Zuordnung ist
+> nachgezogen und um die Adressen aus der Search Console ergänzt. Der heutige Stand der
+> Zuordnung, der Sitemap und des Feeds steht in
+> [`sitemap-und-merchant-center.md`](sitemap-und-merchant-center.md). Wo die beiden
+> Dokumente sich widersprechen, gilt jenes. Überholt sind hier: die Tabelle
+> «Empfohlene Handle-Änderungen» (erledigt, bis auf `purize-aktivkohlefilter-6mm` —
+> 6 mm und 9 mm sind laut Betreiber zwei verschiedene Produkte, die Empfehlung war
+> falsch), die Ziele der Odoo-IDs 2, 23, 36, 40, 47, 48, 49 und die Punkte «Sitemap
+> über 100 Produkte» und «Echtes `lastmod`» unter «Nicht umgesetzt».
+
 ## Kurzfassung
 
 - **Mehr Long-Tail-Keywords in der URL bringen nichts Messbares.** Google selbst:
@@ -185,7 +195,7 @@ zusätzlich ein 301 vom alten Handle.
 
        curl -sI "https://jibbit.ch/fr_CH/shop/purize-super-slim-white-50er-pack-5mm-36?search=filter"
 
-   Erwartet: `301`, `location: https://jibbit.ch/products/purize-super-slim-white-o5mm`,
+   Erwartet: `301`, `location: https://jibbit.ch/products/purize-super-slim-white-5mm`,
    danach `200`. Ein Sprung, kein Parameter.
 5. **Search Console:** neue Sitemap `https://jibbit.ch/sitemap.xml` einreichen (die
    alte war als `http://` gemeldet). **Kein** Adressänderungs-Tool — die Domain

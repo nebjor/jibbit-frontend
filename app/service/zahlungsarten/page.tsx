@@ -4,6 +4,8 @@ import { Prose } from "@/components/Prose";
 
 export const metadata: Metadata = {
   title: "Zahlungsarten",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/service/zahlungsarten" },
   description:
     "Bezahlen mit TWINT, Kreditkarte, PostFinance, Apple Pay oder Google Pay. Abgewickelt über den Schweizer Zahlungsdienstleister zahls.ch.",
 };

@@ -52,6 +52,7 @@ import {
 } from "../config";
 import { gtinProperty, normalizeGtin } from "../gtin";
 import { toMediaSrc } from "../media";
+import { knownBrand } from "../placeholder";
 import { VARIANT_PARAM, unitPriceFor } from "../pricing";
 import type { ProductVariantView, ProductView } from "../types";
 
@@ -558,6 +559,37 @@ function gtinNode(raw: string | undefined): JsonLdObject {
   return gtin ? { [gtinProperty(gtin)]: gtin } : {};
 }
 
+/**
+ * Die Kennung EINER Packung — `sku` im JSON-LD und `id` im Merchant-Feed.
+ *
+ * Beide MÜSSEN derselbe Wert sein: stehen mehrere Angebote auf einer Seite
+ * (Einzeln + Display), ordnet Google die Feed-Zeile dem Angebot über genau
+ * diese Kennung zu («each offer present on the page is annotated with a SKU
+ * or a GTIN and the respective offer in your product data … has the same
+ * SKU or GTIN»). Vorher trug das Schema die Medusa-ID und der Feed die
+ * Artikelnummer — zwei Kennungen für denselben Artikel.
+ *
+ * Die Artikelnummer aus Medusa, wenn gepflegt (stabil über Umbenennungen,
+ * sprechend); sonst die Varianten-ID. Leerraum fällt weg: Google verlangt
+ * die Kennung ohne.
+ */
+export function offerId(variant: Pick<ProductVariantView, "id" | "sku">): string {
+  return (variant.sku ?? "").replace(/\s+/g, "") || variant.id;
+}
+
+/**
+ * Die Marke eines Produkts — für JSON-LD und Feed dieselbe.
+ *
+ * `metadata.brand` aus dem Admin gewinnt. Ist es leer (Stand 2026-09-29: bei
+ * allen Produkten), greift die Herstellerliste aus lib/placeholder.ts — aber
+ * nur, wenn der Titel mit einem Hersteller daraus BEGINNT. Kein Raten aus dem
+ * ersten Wort: «Silikon Dose» hat keine Marke und bekommt keine. Google:
+ * «When in doubt don't provide a brand».
+ */
+export function brandOf(product: Pick<ProductView, "brand" | "title">): string {
+  return product.brand.trim() || knownBrand(product.title) || "";
+}
+
 const variantNodeId = (ctx: ProductContext, variant: ProductVariantView) =>
   `${ctx.url}#variant-${variant.id}`;
 
@@ -623,7 +655,9 @@ function sharedProperties(
 ): JsonLdObject {
   const { product } = ctx;
   return {
-    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
+    brand: brandOf(product)
+      ? { "@type": "Brand", name: brandOf(product) }
+      : undefined,
     category: categoryName,
     // 18+. Bewusst NICHT `TobaccoNicotineConsideration`: jibbit führt weder
     // Tabak noch Nikotin (siehe /impressum) — die Altersgrenze gilt trotzdem.
@@ -663,8 +697,10 @@ function variantNode(
     "@id": variantNodeId(ctx, variant),
     name: `${product.title} – ${variant.title}`,
     description: base ? `${variant.title}: ${base}` : undefined,
-    sku: variant.id,
+    sku: offerId(variant),
     ...gtinNode(variant.gtin),
+    // Dieselbe Gruppe wie `productGroupID` oben und `item_group_id` im Feed.
+    inProductGroupWithID: product.handle,
     image: absoluteImages(images, ctx.domain, ctx.host),
     size: variant.title,
     offers: offerFor(
@@ -746,7 +782,7 @@ export function productJsonLd({
   return prune({
     "@type": "Product",
     ...common,
-    sku: only?.id ?? product.handle,
+    sku: only ? offerId(only) : product.handle,
     ...gtinNode(only?.gtin),
     offers: only ? offerFor(only, ctx, url) : undefined,
   });

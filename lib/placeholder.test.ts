@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brandLabel, kindLabel } from "./placeholder";
+import { brandLabel, kindLabel, knownBrand } from "./placeholder";
 
 describe("brandLabel", () => {
   it("nimmt die gepflegte Marke, wenn es eine gibt", () => {
@@ -51,5 +51,38 @@ describe("kindLabel", () => {
     expect(kindLabel("Purize SUPER SLIM White ø5mm", "filter")).toBe("Filter");
     expect(kindLabel("Elements King Slim Size Ultra Thin", "papers")).toBe("Papers");
     expect(kindLabel("Etwas ganz Neues", "zubehoer")).toBe("Zubehör");
+  });
+});
+
+/** Dieser Wert geht als `brand` an Google — strenger als die Kachel. */
+describe("knownBrand", () => {
+  it("erkennt den Hersteller am Anfang des Titels", () => {
+    expect(knownBrand("OCB Premium kurz")).toBe("OCB");
+    expect(knownBrand("Zig Zag Slim Filter 6mm 120stk")).toBe("Zig Zag");
+    expect(knownBrand("Zig-Zag Slim Filter")).toBe("Zig Zag");
+    expect(knownBrand("dubi Aktivkohlefilter ø7mm")).toBe("dubi");
+    expect(knownBrand("Purize SUPER SLIM White ø5mm")).toBe("PURIZE");
+    expect(knownBrand("Black Leaf El Humeros Konische Hülsen KS 100X")).toBe("Black Leaf");
+  });
+
+  it("rät nicht: kein Hersteller am Anfang, keine Marke", () => {
+    expect(knownBrand("Silikon Dose ø 22mm")).toBeUndefined();
+    expect(knownBrand("Filter für RAW Papers")).toBeUndefined();
+    expect(knownBrand("Rawlings Dose")).toBeUndefined();
+    expect(knownBrand("")).toBeUndefined();
+  });
+
+  it("deckt jedes Produkt mit Hersteller auf test.jibbit.ch ab (Stand 2026-09-29)", () => {
+    const titles = [
+      "Angel Slim Filters 6mm",
+      "Elements BLUE Rolls SW",
+      "Gizeh DW Extra Fine",
+      "Greengo Unbleached Slim Rolls",
+      "Kailar Filter 5.9mm 65stk pink",
+      "PURIZE Aktivkohlefilter 9 mm",
+      "RAW Black Classic King Size Slim",
+      "Smoking Brown kurz (double window)",
+    ];
+    for (const title of titles) expect(knownBrand(title), title).toBeDefined();
   });
 });

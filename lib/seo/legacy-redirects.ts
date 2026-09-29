@@ -1,75 +1,97 @@
 /**
- * 301-Ziele für die URLs des alten Odoo-Shops auf jibbit.ch. Quelle:
- * medusa-ecom data/odoo-redirects.json, Ziele gegen die Produkt-Handles auf
- * test.jibbit.ch geprüft. Odoo akzeptiert unter /shop/<slug>-<id> jeden Slug,
- * deshalb zählt nur die ID am Ende.
+ * Antworten auf die URLs des alten Odoo-Shops auf jibbit.ch. Odoo akzeptiert
+ * unter /shop/<slug>-<id> jeden Slug, deshalb zählt nur die ID am Ende.
  *
- * Stand der Prüfung: 2026-09-29. Die IDs sind die, die der Live-Shop unter
- * /shop/x-<id> mit 200 beantwortet (1–75 durchprobiert), nicht nur die aus
- * seiner Sitemap — 23, 36 und 37 stehen dort nicht, sind aber erreichbar und
- * bei Google bekannt. Begründungen und Quellen: docs/seo/url-structure.md.
+ * DIE ZUORDNUNG SELBST steht in legacy-redirects.data.json — als Daten, damit
+ * tools/smoke.mjs dieselbe Liste gegen eine laufende Umgebung prüfen kann
+ * (`npm run smoke -- --base-url=…`), ohne TypeScript zu lesen. Gespiegelt in
+ * medusa-ecom data/odoo-redirects.json.
+ *
+ * Stand der Prüfung: 2026-09-29. Handles von test.jibbit.ch abgelesen, alte
+ * Adressen aus dem Export der Search Console (544 Adressen, 37 Produkt-IDs;
+ * als Pfadliste in legacy-paths.fixture.json, über die der Test läuft).
+ * Begründungen und Quellen: docs/seo/url-structure.md.
+ *
+ * DREI ANTWORTEN
+ *   301  wo es eine passende neue Seite gibt — in EINEM Sprung.
+ *   410  wo es keine gibt (Warenkorb, Preislisten-Umschalter, Übersetzungs-
+ *        endpunkt, alte Bildadressen, Blog). Nicht auf die Startseite: viele
+ *        alte Adressen auf die Startseite zu leiten wertet Google als
+ *        Soft 404, und 410 nimmt sie schneller aus dem Index als 404.
+ *   200  für /terms — die Adresse bleibt, siehe `KEPT_PATHS`.
  *
  * JEDES ZIEL MUSS EINE SEITE SEIN, DIE ES GIBT. Ein 301 auf ein 404 ist
  * schlechter als eines auf die Kategorie. Wer im Admin einen Handle ändert,
- * zieht ihn hier im selben Zug nach.
+ * zieht ihn in der Datendatei im selben Zug nach.
+ *
+ * AUSNAHME AUF ZEIT: die Handles unter `unveroeffentlicht` sind im Admin
+ * angelegt, aber noch Entwurf (IDs 23, 40, 47). Bis sie veröffentlicht sind,
+ * antworten ihre Seiten mit 404 — das MUSS vor dem Go-live erledigt sein.
+ * Der Smoke-Test nennt sie als eigene Warnung.
+ *
+ * Zu ID 60: das Ziel `purize-aktivkohlefilter-6mm` trägt auf Staging den
+ * Titel «PURIZE Aktivkohlefilter 9 mm». Titel und Handle widersprechen sich;
+ * welches von beiden stimmt, weiss nur der Betreiber. Die Weiterleitung
+ * folgt dem Titel (Odoo 60 = «ø 9mm»).
  */
 
-const PAPERS = "/?kategorie=papers";
+import data from "./legacy-redirects.data.json";
 
-const ODOO_PRODUCTS: Record<string, string> = {
-  2: "raw-classic-king-size-slim",
-  3: "ocb-black-premium-rolls-slim",
-  // 7, 23, 40, 47: im neuen Shop (noch) nicht geführt — die Kategorie ist das
-  // nächstliegende Ziel, nicht die Startseite.
-  7: PAPERS,
-  8: "raw-classic-rolls-slim",
-  9: "ocb-premium-kurz",
-  10: "purize-xtra-slim-white-50er-pack-5-9mm",
-  11: "kailar-filter-5-9mm-65stk-weiss",
-  13: "angel-slim-filters-6mm-120stk",
-  23: PAPERS,
-  24: "greengo-unbleached-slim-rolls",
-  26: "kailar-filter-5-9mm-65stk-schwarz",
-  27: "kailar-filter-5-9mm-65stk-pink",
-  28: "smoking-brown-kurz-double-window",
-  29: "kailar-filter-9mm-big-100-stk-schwarz",
-  31: "greengo-unbleached-slim-rolls",
-  32: "zig-zag-slim-filter-6mm-120stk",
-  33: "zig-zag-slim-filter-6mm-120stk",
-  34: "smoking-brown-kurz-double-window",
-  // 36 ist das Original, 48 dessen Kopie («…-kopie-48») — dasselbe Produkt.
-  36: "purize-super-slim-white-o5mm",
-  // 37 und 61 heissen beide «Gizeh DW Extra Fine».
-  37: "gizeh-dw-extra-fine",
-  40: PAPERS,
-  41: "ocb-slim-filter-bio-120-tips",
-  47: PAPERS,
-  48: "purize-super-slim-white-o5mm",
-  49: "dubi-aktivkohlefilter-o7mm",
-  50: "raw-kristallglas-aschenbecher-rainbow",
-  51: "raw-kristallglas-aschenbecher-ruby",
-  52: "raw-kristallglas-aschenbecher-darkside",
-  // Die XMAS-Ausgabe gibt es nicht mehr, den Filter darin schon.
-  54: "purize-xtra-slim-6mm",
-  55: "silikon-dose-22-mm",
-  56: "elements-ultra-thin-king-size-slim-kss",
-  57: "elements-ultra-thin-king-size-slim-kss",
-  58: "elements-blue-rolls-sw",
-  59: "elements-blue-rolls-sw",
-  // Der Handle sagt 6mm, das Produkt ist der 9-mm-Filter (Titel im Admin).
-  60: "purize-aktivkohlefilter-6mm",
-  61: "gizeh-dw-extra-fine",
-};
+/** Odoo-ID -> Handle, oder (mit führendem Schrägstrich) ein Pfad. */
+export const ODOO_PRODUCTS: Readonly<Record<string, string>> = data.produkte;
 
+/** Ziele, die es im Admin gibt, die aber noch nicht veröffentlicht sind. */
+export const UNPUBLISHED_TARGETS: readonly string[] = data.unveroeffentlicht;
+
+/**
+ * Seiten mit Entsprechung. `/about-us` hat keine eigene Nachfolgeseite; wer
+ * hinter dem Shop steht, sagt im neuen Shop das Impressum.
+ */
 const PAGES: Record<string, string> = {
   "/shop": "/",
   "/contactus": "/service/kontakt",
   "/terms": "/agb",
+  "/about-us": "/impressum",
   "/web/login": "/konto/anmelden",
   "/website/info": "/impressum",
 };
 
-const LANGUAGE_PREFIX = /^\/(?:en|fr_CH|it)(?=\/|$)/;
+/**
+ * /terms OHNE Sprachpfad wird nicht umgeleitet: die Adresse
+ * https://jibbit.ch/terms ist im Merchant Center als URL der
+ * Rückgaberichtlinie hinterlegt und muss genau dort weiter eine Seite
+ * liefern. Das tut app/terms/page.tsx — dieselbe Seite wie /agb, deren
+ * `rel=canonical` /agb nennt; für die Suche gibt es also weiterhin nur eine
+ * Adresse. MIT Sprachpfad (/fr_CH/terms) bleibt es bei einem 301 auf /agb.
+ */
+export const KEPT_PATHS: ReadonlySet<string> = new Set(["/terms"]);
+
+/**
+ * Odoo-Adressen ohne Entsprechung. `/web/` und `/website/` gehören Odoo
+ * ganz — die Storefront hat unter beiden keine Route; die zwei Ausnahmen
+ * (/web/login, /website/info) stehen in PAGES und greifen vorher.
+ */
+const GONE = [
+  /^\/shop\/cart(?:\/|$)/,
+  /^\/shop\/change_pricelist(?:\/|$)/,
+  /^\/shop\/(?:checkout|payment|confirmation|address|wishlist)(?:\/|$)/,
+  /^\/web(?:\/|$)/,
+  /^\/website(?:\/|$)/,
+  /^\/blog(?:\/|$)/,
+];
+
+/**
+ * Odoos Sprachpfade: `/en`, `/it`, `/fr_CH`, `/de_CH`, `/fr_BE` … — zwei
+ * Kleinbuchstaben, wahlweise mit Region. Als Muster statt als Liste, weil
+ * Odoo jede installierte Sprache so ausliefert und die Search Console
+ * laufend weitere kennt.
+ *
+ * Trifft keine eigene Route: die Storefront hat keinen Pfad, dessen erstes
+ * Segment aus genau zwei Buchstaben besteht (geprüft in
+ * legacy-redirects.test.ts gegen das app-Verzeichnis).
+ */
+export const LANGUAGE_PREFIX = /^\/[a-z]{2}(?:_[A-Z]{2})?(?=\/|$)/;
+
 const PRODUCT_PATH = /^\/shop\/[^/]+-(\d+)$/;
 const LEGACY_DOMAIN = /(?:^|\.)jibbit\.ch$/;
 
@@ -86,22 +108,48 @@ const LEGACY_DOMAIN = /(?:^|\.)jibbit\.ch$/;
  */
 const KEPT_PARAMS = /^(?:utm_[a-z_]+|gclid|gbraid|wbraid|fbclid|msclkid)$/;
 
-function resolve(pathname: string): string | null {
+export type LegacyAnswer =
+  /** 301 auf `location` (Pfad samt bereinigtem Query). */
+  | { kind: "redirect"; location: string }
+  /** 410 — die Adresse gibt es nicht mehr und bekommt keinen Nachfolger. */
+  | { kind: "gone" };
+
+const GONE_MARK = Symbol("gone");
+
+/** Ziel, `GONE_MARK` oder `null` für einen Pfad OHNE Sprachpfad. */
+function resolve(pathname: string): string | typeof GONE_MARK | null {
   const product = PRODUCT_PATH.exec(pathname);
   if (product) {
     const target = ODOO_PRODUCTS[product[1]];
     if (!target) return "/";
     return target.startsWith("/") ? target : `/products/${target}`;
   }
-  return PAGES[pathname] ?? (pathname.startsWith("/shop/") ? "/" : null);
+  const page = PAGES[pathname];
+  if (page) return page;
+  if (GONE.some((pattern) => pattern.test(pathname))) return GONE_MARK;
+  // Katalogseiten (/shop/page/2) und alles Übrige unter /shop/: der Katalog
+  // ist die Startseite.
+  return pathname.startsWith("/shop/") ? "/" : null;
+}
+
+function resolveWithLanguage(pathname: string): string | typeof GONE_MARK | null {
+  if (!LANGUAGE_PREFIX.test(pathname)) {
+    return KEPT_PATHS.has(pathname) ? null : resolve(pathname);
+  }
+  const german = pathname.replace(LANGUAGE_PREFIX, "") || "/";
+  return resolve(german) ?? german;
 }
 
 /** Das Ziel für einen alten Odoo-Pfad dieser Domain, oder `null`. */
 export function legacyRedirect(domain: string, pathname: string): string | null {
   if (!LEGACY_DOMAIN.test(domain)) return null;
-  if (!LANGUAGE_PREFIX.test(pathname)) return resolve(pathname);
-  const german = pathname.replace(LANGUAGE_PREFIX, "") || "/";
-  return resolve(german) ?? german;
+  const target = resolveWithLanguage(pathname);
+  return typeof target === "string" ? target : null;
+}
+
+/** Gibt es diese alte Adresse ersatzlos nicht mehr (410)? */
+export function legacyGone(domain: string, pathname: string): boolean {
+  return LEGACY_DOMAIN.test(domain) && resolveWithLanguage(pathname) === GONE_MARK;
 }
 
 /**
@@ -130,4 +178,15 @@ export function legacyRedirectLocation(
     }
   }
   return url.pathname + url.search;
+}
+
+/** Die eine Antwort auf eine alte Adresse — oder `null`: kein Altpfad. */
+export function legacyAnswer(
+  domain: string,
+  pathname: string,
+  search: string,
+): LegacyAnswer | null {
+  const location = legacyRedirectLocation(domain, pathname, search);
+  if (location) return { kind: "redirect", location };
+  return legacyGone(domain, pathname) ? { kind: "gone" } : null;
 }

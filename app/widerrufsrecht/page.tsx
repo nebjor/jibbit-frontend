@@ -5,6 +5,8 @@ import { STORE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Widerrufsrecht",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/widerrufsrecht" },
   description: `Widerrufs- und Rückgaberecht bei ${STORE.domain}: In der Schweiz besteht für Onlinebestellungen kein gesetzliches Widerrufsrecht.`,
 };
 
