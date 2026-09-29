@@ -230,14 +230,50 @@ describe("proxy (alte Odoo-URLs)", () => {
     return proxy(req, makeEvent());
   };
 
-  it("leitet auf jibbit.ch mit 301 um, Query bleibt", async () => {
+  it("leitet auf jibbit.ch mit 301 um, Kampagnenparameter bleiben", async () => {
     const res = await redirectFor("jibbit.ch", "/shop/gizeh-dw-extra-fine-61?utm_source=x");
     expect(res.status).toBe(301);
     expect(res.headers.get("location")).toBe("https://jibbit.ch/products/gizeh-dw-extra-fine?utm_source=x");
   });
 
+  // Die Adressen aus der Search Console: Sprachpfad, alter Slug, Odoo-Parameter.
+  it.each([
+    "/fr_CH/shop/kailar-filter-5-9mm-65stk-schwarz-26?search=filter",
+    "/shop/kailar-filer-5-9mm-65stk-schwarz-26?search=filter",
+    "/it/shop/kailar-filter-5-9mm-65stk-schwarz-26?order=list_price+asc",
+  ])("%s: ein Sprung, ohne Odoo-Parameter", async (path) => {
+    const res = await redirectFor("jibbit.ch", path);
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe(
+      "https://jibbit.ch/products/kailar-filter-5-9mm-65stk-schwarz",
+    );
+  });
+
   it("lässt andere Mandanten unberührt", async () => {
     const res = await redirectFor("a.jibbit.app", "/terms");
     expect(res.status).not.toBe(301);
+  });
+});
+
+describe("proxy (Schreibweise der Produktadressen)", () => {
+  const respond = async (path: string) => {
+    const host = "a.jibbit.app";
+    vi.mocked(resolveTenantConfig).mockResolvedValue(makeConfig("tenant-a", host));
+    const req = new NextRequest(`https://${host}${path}`, { headers: new Headers({ host }) });
+    return proxy(req, makeEvent());
+  };
+
+  it("leitet gross geschriebene Handles dauerhaft auf die kleine Schreibweise", async () => {
+    const res = await respond("/products/Gizeh-DW-Extra-Fine?variant=v1");
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe(
+      "https://a.jibbit.app/products/gizeh-dw-extra-fine?variant=v1",
+    );
+  });
+
+  it("reicht die kanonische Schreibweise unverändert durch", async () => {
+    const res = await respond("/products/gizeh-dw-extra-fine");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 });
