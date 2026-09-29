@@ -9,10 +9,9 @@ Referenzdaten: `medusa-ecom/data/odoo-redirects.json`.
 > Zuordnung, der Sitemap und des Feeds steht in
 > [`sitemap-und-merchant-center.md`](sitemap-und-merchant-center.md). Wo die beiden
 > Dokumente sich widersprechen, gilt jenes. Überholt sind hier: die Tabelle
-> «Empfohlene Handle-Änderungen» (erledigt, bis auf `purize-aktivkohlefilter-6mm` —
-> 6 mm und 9 mm sind laut Betreiber zwei verschiedene Produkte, die Empfehlung war
-> falsch), die Ziele der Odoo-IDs 2, 23, 36, 40, 47, 48, 49 und die Punkte «Sitemap
-> über 100 Produkte» und «Echtes `lastmod`» unter «Nicht umgesetzt».
+> «Empfohlene Handle-Änderungen» (Stand je Zeile dort nachgetragen), die Ziele der
+> Odoo-IDs 2, 23, 36, 40, 47, 48, 49, 60 und die Punkte «Sitemap über 100 Produkte»
+> und «Echtes `lastmod`» unter «Nicht umgesetzt».
 
 ## Kurzfassung
 
@@ -149,14 +148,17 @@ Diese Ziele sind aus Titelvergleich geschlossen, nicht aus Stammdaten:
 Im Medusa-Admin anzuwenden, **vor** dem Go-live. Nur Fehler, keine Kosmetik.
 Alle übrigen 21 Produkt-Handles bleiben, wie sie sind.
 
-| Heute | Empfohlen | Grund | Dringlichkeit |
-|---|---|---|---|
-| `purize-aktivkohlefilter-6mm` | `purize-aktivkohlefilter-9mm` | Das Produkt heisst «PURIZE Aktivkohlefilter 9 mm». Die Adresse nennt das falsche Mass — und es gibt daneben ein echtes 6-mm-Produkt. | hoch |
-| `raw-classic-king-size-slim` | `raw-black-classic-king-size-slim` | Titel «RAW Black Classic …». RAW Classic und RAW Black sind verschiedene Produkte; der Handle bezeichnet das falsche und blockiert ihn für das echte Classic. | hoch |
-| `purize-super-slim-white-o5mm` | `purize-super-slim-white-5mm` | Das «o» ist ein transliteriertes «ø» und bedeutet nichts. | mittel |
-| `dubi-aktivkohlefilter-o7mm` | `dubi-aktivkohlefilter-7mm` | wie oben | mittel |
-| Kategorie `filter-&-tips` | `filter-tips` | `&` ist das Trennzeichen für Parameter und muss als `%26` kodiert werden; abgetippt oder falsch kopiert bricht die Adresse. | hoch |
-| Kategorie `kräutermischungen` | `kraeutermischungen` | Umlaut erscheint als `kr%C3%A4utermischungen`. Google empfiehlt Transliteration. | mittel |
+Stand 2026-09-29: Die Spalte «Heute» nennt den Handle zum Zeitpunkt der Empfehlung,
+die Spalte «Stand» das, was der Betreiber im Admin daraus gemacht hat.
+
+| Heute | Empfohlen | Grund | Dringlichkeit | Stand |
+|---|---|---|---|---|
+| `purize-aktivkohlefilter-6mm` | `purize-aktivkohlefilter-9mm` | Das Produkt trug den Titel «PURIZE Aktivkohlefilter 9 mm», die Adresse nannte 6 mm. Es ist das 9-mm-Produkt (Odoo 60, «ø 9mm»). Das 6-mm-Produkt ist ein anderes: `purize-xtra-slim-6mm`, unverändert. | hoch | **erledigt** — vom Betreiber umbenannt, Titel «PURIZE Aktivkohlefilter 9 mm». Den Handle `…-6mm` gibt es nicht mehr (404), Odoo 60 zeigt auf `purize-aktivkohlefilter-9mm`. |
+| `raw-classic-king-size-slim` | `raw-black-classic-king-size-slim` | Titel «RAW Black Classic …». RAW Classic und RAW Black sind verschiedene Produkte; der Handle bezeichnet das falsche und blockiert ihn für das echte Classic. | hoch | **erledigt** |
+| `purize-super-slim-white-o5mm` | `purize-super-slim-white-5mm` | Das «o» ist ein transliteriertes «ø» und bedeutet nichts. | mittel | **erledigt** |
+| `dubi-aktivkohlefilter-o7mm` | `dubi-aktivkohlefilter-7mm` | wie oben | mittel | **erledigt** |
+| Kategorie `filter-&-tips` | `filter-tips` | `&` ist das Trennzeichen für Parameter und muss als `%26` kodiert werden; abgetippt oder falsch kopiert bricht die Adresse. | hoch | **erledigt** |
+| Kategorie `kräutermischungen` | `kraeutermischungen` | Umlaut erscheint als `kr%C3%A4utermischungen`. Google empfiehlt Transliteration. | mittel | offen — auf Staging gibt es die Kategorie unter keinem der beiden Handles |
 
 Bewusst **nicht** empfohlen: `elements-ultra-thin-king-size-slim-kss` (das «kss»
 doppelt, schadet aber nicht), `elements-blue-rolls-sw`, `silikon-dose-22-mm`,
@@ -166,8 +168,9 @@ Zu klären: es gibt die Kategorien `filter` **und** `filter-&-tips`. Falls beide
 dasselbe meinen, eine davon auflösen.
 
 **Wer einen Handle ändert, zieht ihn im selben Zug nach** in
-`lib/seo/legacy-redirects.ts` und `medusa-ecom/data/odoo-redirects.json` (betroffen:
-IDs 60, 2, 36, 48, 49). Die Tests nennen die Handles ebenfalls. Medusa legt beim
+`lib/seo/legacy-redirects.data.json` (dazu `lib/seo/staging-handles.fixture.json`) und
+`medusa-ecom/data/odoo-redirects.json` (betroffen waren die IDs 60, 2, 36, 48, 49; alle
+nachgezogen). Die Tests nennen die Handles ebenfalls. Medusa legt beim
 Umbenennen keine Weiterleitung an; nach dem Go-live braucht jede Umbenennung
 zusätzlich ein 301 vom alten Handle.
 
