@@ -36,21 +36,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/service/faq",
   ];
 
+  // Kein `lastModified`: Google wertet <lastmod> nur aus, wenn es nachweislich
+  // stimmt. Der Zeitpunkt des Abrufs («jetzt», bei jedem Abruf neu) sagt
+  // nichts über die Seite und entwertet die Angabe für die ganze Sitemap.
   return [
     ...staticRoutes.map((path) => ({
       url: `${BASE}${path}`,
-      lastModified: new Date(),
       priority: path === "" ? 1 : 0.6,
     })),
     ...categories.map((c) => ({
       // Kodieren: Handles können `&` oder Umlaute enthalten.
       url: `${BASE}/?kategorie=${encodeURIComponent(c.handle)}`,
-      lastModified: new Date(),
       priority: 0.8,
     })),
     ...products.map((p) => ({
       url: `${BASE}/products/${p.handle}`,
-      lastModified: new Date(),
       priority: 0.7,
     })),
   ];
