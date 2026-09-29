@@ -8,7 +8,8 @@ import {
   applyIndexingHeader,
   isTenantlessAssetPath,
 } from "@/lib/seo/indexing";
-import { legacyRedirect } from "@/lib/seo/legacy-redirects";
+import { legacyRedirectLocation } from "@/lib/seo/legacy-redirects";
+import { lowercaseProductPath } from "@/lib/seo/canonical-path";
 
 /**
  * Host-based tenant resolution — the front door of multi-tenancy.
@@ -85,11 +86,18 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   const { domain } = tenant.theme;
   const { pathname, search } = request.nextUrl;
-  const legacyTarget = legacyRedirect(domain, pathname);
+  // Alte Odoo-Adressen: EIN Sprung aufs Ziel, Odoos Parameter (?search=,
+  // ?order=) fallen weg — Begründung in lib/seo/legacy-redirects.ts.
+  const legacyTarget = legacyRedirectLocation(domain, pathname, search);
   if (legacyTarget) {
-    const target = legacyTarget.includes("?") ? legacyTarget : legacyTarget + search;
     // Nicht request.nextUrl als Basis: hinter nginx trägt sie die interne Adresse.
-    return NextResponse.redirect(new URL(target, `https://${domain}`), 301);
+    return NextResponse.redirect(new URL(legacyTarget, `https://${domain}`), 301);
+  }
+
+  // Gross geschriebene Produktadressen: eine Schreibweise je Produkt.
+  const lowercased = lowercaseProductPath(pathname);
+  if (lowercased) {
+    return NextResponse.redirect(new URL(lowercased + search, `https://${domain}`), 301);
   }
 
   const requestHeaders = new Headers(request.headers);

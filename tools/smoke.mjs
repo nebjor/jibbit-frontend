@@ -42,7 +42,7 @@ const CORE_PATHS = [
  */
 const REDIRECTS = [
   { from: "/shop", to: "/" },
-  { from: "/shop/ocb-premium-kss-7", to: "/products/ocb-premium-kss-papers-mit-filter" },
+  { from: "/fr_CH/shop/ocb-slim-filter-bio-10x120-tips-41?search=filter", to: "/products/ocb-slim-filter-bio-120-tips" },
 ];
 
 const MISSING_PATH = "/products/dieses-produkt-gibt-es-nicht-smoke";
