@@ -241,7 +241,7 @@ describe("preparePayment", () => {
       expect(logged).toContain("credentials missing");
       expect(logged).toContain(`provider=${ZAHLS_PROVIDER_ID}`);
       expect(logged).toContain("region=reg_1");
-      expect(logged).toContain("check-payment-setup.ts");
+      expect(logged).toContain("check-payment-setup.js");
     } finally {
       spy.mockRestore();
     }
@@ -352,7 +352,11 @@ describe("describeInitiateFailure", () => {
     expect(line).toContain("status=500");
     expect(line).toContain("type=unknown_error");
     expect(line).toContain("message=boom");
-    expect(line).toContain("check-payment-setup.ts");
+    // Inside the container only compiled code exists — the command names .js.
+    expect(line).toContain(
+      "docker compose exec medusa npx medusa exec ./src/scripts/check-payment-setup.js",
+    );
+    expect(line).toContain("does not register it");
   });
 
   it("survives an error that is not an Error and a region that is missing", () => {
@@ -360,5 +364,96 @@ describe("describeInitiateFailure", () => {
     expect(line).toContain("region=?");
     expect(line).toContain("region_offers=[-]");
     expect(line).toContain("message=kaputt");
+    // No status, no type: nothing says the PSP answered — the default hint.
+    expect(line).toContain("does not register it");
+    expect(line).toContain("check-payment-setup.js");
+  });
+
+  const lineFor = (error: unknown) =>
+    describeInitiateFailure(
+      ZAHLS_PROVIDER_ID,
+      "reg_1",
+      [{ id: ZAHLS_PROVIDER_ID }],
+      error,
+    );
+
+  it("says that locally the script is .ts, in the container .js", () => {
+    const text = lineFor(Object.assign(new Error("boom"), { status: 500 }));
+    expect(text).toContain("check-payment-setup.js");
+    expect(text).toContain("./src/scripts/check-payment-setup.ts");
+    expect(text).toContain("medusa develop");
+  });
+
+  it("keeps the default hint for a 4xx that carries no message", () => {
+    const text = lineFor(Object.assign(new Error(""), { status: 400 }));
+    expect(text).toContain("does not register it");
+  });
+
+  /** The staging incident, verbatim: zahls.ch refused, nothing was missing. */
+  it("points at the zahls.ch subscription when the license is the problem", () => {
+    const text = lineFor(
+      Object.assign(
+        new Error("An error occurred: API is not included in your license."),
+        { status: 400 },
+      ),
+    );
+
+    expect(text).toContain("status=400");
+    expect(text).toContain(
+      "message=An error occurred: API is not included in your license.",
+    );
+    expect(text).toContain("the payment provider rejected the call");
+    expect(text).toContain("zahls.ch subscription");
+    expect(text).toContain("trial expired or plan without API");
+    expect(text).not.toContain("does not register it");
+    expect(text).not.toContain("check-payment-setup");
+  });
+
+  it("recognises the German wording of a license problem too", () => {
+    const text = lineFor(
+      Object.assign(new Error("API ist in Ihrer Lizenz nicht enthalten"), {
+        status: 402,
+      }),
+    );
+    expect(text).toContain("zahls.ch subscription");
+  });
+
+  it("points at the credentials on 401/403", () => {
+    for (const status of [401, 403]) {
+      const text = lineFor(Object.assign(new Error("Nope"), { status }));
+      expect(text).toContain("the payment provider rejected the call");
+      expect(text).toContain("ZAHLS_API_KEY / ZAHLS_INSTANCE");
+      expect(text).not.toContain("does not register it");
+    }
+  });
+
+  it("points at the credentials when the message names the API key or instance", () => {
+    for (const message of ["Invalid API key", "Instance not found"]) {
+      const text = lineFor(Object.assign(new Error(message), { status: 400 }));
+      expect(text).toContain("ZAHLS_API_KEY / ZAHLS_INSTANCE");
+    }
+  });
+
+  it("names the provider's refusal for any other 4xx with a message", () => {
+    const text = lineFor(
+      Object.assign(new Error("Amount must be greater than 0"), { status: 422 }),
+    );
+    expect(text).toContain("the payment provider rejected the call");
+    expect(text).toContain(
+      "Check account, license and credentials in the zahls.ch backend",
+    );
+    expect(text).not.toContain("does not register it");
+  });
+
+  it("says the backend cannot reach zahls.ch on a network error", () => {
+    const text = lineFor(
+      Object.assign(new Error("zahls.ch network error: fetch failed"), {
+        status: 500,
+        type: "unknown_error",
+      }),
+    );
+    expect(text).toContain("the backend cannot reach zahls.ch");
+    expect(text).not.toContain("does not register it");
+    expect(text).not.toContain("rejected the call");
   });
 });
