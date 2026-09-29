@@ -29,10 +29,11 @@
  * antworten ihre Seiten mit 404 — das MUSS vor dem Go-live erledigt sein.
  * Der Smoke-Test nennt sie als eigene Warnung.
  *
- * Zu ID 60: das Ziel `purize-aktivkohlefilter-6mm` trägt auf Staging den
- * Titel «PURIZE Aktivkohlefilter 9 mm». Titel und Handle widersprechen sich;
- * welches von beiden stimmt, weiss nur der Betreiber. Die Weiterleitung
- * folgt dem Titel (Odoo 60 = «ø 9mm»).
+ * Zu ID 60: Odoo 60 ist «PURIZE Aktivkohlefilter ø 9mm». Das Ziel hiess
+ * bis 2026-09-29 `purize-aktivkohlefilter-6mm`, trug aber den Titel
+ * «… 9 mm»; der Betreiber hat den Handle auf `purize-aktivkohlefilter-9mm`
+ * umbenannt. Den alten Handle gibt es nicht mehr. Das 6-mm-Produkt ist
+ * `purize-xtra-slim-6mm` (Odoo 54).
  */
 
 import data from "./legacy-redirects.data.json";
