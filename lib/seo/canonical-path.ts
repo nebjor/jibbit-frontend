@@ -26,3 +26,34 @@ export function lowercaseProductPath(pathname: string): string | null {
   const lower = pathname.toLowerCase();
   return lower === pathname ? null : lower;
 }
+
+/**
+ * EIN HOST JE SHOP: `www.<domain>` -> `<domain>`.
+ *
+ * Die Search Console kennt 44 Adressen unter www.jibbit.ch. Die statische
+ * Mandantentabelle führt `www` als Alias (lib/tenant/static-tenants.ts) — die
+ * Storefront beantwortete dort bisher jede Seite mit 200, also unter zwei
+ * Hosts denselben Inhalt. Das Canonical zeigte zwar auf die Hauptdomain, ein
+ * 301 ist aber das stärkere Signal und erspart Google das Doppelcrawlen.
+ *
+ * Bewusst NUR für genau `www.` + Domain: ein Mandant, dessen Host sich sonst
+ * von seiner Domain unterscheidet (Plattform-Subdomain neben eigener Domain),
+ * wird hier nicht angefasst.
+ */
+export function isWwwAlias(host: string, domain: string): boolean {
+  return host.toLowerCase() === `www.${domain.toLowerCase()}`;
+}
+
+/**
+ * Der kanonische Pfad, falls die Anfrage umgeleitet werden muss — wegen des
+ * Hosts, der Schreibweise oder beidem, in EINEM Sprung. Sonst `null`.
+ */
+export function canonicalHostRedirect(
+  host: string,
+  domain: string,
+  pathname: string,
+): string | null {
+  const lowercased = lowercaseProductPath(pathname);
+  if (lowercased) return lowercased;
+  return isWwwAlias(host, domain) ? pathname : null;
+}

@@ -564,7 +564,7 @@ Anbieterangaben (Adresse, Telefon …) hier gekürzt.
 | Product | `name` | Pflicht; an Varianten GENAUER als die Gruppe | G-ML, G-VAR | ✔ «Titel – Packung» |
 | Product | `image` | Pflicht | G-ML | ✔ eigenes Bild der Packung, sonst Produktbilder |
 | Product | `offers` (`Offer`, nicht `AggregateOffer`) | Pflicht | G-ML | ✔ |
-| Product | `sku` (ohne Leerzeichen) oder `gtin*` | Pflicht je Variante | G-VAR | ✔ `sku` = Varianten-ID |
+| Product | `sku` (ohne Leerzeichen) oder `gtin*` | Pflicht je Variante | G-VAR | ✔ `sku` = Artikelnummer aus Medusa, sonst Varianten-ID — derselbe Wert wie `id` im Merchant-Feed (seit 2026-09-29) |
 | Product | `gtin8/12/13/14` | empfohlen, spezifischste Form | G-ML | ✔ wenn gepflegt und gültig |
 | Product | `description` | «strongly recommended» | G-ML | ✔ «Packung: Beschreibung» |
 | Product | `size` (max. 1 Wert) | empfohlen | G-ML | ✔ Packungseinheit |
@@ -588,7 +588,8 @@ Anbieterangaben (Adresse, Telefon …) hier gekürzt.
 ## 7. Entscheide
 
 - **Varianten-URL = `?variant=<Medusa-Varianten-ID>`** (`VARIANT_PARAM` in `lib/pricing.ts`). ID statt
-  sprechendem Slug: Titel werden im Admin umbenannt, IDs nicht; und es ist dieselbe Kennung wie `sku`.
+  sprechendem Slug: Titel werden im Admin umbenannt, IDs nicht. (`sku` trägt seit 2026-09-29 die
+  Artikelnummer, damit sie der `id` im Merchant-Feed entspricht; die URL bleibt bei der ID.)
   Die Seite liest den Parameter serverseitig (`preselectedVariant`) und wählt Kaufbox UND LCP-Bild vor;
   unbekannte IDs fallen auf die übliche Vorauswahl. Eine ausverkaufte Packung wird trotzdem angezeigt
   (mit «Ausverkauft») — die URL soll zeigen, was sie verspricht. Bei jeder Auswahl schreibt der Provider

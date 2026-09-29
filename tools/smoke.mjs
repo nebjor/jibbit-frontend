@@ -12,7 +12,15 @@
  * runs anywhere Node runs, including a box that cannot install Chromium.
  *
  * Exit code 0 when everything passed, 1 otherwise. A WARN never fails the run.
+ *
+ * Options:
+ *   --require-sitemap      an empty sitemap fails the run (indexable deployment)
+ *   --skip-target-pages    check every Odoo redirect, but do not request the
+ *                          product page behind it — for a stack whose catalogue
+ *                          is a fixture (the end-to-end suite)
  */
+
+import { readFile } from "node:fs/promises";
 
 const DEFAULTS = {
   timeout: 15_000,
@@ -47,12 +55,29 @@ const REDIRECTS = [
 
 const MISSING_PATH = "/products/dieses-produkt-gibt-es-nicht-smoke";
 
+/**
+ * The full Odoo mapping — the same file `lib/seo/legacy-redirects.ts` reads.
+ * Every target is requested, so a handle renamed in the admin shows up here
+ * before Google finds the 404.
+ */
+const LEGACY_DATA = new URL("../lib/seo/legacy-redirects.data.json", import.meta.url);
+
+const FEED_PATH = "/merchant-feed.tsv";
+/** Attributes Merchant Center refuses to work without. */
+const FEED_REQUIRED = ["id", "title", "link", "image_link", "availability", "price"];
+
 function parseArgs(argv) {
-  const options = { ...DEFAULTS, baseUrl: null, requireSitemap: false };
+  const options = {
+    ...DEFAULTS,
+    baseUrl: null,
+    requireSitemap: false,
+    skipTargetPages: false,
+  };
   for (const arg of argv) {
     const [key, value] = arg.startsWith("--") ? arg.slice(2).split("=") : [null, null];
     if (key === "base-url") options.baseUrl = value;
     else if (key === "require-sitemap") options.requireSitemap = true;
+    else if (key === "skip-target-pages") options.skipTargetPages = true;
     else if (key === "timeout") options.timeout = Number(value);
     else if (key === "concurrency") options.concurrency = Number(value);
     else if (key === "max-urls") options.maxUrls = Number(value);
@@ -141,6 +166,180 @@ async function checkHomeContent(options) {
   return row("PASS", "Startseite", `${Math.round(html.length / 1024)} kB HTML`);
 }
 
+/**
+ * Every old Odoo product address: one 301, onto the mapped handle, and the
+ * page behind it answers 200.
+ *
+ * Targets listed under `unveroeffentlicht` are drafts in the admin. Their 404
+ * is expected until the owner publishes them, so it is reported as ONE named
+ * warning with the handles — visible, but not a failure. Any other target
+ * that does not answer 200 fails the run.
+ */
+async function checkLegacyTargets(options) {
+  const label = "Odoo-Weiterleitungen";
+  let data;
+  try {
+    data = JSON.parse(await readFile(LEGACY_DATA, "utf8"));
+  } catch (error) {
+    return [row("FAIL", label, `Zuordnung nicht lesbar: ${error.message}`)];
+  }
+  const pending = new Set(data.unveroeffentlicht ?? []);
+  const entries = Object.entries(data.produkte ?? {});
+
+  const results = await mapLimit(entries, options.concurrency, async ([id, target]) => {
+    const from = `/shop/x-${id}`;
+    const expected = target.startsWith("/") ? target : `/products/${target}`;
+    const hop = await request(options.baseUrl + from, options, { redirect: "manual" });
+    if (hop.error) return { id, target, problem: `${from}: ${hop.error.message}` };
+    if (hop.response.status !== 301) {
+      return { id, target, problem: `${from}: ${hop.response.status}, erwartet 301` };
+    }
+    const location = new URL(hop.response.headers.get("location") ?? "", options.baseUrl);
+    const actual = location.pathname + location.search;
+    if (actual !== expected) {
+      return { id, target, problem: `${from} → ${actual}, erwartet ${expected}` };
+    }
+    if (options.skipTargetPages) return { id, target, expected, status: 200, skipped: true };
+    const page = await request(options.baseUrl + expected, options, { redirect: "manual" });
+    if (page.error) return { id, target, problem: `${expected}: ${page.error.message}` };
+    return { id, target, expected, status: page.response.status };
+  });
+
+  const byTarget = (list) => {
+    const ids = new Map();
+    for (const { id, target } of list) ids.set(target, [...(ids.get(target) ?? []), id]);
+    return [...ids].map(([target, odoo]) => `${target} (Odoo ${odoo.join(", ")})`);
+  };
+
+  const broken = results.filter(
+    (r) => r.problem || (r.status !== 200 && !(r.status === 404 && pending.has(r.target))),
+  );
+  const drafts = results.filter((r) => !r.problem && r.status === 404 && pending.has(r.target));
+  const published = results.filter(
+    (r) => !r.problem && !r.skipped && r.status === 200 && pending.has(r.target),
+  );
+  const fine = results.length - broken.length - drafts.length;
+
+  const rows = [
+    broken.length
+      ? row("FAIL", label, `${broken.length} von ${results.length} kaputt`)
+      : row(
+          "PASS",
+          label,
+          options.skipTargetPages
+            ? `${results.length} Adressen leiten richtig um (Zielseiten nicht geprüft)`
+            : `${fine} von ${results.length} Zielen antworten mit 200`,
+        ),
+    ...broken.map((r) =>
+      row("FAIL", `  Odoo ${r.id}`, r.problem ?? `${r.expected}: ${r.status}, erwartet 200`),
+    ),
+  ];
+  if (drafts.length) {
+    const handles = byTarget(drafts);
+    rows.push(
+      row(
+        "WARN",
+        "UNVERÖFFENTLICHTE ZIELE",
+        `${handles.length} Produkte sind noch Entwurf (404) — vor dem Go-live veröffentlichen`,
+      ),
+      ...handles.map((text) => row("WARN", "  Entwurf", text)),
+    );
+  }
+  for (const text of byTarget(published)) {
+    rows.push(row("WARN", "  veröffentlicht", `${text} — aus «unveroeffentlicht» streichen`));
+  }
+  return rows;
+}
+
+/**
+ * The Merchant Center feed: answers, carries the required columns, links
+ * only to pages that exist — and lists every product the sitemap lists.
+ */
+async function checkFeed(options, sitemapPaths) {
+  const { response, error } = await request(options.baseUrl + FEED_PATH, options);
+  if (error) return [row("FAIL", FEED_PATH, `nicht erreichbar: ${error.message}`)];
+  if (!response.ok) return [row("FAIL", FEED_PATH, `${response.status}, erwartet 200`)];
+
+  const [head, ...lines] = (await response.text()).trimEnd().split("\n");
+  const columns = head.split("\t");
+  const items = lines.map((line) => {
+    const cells = line.split("\t");
+    return Object.fromEntries(columns.map((name, i) => [name, cells[i] ?? ""]));
+  });
+  if (items.length === 0) return [row("FAIL", FEED_PATH, "keine einzige Zeile")];
+
+  const rows = [row("PASS", FEED_PATH, `${items.length} Artikel, ${columns.length} Spalten`)];
+
+  const ids = items.map((item) => item.id);
+  const duplicates = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+  if (duplicates.length) {
+    rows.push(row("FAIL", "  Feed: id", `doppelt: ${duplicates.slice(0, 5).join(", ")}`));
+  }
+
+  for (const name of FEED_REQUIRED) {
+    const empty = items.filter((item) => !item[name]).map((item) => item.id);
+    if (empty.length) {
+      rows.push(
+        row("FAIL", `  Feed: ${name}`, `leer bei ${empty.length}: ${empty.slice(0, 5).join(", ")}`),
+      );
+    }
+  }
+  // Google lehnt einen Preis von 0 ab; meist fehlt dann der Preis im Admin.
+  const free = items.filter((item) => /^0+(\.0+)? /.test(item.price)).map((item) => item.id);
+  if (free.length) {
+    rows.push(row("FAIL", "  Feed: price", `0.00 bei ${free.length}: ${free.slice(0, 5).join(", ")}`));
+  }
+  for (const name of ["brand", "description", "gtin"]) {
+    if (!columns.includes(name)) continue;
+    const empty = items.filter((item) => !item[name]).length;
+    if (empty) rows.push(row("WARN", `  Feed: ${name}`, `leer bei ${empty} von ${items.length}`));
+  }
+
+  // Links zeigen auf die Domain des Mandanten; geprüft wird diese Umgebung.
+  const paths = [...new Set(items.map((item) => new URL(item.link).pathname))];
+  const dead = (
+    await mapLimit(paths.slice(0, options.maxUrls), options.concurrency, async (path) => {
+      const page = await request(options.baseUrl + path, options, { redirect: "manual" });
+      if (page.error) return `${path} (${page.error.message})`;
+      return page.response.status === 200 ? null : `${path} (${page.response.status})`;
+    })
+  ).filter(Boolean);
+  rows.push(
+    dead.length
+      ? row("FAIL", "  Feed: link", `${dead.length} ohne 200: ${dead.slice(0, 5).join(", ")}`)
+      : row("PASS", "  Feed: link", `${paths.length} Produktseiten, alle 200`),
+  );
+
+  // Nur mit Sitemap vergleichbar — auf einem gesperrten Deployment ist sie leer.
+  const listed = sitemapPaths.filter((path) => path.startsWith("/products/"));
+  if (listed.length) {
+    const inFeed = new Set(paths);
+    const missing = listed.filter((path) => !inFeed.has(path));
+    const extra = paths.filter((path) => !listed.includes(path));
+    rows.push(
+      missing.length || extra.length
+        ? row(
+            "FAIL",
+            "  Feed ↔ Sitemap",
+            `im Feed fehlen ${missing.length}, in der Sitemap fehlen ${extra.length}: ` +
+              [...missing, ...extra].slice(0, 5).join(", "),
+          )
+        : row("PASS", "  Feed ↔ Sitemap", `dieselben ${listed.length} Produkte`),
+    );
+  }
+  return rows;
+}
+
+/** An indexable deployment must point crawlers at its sitemap. */
+async function checkRobotsSitemap(options) {
+  const { response, error } = await request(options.baseUrl + "/robots.txt", options);
+  if (error || !response.ok) return row("FAIL", "robots.txt: Sitemap", "nicht lesbar");
+  const line = /^sitemap:\s*(\S+)/im.exec(await response.text());
+  return line
+    ? row("PASS", "robots.txt: Sitemap", line[1])
+    : row("FAIL", "robots.txt: Sitemap", "Zeile fehlt, obwohl die Sitemap URLs führt");
+}
+
 /** Sitemap URLs, rewritten onto the environment under test. */
 async function readSitemap(options) {
   const { response, error } = await request(options.baseUrl + "/sitemap.xml", options);
@@ -225,6 +424,8 @@ async function main() {
   if (sitemap.paths.length) {
     rows.push(...(await crawl(options, sitemap.paths)));
 
+    rows.push(await checkRobotsSitemap(options));
+
     const product = sitemap.paths.find((path) => path.startsWith("/products/"));
     if (product) {
       rows.push(await checkStatus(options, product, 200));
@@ -233,9 +434,12 @@ async function main() {
     }
   }
 
+  rows.push(...(await checkFeed(options, sitemap.paths)));
+
   for (const redirect of REDIRECTS) {
     rows.push(await checkRedirect(options, redirect));
   }
+  rows.push(...(await checkLegacyTargets(options)));
   rows.push(await checkStatus(options, MISSING_PATH, 404));
 
   process.exitCode = print(rows, options.baseUrl) > 0 ? 1 : 0;

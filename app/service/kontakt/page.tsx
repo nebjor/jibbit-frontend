@@ -7,6 +7,8 @@ import { displayPhone } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Kontakt",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/service/kontakt" },
   description:
     "So erreichst du jibbit — bei Fragen zur Bestellung, zum Sortiment oder zur Community.",
 };

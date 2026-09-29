@@ -12,6 +12,8 @@ import { BUSINESS, RETURNS } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Rückgaberecht & Reklamation",
+  // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
+  alternates: { canonical: "/service/rueckgabe" },
   description:
     "Rückgaberegel von jibbit: keine Rückgabe bei Sinneswandel, defekte oder falsch gelieferte Ware nehmen wir auf unsere Kosten zurück. Ablauf, Ausnahmen und Rücksendeadresse.",
 };

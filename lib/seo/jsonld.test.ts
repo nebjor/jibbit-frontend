@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  brandOf,
+  offerId,
   breadcrumbJsonLd,
   graph,
   itemListJsonLd,
@@ -389,6 +391,30 @@ describe("Produkt — GTIN", () => {
     }
   });
 
+  it("sku ist die Artikelnummer aus Medusa — dieselbe Kennung wie im Feed", () => {
+    const node = build({
+      variants: [
+        variant("v_single", { sku: "ANG-SLI-FIL-6MM-120-EA" }),
+        variant("v_display", { sku: "ANG SLI D34" }),
+      ],
+    });
+    // Leerraum fällt weg: Google verlangt die Kennung ohne.
+    expect(packsOf(node).map((p) => p.sku)).toEqual([
+      "ANG-SLI-FIL-6MM-120-EA",
+      "ANGSLID34",
+    ]);
+    expect(offerId({ id: "v", sku: undefined })).toBe("v");
+    expect(offerId({ id: "v", sku: "  " })).toBe("v");
+  });
+
+  it("jede Packung nennt ihre Gruppe — wie item_group_id im Feed", () => {
+    const node = build();
+    for (const p of packsOf(node)) {
+      expect(p.inProductGroupWithID).toBe(node.productGroupID);
+    }
+    expect(build({ variants: [variant("v_only")] }).inProductGroupWithID).toBeUndefined();
+  });
+
   it("ohne GTIN bleibt jede Packung über ihre sku eindeutig", () => {
     const node = build();
     expect(JSON.stringify(node)).not.toContain("gtin");
@@ -417,7 +443,32 @@ describe("Produkt — Rest", () => {
   });
 
   it("lässt die Marke weg, statt sie leer zu setzen", () => {
-    expect("brand" in build({ brand: "" })).toBe(false);
+    expect("brand" in build({ brand: "", title: "Silikon Dose ø 22mm" })).toBe(false);
+  });
+
+  it("nicht gepflegte Marke: der Hersteller, mit dem der Titel beginnt", () => {
+    expect(build({ brand: "" }).brand).toEqual({ "@type": "Brand", name: "Angel" });
+    expect(build({ brand: "", title: "Zig Zag Slim Filter 6mm" }).brand).toEqual({
+      "@type": "Brand",
+      name: "Zig Zag",
+    });
+    expect(build({ brand: "", title: "PURIZE Aktivkohlefilter 9 mm" }).brand).toEqual({
+      "@type": "Brand",
+      name: "PURIZE",
+    });
+  });
+
+  it("die gepflegte Marke gewinnt gegen die abgeleitete", () => {
+    expect(build({ brand: "Angel Filters" }).brand).toEqual({
+      "@type": "Brand",
+      name: "Angel Filters",
+    });
+  });
+
+  it("rät keine Marke aus der Mitte des Titels oder dem ersten Wort", () => {
+    expect(brandOf({ brand: "", title: "Filter für RAW Papers" })).toBe("");
+    expect(brandOf({ brand: "", title: "Rawlings Dose" })).toBe("");
+    expect(brandOf({ brand: "", title: "Kristallglas Aschenbecher" })).toBe("");
   });
 
   it("führt Gemeinsames einmal an der Gruppe, nicht an jeder Packung", () => {
