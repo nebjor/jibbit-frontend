@@ -1,8 +1,9 @@
 {
   "kommentar": "Veröffentlichte Produkt- und Kategorie-Handles auf test.jibbit.ch, abgelesen aus den ausgelieferten Seiten. NUR Prüfstand für lib/seo/legacy-redirects.test.ts — die Storefront liest diese Datei nicht. Die verbindliche Prüfung gegen eine laufende Umgebung ist `npm run smoke -- --base-url=…`.",
-  "stand": "2026-10-01",
+  "stand": "2026-10-02",
   "produkte": [
     "angel-slim-filters-6mm-120stk",
+    "black-leaf-el-humeros-konische-huelsen-ks-100x",
     "dubi-aktivkohlefilter-7mm",
     "elements-blue-rolls-sw",
     "elements-king-size-ultra-thin",
@@ -12,6 +13,7 @@
     "kailar-filter-5-9mm-65stk-schwarz",
     "kailar-filter-5-9mm-65stk-weiss",
     "kailar-filter-9mm-big-100-stk-schwarz",
+    "ocb-bio-slim-organic-hemp-rolls",
     "ocb-black-premium-rolls-slim",
     "ocb-premium-kurz",
     "ocb-slim-filter-bio-120-tips",

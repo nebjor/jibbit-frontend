@@ -1,6 +1,6 @@
 {
-  "kommentar": "Odoo-Produkt-ID -> Produkt-Handle im neuen Shop oder, mit führendem Schrägstrich, ein Pfad (Kategorie, wenn der neue Shop das Produkt nicht führt). Gelesen von lib/seo/legacy-redirects.ts und tools/smoke.mjs; gespiegelt in medusa-ecom data/odoo-redirects.json — beide Stellen gemeinsam ändern. Die IDs sind alle 37, die die Search Console für jibbit.ch kennt. unveroeffentlicht nennt Ziele, die im Admin angelegt, aber noch Entwurf sind: ihre Seiten antworten bis zum Veröffentlichen mit 404. Danach den Handle dort streichen.",
-  "stand": "2026-09-29",
+  "kommentar": "Odoo-Produkt-ID -> Produkt-Handle im neuen Shop oder, mit führendem Schrägstrich, ein Pfad (Kategorie, wenn der neue Shop das Produkt nicht führt). Gelesen von lib/seo/legacy-redirects.ts und tools/smoke.mjs; gespiegelt in medusa-ecom data/odoo-redirects.json — beide Stellen gemeinsam ändern. Die IDs sind alle 37, die die Search Console für jibbit.ch kennt. unveroeffentlicht nennt Ziele, die im Admin angelegt, aber noch Entwurf sind: ihre Seiten antworten bis zum Veröffentlichen mit 404. Danach den Handle dort streichen. Seit 2026-10-02 leer: alle Ziele sind veröffentlicht.",
+  "stand": "2026-10-02",
   "produkte": {
     "2": "raw-black-classic-king-size-slim",
     "3": "ocb-black-premium-rolls-slim",
@@ -40,8 +40,5 @@
     "60": "purize-aktivkohlefilter-9mm",
     "61": "gizeh-dw-extra-fine"
   },
-  "unveroeffentlicht": [
-    "black-leaf-el-humeros-konische-huelsen-ks-100x",
-    "ocb-bio-slim-organic-hemp-rolls"
-  ]
+  "unveroeffentlicht": []
 }
