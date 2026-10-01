@@ -173,6 +173,7 @@ Funktion laufen wie der Proxy.
 | 7 | Kategorie Papers | unverändert, das Produkt wird nicht mehr geführt |
 | 60 | `purize-aktivkohlefilter-6mm` | `purize-aktivkohlefilter-9mm` (im Admin umbenannt, siehe «Auffälligkeiten») |
 | 10 | `purize-xtra-slim-white-50er-pack-5-9mm` | `purize-xtra-slim-6mm` (Dublette gelöscht, siehe «Auffälligkeiten») |
+| 56, 57 | `elements-ultra-thin-king-size-slim-kss` | `elements-king-size-ultra-thin` (im Admin umbenannt am 2026-10-01: laut Verpackung das breite King Size, nicht King Size Slim) |
 
 ### Alte Handles des neuen Shops
 
@@ -189,6 +190,7 @@ es die Varianten-IDs des alten Produkts am Ziel nicht gibt; Kampagnenparameter b
 | `/products/purize-super-slim-white-o5mm` | `/products/purize-super-slim-white-5mm` | umbenannt |
 | `/products/dubi-aktivkohlefilter-o7mm` | `/products/dubi-aktivkohlefilter-7mm` | umbenannt |
 | `/products/purize-aktivkohlefilter-6mm` | `/products/purize-aktivkohlefilter-9mm` | umbenannt |
+| `/products/elements-ultra-thin-king-size-slim-kss` | `/products/elements-king-size-ultra-thin` | umbenannt (2026-10-01) |
 
 Wird ein alter Handle im Admin neu vergeben (etwa `raw-classic-king-size-slim` für ein
 echtes RAW Classic), muss seine Zeile aus der Datendatei, sonst ist das neue Produkt

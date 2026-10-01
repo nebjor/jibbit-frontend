@@ -159,10 +159,13 @@ die Spalte «Stand» das, was der Betreiber im Admin daraus gemacht hat.
 | `dubi-aktivkohlefilter-o7mm` | `dubi-aktivkohlefilter-7mm` | wie oben | mittel | **erledigt** |
 | Kategorie `filter-&-tips` | `filter-tips` | `&` ist das Trennzeichen für Parameter und muss als `%26` kodiert werden; abgetippt oder falsch kopiert bricht die Adresse. | hoch | **erledigt** |
 | Kategorie `kräutermischungen` | `kraeutermischungen` | Umlaut erscheint als `kr%C3%A4utermischungen`. Google empfiehlt Transliteration. | mittel | offen — auf Staging gibt es die Kategorie unter keinem der beiden Handles |
+| `elements-ultra-thin-king-size-slim-kss` | `elements-king-size-ultra-thin` | Nachträglich (2026-10-01): Das Produkt ist laut Verpackung das breite **Elements King Size Ultra Thin** (ca. 110 × 53 mm, 33 Blatt, Strichcode 716165177814), nicht das 44 mm schmale «King Size Slim». Titel und Handle nannten das falsche Format. | hoch | **erledigt** — Titel «Elements King Size Ultra Thin», Odoo 56 und 57 zeigen auf den neuen Handle, der alte steht in `handle-redirects.data.json`. |
 
-Bewusst **nicht** empfohlen: `elements-ultra-thin-king-size-slim-kss` (das «kss»
-doppelt, schadet aber nicht), `elements-blue-rolls-sw`, `silikon-dose-22-mm`,
-`kailar-filter-9mm-big-100-stk-schwarz` — unschön, aber richtig.
+Bewusst **nicht** empfohlen: `elements-blue-rolls-sw`, `silikon-dose-22-mm`,
+`kailar-filter-9mm-big-100-stk-schwarz` — unschön, aber richtig. (Der Handle
+`elements-ultra-thin-king-size-slim-kss` stand ursprünglich auch hier, mit dem Hinweis,
+das doppelte «kss» schade nicht. Der Fehler lag nicht beim «kss», sondern beim Format,
+siehe Tabelle.)
 
 Zu klären: es gibt die Kategorien `filter` **und** `filter-&-tips`. Falls beide
 dasselbe meinen, eine davon auflösen.
@@ -173,7 +176,7 @@ dasselbe meinen, eine davon auflösen.
 nachgezogen). Die Tests nennen die Handles ebenfalls. Medusa legt beim
 Umbenennen keine Weiterleitung an; jede Umbenennung und jedes gelöschte Produkt
 braucht zusätzlich ein 301 vom alten Handle. Dafür gibt es
-`lib/seo/handle-redirects.data.json` (alter Handle → heutiger Handle): die vier
+`lib/seo/handle-redirects.data.json` (alter Handle → heutiger Handle): die fünf
 Umbenennungen oben und die am 2026-09-29 gelöschte Dublette
 `purize-xtra-slim-white-50er-pack-5-9mm` → `purize-xtra-slim-6mm` (Odoo 10 zeigt
 ebenfalls dorthin) stehen drin.

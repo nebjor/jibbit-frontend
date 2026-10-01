@@ -1,11 +1,11 @@
 {
   "kommentar": "Veröffentlichte Produkt- und Kategorie-Handles auf test.jibbit.ch, abgelesen aus den ausgelieferten Seiten. NUR Prüfstand für lib/seo/legacy-redirects.test.ts — die Storefront liest diese Datei nicht. Die verbindliche Prüfung gegen eine laufende Umgebung ist `npm run smoke -- --base-url=…`.",
-  "stand": "2026-09-29",
+  "stand": "2026-10-01",
   "produkte": [
     "angel-slim-filters-6mm-120stk",
     "dubi-aktivkohlefilter-7mm",
     "elements-blue-rolls-sw",
-    "elements-ultra-thin-king-size-slim-kss",
+    "elements-king-size-ultra-thin",
     "gizeh-dw-extra-fine",
     "greengo-unbleached-slim-rolls",
     "kailar-filter-5-9mm-65stk-pink",
