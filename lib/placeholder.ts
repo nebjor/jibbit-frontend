@@ -20,7 +20,7 @@ import type { CategoryHandle } from "./types";
 /**
  * Marken im Sortiment, absteigend nach Länge geprüft: „Zig Zag" muss vor
  * „Zig" greifen, und ohne feste Liste würde aus „dubi Aktivkohlefilter"
- * korrekt „dubi", aus „Elements King Slim Size" aber auch „Elements" — nur
+ * korrekt „dubi", aus „Elements King Size Ultra Thin" aber auch „Elements" — nur
  * eben zufällig, weil beide mit der Marke beginnen. Sobald ein Artikel
  * „Bio Slim von OCB" hiesse, wäre das erste Wort falsch.
  */

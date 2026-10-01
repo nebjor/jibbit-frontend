@@ -29,12 +29,14 @@ const SITEMAP: Record<string, string | null> = {
   "/shop/angel-slim-filters-6mm-120stk-13": "/products/angel-slim-filters-6mm-120stk",
   "/shop/black-leaf-el-humeros-konische-hulsen-ks-100x-47": HUMEROS,
   "/shop/box-24x-elements-blue-rolls-sw-59": "/products/elements-blue-rolls-sw",
-  "/shop/box-50x-elements-king-slim-size-ultra-thin-57": "/products/elements-ultra-thin-king-size-slim-kss",
+  "/shop/box-50x-elements-king-slim-size-ultra-thin-57": "/products/elements-king-size-ultra-thin",
   "/shop/display-24x-greengo-unbleached-slim-rolls-31": "/products/greengo-unbleached-slim-rolls",
   "/shop/display-25x-smoking-brown-kurz-double-window-34": "/products/smoking-brown-kurz-double-window",
   "/shop/display-34x-zig-zag-slim-filter-6mm-120stk-33": "/products/zig-zag-slim-filter-6mm-120stk",
   "/shop/elements-blue-rolls-sw-58": "/products/elements-blue-rolls-sw",
-  "/shop/elements-king-slim-size-ultra-thin-56": "/products/elements-ultra-thin-king-size-slim-kss",
+  // Odoo nannte das Produkt «King Slim Size»; laut Verpackung ist es das breite
+  // King Size (ca. 110 × 53 mm, 33 Blatt), siehe Handle-Umbenennung 2026-10-01.
+  "/shop/elements-king-slim-size-ultra-thin-56": "/products/elements-king-size-ultra-thin",
   "/shop/gizeh-dw-extra-fine-61": "/products/gizeh-dw-extra-fine",
   "/shop/greengo-unbleached-slim-rolls-24": "/products/greengo-unbleached-slim-rolls",
   "/shop/kailar-filter-5-9mm-65stk-pink-27": "/products/kailar-filter-5-9mm-65stk-pink",
@@ -355,12 +357,13 @@ describe("umbenannte und gelöschte Handles", () => {
     ["purize-super-slim-white-o5mm", "purize-super-slim-white-5mm"],
     ["dubi-aktivkohlefilter-o7mm", "dubi-aktivkohlefilter-7mm"],
     ["purize-aktivkohlefilter-6mm", "purize-aktivkohlefilter-9mm"],
+    ["elements-ultra-thin-king-size-slim-kss", "elements-king-size-ultra-thin"],
   ])("/products/%s -> /products/%s", (old, current) => {
     expect(location(`/products/${old}`)).toBe(`/products/${current}`);
   });
 
-  it("kennt genau diese fünf", () => {
-    expect(Object.keys(RENAMED_HANDLES)).toHaveLength(5);
+  it("kennt genau diese sechs", () => {
+    expect(Object.keys(RENAMED_HANDLES)).toHaveLength(6);
   });
 
   it("lässt `variant` fallen, Kampagnenparameter bleiben", () => {

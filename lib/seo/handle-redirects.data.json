@@ -1,11 +1,12 @@
 {
   "kommentar": "Alter Produkt-Handle im NEUEN Shop -> heutiger Handle. Für Produkte, die im Admin umbenannt oder als Dublette gelöscht wurden: Medusa legt dabei keine Weiterleitung an, die alte Adresse /products/<alt> liefe in ein 404. Gelesen von lib/seo/legacy-redirects.ts, beantwortet mit 301 in einem Sprung. Regeln: das Ziel ist ein veröffentlichter Handle und steht selbst nicht links (keine Ketten). Wird ein alter Handle im Admin neu vergeben, MUSS die Zeile hier raus — sonst ist das neue Produkt nicht erreichbar.",
-  "stand": "2026-09-29",
+  "stand": "2026-10-01",
   "handles": {
     "purize-xtra-slim-white-50er-pack-5-9mm": "purize-xtra-slim-6mm",
     "raw-classic-king-size-slim": "raw-black-classic-king-size-slim",
     "purize-super-slim-white-o5mm": "purize-super-slim-white-5mm",
     "dubi-aktivkohlefilter-o7mm": "dubi-aktivkohlefilter-7mm",
-    "purize-aktivkohlefilter-6mm": "purize-aktivkohlefilter-9mm"
+    "purize-aktivkohlefilter-6mm": "purize-aktivkohlefilter-9mm",
+    "elements-ultra-thin-king-size-slim-kss": "elements-king-size-ultra-thin"
   }
 }

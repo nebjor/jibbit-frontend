@@ -41,8 +41,8 @@ describe("displayTitle", () => {
 
   it("leaves titles alone when the brand is not a clean word prefix", () => {
     // Brand appears mid-title.
-    expect(displayTitle("Box: 50x Elements King Slim", "Elements")).toBe(
-      "Box: 50x Elements King Slim",
+    expect(displayTitle("Box: 50x Elements King Size Ultra Thin", "Elements")).toBe(
+      "Box: 50x Elements King Size Ultra Thin",
     );
     // Brand is a prefix of a longer word, not a word of its own.
     expect(displayTitle("RAWr Papers", "RAW")).toBe("RAWr Papers");

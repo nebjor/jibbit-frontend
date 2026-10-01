@@ -42,7 +42,7 @@ const CATALOG: SearchDoc[] = [
   doc("Angel Slim Filters 6mm 120stk", "Angel", FILTER),
   doc("dubi Aktivkohlefilter ø7mm", "dubi", FILTER),
   doc("Elements BLUE Rolls SW", "Elements", PAPERS),
-  doc("Elements King Slim Size Ultra Thin", "Elements", PAPERS),
+  doc("Elements King Size Ultra Thin", "Elements", PAPERS),
   doc("Gizeh DW Extra Fine", "Gizeh", PAPERS),
   doc(
     "Greengo Unbleached Slim Rolls",
