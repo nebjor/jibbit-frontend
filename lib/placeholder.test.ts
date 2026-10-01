@@ -49,7 +49,7 @@ describe("kindLabel", () => {
 
   it("fällt auf die Kategorie zurück, wenn der Name nichts hergibt", () => {
     expect(kindLabel("Purize SUPER SLIM White ø5mm", "filter")).toBe("Filter");
-    expect(kindLabel("Elements King Slim Size Ultra Thin", "papers")).toBe("Papers");
+    expect(kindLabel("Elements King Size Ultra Thin", "papers")).toBe("Papers");
     expect(kindLabel("Etwas ganz Neues", "zubehoer")).toBe("Zubehör");
   });
 });
