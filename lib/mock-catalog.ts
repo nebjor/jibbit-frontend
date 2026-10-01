@@ -114,12 +114,12 @@ const SEEDS: Seed[] = [
     featured: true,
   },
   {
-    handle: "box-50x-elements-king-slim-ultra-thin",
-    title: "Box: 50x Elements King Slim Ultra Thin",
+    handle: "box-50x-elements-king-size-ultra-thin",
+    title: "Box: 50x Elements King Size Ultra Thin",
     brand: "Elements",
     subtitle: "Ganze Box, 50 Hefte",
     description:
-      "Die ganze Box. 50 Hefte Elements King Slim Ultra Thin. Rechne kurz nach: pro Heft deutlich günstiger als einzeln. Für alle die nicht jede Woche nachbestellen wollen.",
+      "Die ganze Box. 50 Hefte Elements King Size Ultra Thin. Rechne kurz nach: pro Heft deutlich günstiger als einzeln. Für alle die nicht jede Woche nachbestellen wollen.",
     category: "papers",
     price: 38.0,
     compareAt: 40.0,
