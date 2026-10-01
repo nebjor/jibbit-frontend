@@ -22,8 +22,8 @@ daneben, dazu `e2e/routing.spec.ts`). Ergänzt `url-structure.md` und `merchant-
   Artikelnummer.
 - **Alte Adressen:** alle 37 Produkt-IDs und alle 485 Pfade, die die Search Console
   kennt, sind beantwortet und als Test hinterlegt.
-- **Vor dem Go-live zwingend:** zwei Produkte veröffentlichen, einen Preis eintragen,
-  `www` im DNS umstellen. Siehe «Von Hand».
+- **Vor dem Go-live zwingend:** einen Preis eintragen, `www` im DNS umstellen. Siehe
+  «Von Hand». (Die zwei fehlenden Produkte sind seit 2026-10-02 veröffentlicht.)
 
 ## Wie Google an die Daten kommt
 
@@ -167,8 +167,8 @@ Funktion laufen wie der Proxy.
 | 2 | `raw-classic-king-size-slim` | `raw-black-classic-king-size-slim` |
 | 36, 48 | `purize-super-slim-white-o5mm` | `purize-super-slim-white-5mm` |
 | 49 | `dubi-aktivkohlefilter-o7mm` | `dubi-aktivkohlefilter-7mm` |
-| 23, 47 | Kategorie Papers | `black-leaf-el-humeros-konische-huelsen-ks-100x` (Entwurf) |
-| 40 | Kategorie Papers | `ocb-bio-slim-organic-hemp-rolls` (Entwurf) |
+| 23, 47 | Kategorie Papers | `black-leaf-el-humeros-konische-huelsen-ks-100x` (veröffentlicht am 2026-10-02) |
+| 40 | Kategorie Papers | `ocb-bio-slim-organic-hemp-rolls` (veröffentlicht am 2026-10-02) |
 | 5 | fehlte, landete auf der Startseite | Kategorie Papers |
 | 7 | Kategorie Papers | unverändert, das Produkt wird nicht mehr geführt |
 | 60 | `purize-aktivkohlefilter-6mm` | `purize-aktivkohlefilter-9mm` (im Admin umbenannt, siehe «Auffälligkeiten») |
@@ -319,11 +319,12 @@ deshalb Abweichungen bei den Weiterleitungen, bis neu ausgeliefert ist.
 
 ### Vor dem Go-live
 
-1. **Zwei Produkte veröffentlichen:** `black-leaf-el-humeros-konische-huelsen-ks-100x`
-   (Kategorie Papers ist zugewiesen) und `ocb-bio-slim-organic-hemp-rolls`. Bis dahin enden
-   die Odoo-IDs 23, 40 und 47 auf einem 404. Danach beide Handles in
-   `lib/seo/legacy-redirects.data.json` aus `unveroeffentlicht` streichen und in
-   `lib/seo/staging-handles.fixture.json` unter `produkte` eintragen.
+1. ~~Zwei Produkte veröffentlichen: `black-leaf-el-humeros-konische-huelsen-ks-100x`
+   und `ocb-bio-slim-organic-hemp-rolls`.~~ Erledigt am 2026-10-02: beide sind
+   veröffentlicht und stehen im Feed, die Odoo-IDs 23, 40 und 47 enden auf 200. Beide
+   Handles sind in `lib/seo/legacy-redirects.data.json` aus `unveroeffentlicht`
+   gestrichen (die Liste ist leer) und in `lib/seo/staging-handles.fixture.json` unter
+   `produkte` eingetragen.
 2. ~~Entwurf `ocb-premium-kss-papers-mit-filter` löschen.~~ Erledigt, der Entwurf ist
    gelöscht. Die Odoo-IDs 5 und 7 zeigen auf die Kategorie Papers.
 3. **`silikon-dose-22-mm`:** Preis eintragen, Artikelnummer und Kategorie vergeben, oder

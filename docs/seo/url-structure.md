@@ -141,7 +141,8 @@ Diese Ziele sind aus Titelvergleich geschlossen, nicht aus Stammdaten:
 | 2 | RAW Black KSS Papers | `raw-classic-king-size-slim` («RAW Black Classic King Size Slim») | KSS = King Size Slim |
 | 54 | PURIZE XTRA Slim XMAS ø 6mm | `purize-xtra-slim-6mm` | Sonderausgabe → Standardprodukt |
 | 36 | Purize Super SLIM White, 50er Pack, 5mm | `purize-super-slim-white-o5mm` | 48 ist laut Slug die Kopie von 36 |
-| 7, 40, 23, 47 | OCB Premium KSS mit Filter, OCB Bio Slim Organic Hemp Rolls, Black Leaf Hülsen | `/?kategorie=papers` | auf Staging nicht veröffentlicht. Kommen sie ins Sortiment, Ziel auf das Produkt umstellen |
+| 7 | OCB Premium KSS mit Filter | `/?kategorie=papers` | wird nicht mehr geführt |
+| 40, 23, 47 | OCB Bio Slim Organic Hemp Rolls, Black Leaf Hülsen | `ocb-bio-slim-organic-hemp-rolls`, `black-leaf-el-humeros-konische-huelsen-ks-100x` | waren bis 2026-10-02 Entwurf (Ziel vorher `/?kategorie=papers`); seit der Veröffentlichung zeigen die IDs auf die Produkte, siehe `sitemap-und-merchant-center.md` |
 
 ## Empfohlene Handle-Änderungen
 
