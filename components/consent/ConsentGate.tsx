@@ -23,6 +23,7 @@ import {
   setAgeGateOpen,
   subscribeIntroActive,
 } from "@/lib/intro/starter";
+import { useScrollLock } from "../useScrollLock";
 import { AgeGate } from "./AgeGate";
 import { ConsentBanner } from "./ConsentBanner";
 
@@ -96,16 +97,10 @@ export function ConsentGate({
     step === "consent-banner" && (settingsOpen || !dismissed) && !introActive;
   const showGate = step === "age-gate";
 
-  // Hintergrund nicht scrollbar, solange ein Dialog vorne ist (gleiches
-  // Muster wie der CartDrawer).
-  useEffect(() => {
-    if (!showGate && !showBanner) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [showGate, showBanner]);
+  // Hintergrund nicht scrollbar, solange ein Dialog vorne ist — dieselbe
+  // gemeinsame Sperre wie CartDrawer und Suchschicht (lib/scroll-lock.ts):
+  // gleicht die Scrollleistenbreite aus, zählt überlappende Overlays.
+  useScrollLock(showGate || showBanner);
 
   // Meldet dem Intro-Startwächter (lib/intro/starter.ts), ob die
   // Altersabfrage gerade VOR dem Besucher steht. Das Cookie allein taugt

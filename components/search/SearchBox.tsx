@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { buildIndex, search, type SearchDoc } from "@/lib/search/engine";
 import { displayTitle } from "@/lib/search/display";
 import { formatMoney } from "@/lib/format";
+import { useScrollLock } from "../useScrollLock";
 import styles from "./SearchBox.module.css";
 
 /**
@@ -165,15 +166,9 @@ export function SearchBox({ docs }: { docs: SearchDoc[] }) {
   }, [layerOpen]);
 
   // The page behind the layer must not scroll (a second scroll surface on a
-  // 320px screen means mis-taps and a lost scroll position).
-  useEffect(() => {
-    if (!layerOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [layerOpen]);
+  // 320px screen means mis-taps and a lost scroll position). Shared lock —
+  // compensates the scrollbar width, see lib/scroll-lock.ts.
+  useScrollLock(layerOpen);
 
   // Rotating a phone / resizing a window across the breakpoint while the
   // layer is open would leave `layerOpen` orphaned (the trigger is hidden
