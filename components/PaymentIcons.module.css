@@ -2,29 +2,48 @@
   list-style: none;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--s-2);
   padding: 0;
   margin: 0;
 }
 
+/* Kachel: immer weiss (Markenfarben), gleich gross für alle Logos, mit
+   4 px Innenabstand; das Logo skaliert in die verbleibende Fläche. */
 .badge {
-  display: inline-flex;
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
+  width: 56px;
   height: 36px;
-  background: var(--c-surface);
+  padding: 4px;
+  background: #fff;
   border: var(--border-w) solid var(--c-line);
   border-radius: var(--radius);
-  color: var(--c-ink);
 }
 
+@media (max-width: 480px) {
+  .badge {
+    width: 48px;
+    height: 32px;
+  }
+}
+
+/* Volle Innenfläche; preserveAspectRatio (Standard: meet) hält das
+   Seitenverhältnis. Die Marken-Klassen unten gleichen das optische Gewicht
+   an — breite Wortmarken etwas schmaler, kompakte Signets etwas niedriger. */
 .svg {
-  width: 56px;
-  height: 22px;
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.svg text {
-  font-family: var(--font-display);
+.visa {
+  width: 84%;
+}
+
+.mastercard,
+.postfinance {
+  height: 86%;
 }
