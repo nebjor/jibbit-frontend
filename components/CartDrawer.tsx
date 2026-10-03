@@ -5,12 +5,24 @@ import Link from "next/link";
 import { useCart } from "./CartProvider";
 import { FreeShippingMeter } from "./FreeShippingMeter";
 import { Price } from "./Price";
+import { usePresence } from "./usePresence";
+import { useScrollLock } from "./useScrollLock";
 import { formatPrice } from "@/lib/format";
 import styles from "./CartDrawer.module.css";
 
 /**
  * Slide-over cart. Opens automatically on add-to-cart so the customer stays on
  * the product page (never navigate away after adding).
+ *
+ * BEWEGUNG: Das Panel schiebt sich von rechts herein, der Scrim blendet auf
+ * (CartDrawer.module.css, gesteuert über `data-state`). Beim Schliessen
+ * bleibt die Schublade im DOM, bis die Transition hinaus durch ist
+ * (`usePresence`) — sonst gäbe es keine Austritts-Animation. Während des
+ * Austritts ist sie `inert`: nicht fokussierbar, nicht klickbar.
+ *
+ * SCROLL-SPERRE ohne Layout-Shift: `useScrollLock` gleicht die Breite der
+ * verschwindenden Scrollleiste aus (lib/scroll-lock.ts) — vorher sprang der
+ * Seiteninhalt bei jedem Öffnen und Schliessen um die halbe Leistenbreite.
  *
  * PRICES COME FROM MEDUSA. `l.unitPrice` and `l.lineTotal` are the numbers the
  * backend will charge, already quantity-break aware; this component does no
@@ -41,27 +53,37 @@ export function CartDrawer() {
     notice,
   } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
+  const presence = usePresence(isOpen, panelRef);
 
-  // Escape to close + lock background scroll while open.
+  // Gesperrt, solange die Schublade IM DOM ist — also auch während der
+  // Schliess-Animation. Käme die Scrollleiste schon bei isOpen=false zurück,
+  // spränge das hinausfahrende Panel um ihre Breite nach links (gemessen).
+  useScrollLock(presence.mounted);
+
+  // Escape to close + focus the panel once it is in the DOM. `preventScroll`:
+  // the panel starts translated off-screen, and a scrolling focus would yank
+  // it into view before the transition can run.
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !presence.mounted) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeCart();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
+    panelRef.current?.focus({ preventScroll: true });
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
-  }, [isOpen, closeCart]);
+  }, [isOpen, presence.mounted, closeCart]);
 
-  if (!isOpen) return null;
+  if (!presence.mounted) return null;
 
   return (
-    <div className={styles.overlay}>
+    <div
+      className={styles.overlay}
+      data-state={presence.state}
+      // Während der Schliess-Animation weder klick- noch fokussierbar.
+      inert={!isOpen || undefined}
+    >
       <button
         className={styles.scrim}
         onClick={closeCart}
@@ -75,6 +97,7 @@ export function CartDrawer() {
         aria-label="Warenkorb"
         ref={panelRef}
         tabIndex={-1}
+        onTransitionEnd={presence.onTransitionEnd}
       >
         <header className={styles.head}>
           <h2 className={styles.title}>
