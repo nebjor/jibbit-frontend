@@ -53,9 +53,19 @@ function item(id: string, variant: string, quantity: number, title: string, vari
 const DEAD = new Set(["variant_OCB1", "variant_ELE5"]);
 
 /** A tiny in-memory Medusa that behaves like v2.13 for dead line items. */
+const PICKUP_OPTION = {
+  id: "so_pickup",
+  provider_id: "swiss-shipping_swiss-shipping",
+  amount: 0,
+  metadata: { pickup: true },
+  data: { id: "swiss-pickup", pickup: true },
+  type: { code: "pickup" },
+};
+
 const SHIPPING_OPTIONS = [
   { id: "so_free", provider_id: "manual_manual", amount: 0 },
   { id: "so_swiss", provider_id: "swiss-shipping_swiss-shipping", amount: undefined },
+  PICKUP_OPTION,
 ];
 
 type FakeCart = {
@@ -63,7 +73,9 @@ type FakeCart = {
   items: ReturnType<typeof item>[];
   email?: string;
   shipping_address?: unknown;
-  shipping_methods?: { id: string; shipping_option_id: string }[];
+  billing_address?: unknown;
+  metadata?: Record<string, unknown> | null;
+  shipping_methods?: { id: string; shipping_option_id: string; data?: Record<string, unknown> }[];
   shipping_total?: number;
 };
 
@@ -104,20 +116,42 @@ function fakeMedusa(options: unknown[] = SHIPPING_OPTIONS) {
           carts.get(id)!.items.push(item(`li_${body.variant_id}`, body.variant_id, body.quantity, "RAW Classic"));
           return { cart: structuredClone(carts.get(id)!) };
         }),
-        update: vi.fn(async (id: string, body: { email: string; shipping_address: unknown }) => {
-          refresh(id);
-          Object.assign(carts.get(id)!, { email: body.email, shipping_address: body.shipping_address });
-          return { cart: structuredClone(carts.get(id)!) };
-        }),
+        update: vi.fn(
+          async (
+            id: string,
+            body: {
+              email: string;
+              shipping_address: unknown;
+              billing_address?: unknown;
+              metadata?: Record<string, unknown>;
+            },
+          ) => {
+            refresh(id);
+            Object.assign(carts.get(id)!, {
+              email: body.email,
+              shipping_address: body.shipping_address,
+              billing_address: body.billing_address,
+              metadata: body.metadata,
+            });
+            return { cart: structuredClone(carts.get(id)!) };
+          },
+        ),
         transferCart: vi.fn(async () => ({ cart: {} })),
-        addShippingMethod: vi.fn(async (id: string, body: { option_id: string }) => {
-          refresh(id);
-          Object.assign(carts.get(id)!, {
-            shipping_methods: [{ id: "sm_1", shipping_option_id: body.option_id }],
-            shipping_total: 4.5,
-          });
-          return { cart: structuredClone(carts.get(id)!) };
-        }),
+        addShippingMethod: vi.fn(
+          async (id: string, body: { option_id: string; data?: Record<string, unknown> }) => {
+            refresh(id);
+            const pickup = body.option_id === PICKUP_OPTION.id;
+            Object.assign(carts.get(id)!, {
+              shipping_methods: [
+                // Wie der swiss-shipping-Provider: der Abhol-Stempel kommt
+                // auch dann, wenn der Client kein `data` schickt.
+                { id: "sm_1", shipping_option_id: body.option_id, data: { ...(body.data ?? {}), ...(pickup ? { pickup: true } : {}) } },
+              ],
+              shipping_total: pickup ? 0 : 4.5,
+            });
+            return { cart: structuredClone(carts.get(id)!) };
+          },
+        ),
       },
       fulfillment: {
         listCartOptions: vi.fn(async () => ({ shipping_options: options })),
@@ -183,6 +217,90 @@ describe("saveContactAndAddress puts the delivery method on the cart", () => {
     if (result.ok) return;
     expect(result.message).toContain("nicht liefern");
   });
+
+  it("Lieferung bleibt Lieferung, auch wenn die gratis Abholung im Angebot steht", async () => {
+    const { sdk, carts } = healthy();
+
+    const result = await saveContactAndAddress("kundin@example.ch", ADDRESS, "shipping");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(sdk.store.cart.addShippingMethod).toHaveBeenCalledWith(
+      "cart_ok",
+      { option_id: "so_swiss" },
+      expect.anything(),
+    );
+    expect(result.cart.pickup).toBe(false);
+    expect(carts.get("cart_ok")!.metadata).toEqual({ pickup: false });
+  });
+
+  it("Abholung im Laden: Ladenadresse an Medusa, Marker auf Methode und Cart, keine Adresse ins Adressbuch", async () => {
+    const { sdk, carts } = healthy();
+    const payload = Buffer.from(JSON.stringify({ actor_id: "cus_jana", exp: 9999999999 })).toString("base64url");
+    mocks.sessionToken = `h.${payload}.s`;
+
+    const result = await saveContactAndAddress(
+      "kundin@example.ch",
+      { ...ADDRESS, address1: "", postalCode: "", city: "", phone: "076 414 08 90" },
+      "pickup",
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(sdk.store.cart.addShippingMethod).toHaveBeenCalledWith(
+      "cart_ok",
+      { option_id: "so_pickup", data: { pickup: true } },
+      expect.anything(),
+    );
+    const cart = carts.get("cart_ok")!;
+    expect(cart.shipping_address).toMatchObject({
+      first_name: "Joris",
+      last_name: "Neber",
+      address_1: "Unterwegli 1",
+      postal_code: "8404",
+      city: "Winterthur",
+      country_code: "ch",
+      phone: "076 414 08 90",
+    });
+    expect(cart.billing_address).toEqual(cart.shipping_address);
+    expect(cart.metadata).toEqual({ pickup: true });
+    expect(result.cart.pickup).toBe(true);
+    expect(result.cart.hasShippingMethod).toBe(true);
+    expect(result.cart.shipping).toBe(0);
+    // Die Ladenadresse gehört nicht ins Adressbuch der Kundin.
+    expect(sdk.store.customer.createAddress).not.toHaveBeenCalled();
+  });
+
+  it("Abholung: Telefon ist Pflicht, Strasse und Ort nicht", async () => {
+    healthy();
+
+    const result = await saveContactAndAddress(
+      "kundin@example.ch",
+      { ...ADDRESS, address1: "", postalCode: "", city: "", phone: "" },
+      "pickup",
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.phone).toContain("Telefonnummer fehlt");
+    expect(result.errors.address1).toBeUndefined();
+    expect(result.errors.postalCode).toBeUndefined();
+  });
+
+  it("Abholung ohne Abhol-Option im Backend: eigene Meldung, kein Rückfall auf Versand", async () => {
+    const { sdk } = healthy(SHIPPING_OPTIONS.filter((o) => o.id !== "so_pickup"));
+
+    const result = await saveContactAndAddress(
+      "kundin@example.ch",
+      { ...ADDRESS, phone: "076 414 08 90" },
+      "pickup",
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.message).toContain("Abholung im Laden ist gerade nicht verfügbar");
+    expect(sdk.store.cart.addShippingMethod).not.toHaveBeenCalled();
+  });
 });
 
 describe("ensureShippingMethod — delivery method dropped on step «Kaufen»", () => {
@@ -191,7 +309,10 @@ describe("ensureShippingMethod — delivery method dropped on step «Kaufen»", 
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  function cartWith(shipping_methods?: FakeCart["shipping_methods"]) {
+  function cartWith(
+    shipping_methods?: FakeCart["shipping_methods"],
+    metadata: FakeCart["metadata"] = null,
+  ) {
     const medusa = fakeMedusa();
     medusa.carts.set("cart_ok", {
       id: "cart_ok",
@@ -199,10 +320,25 @@ describe("ensureShippingMethod — delivery method dropped on step «Kaufen»", 
       email: "kundin@example.ch",
       shipping_address: { country_code: "ch", city: "Zürich" },
       shipping_methods,
+      metadata,
     });
     mocks.sdk = medusa.sdk;
     return medusa;
   }
+
+  it("re-applies the stored choice — Abholung bleibt Abholung", async () => {
+    const { sdk } = cartWith(undefined, { pickup: true });
+
+    const result = await ensureShippingMethod();
+
+    expect(result.ok).toBe(true);
+    expect(result.cart.pickup).toBe(true);
+    expect(sdk.store.cart.addShippingMethod).toHaveBeenCalledWith(
+      "cart_ok",
+      { option_id: "so_pickup", data: { pickup: true } },
+      expect.anything(),
+    );
+  });
 
   it("re-applies the automatic choice without the customer doing anything", async () => {
     const { sdk } = cartWith(undefined);

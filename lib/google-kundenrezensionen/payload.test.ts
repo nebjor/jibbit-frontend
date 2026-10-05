@@ -84,6 +84,13 @@ describe("geschaetztesLieferdatum", () => {
       geschaetztesLieferdatum(new Date(bestellung.createdAt), DELIVERY_6, now),
     ).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+
+  it("Abholung im Laden: nur die Bearbeitung, kein Transport", () => {
+    // Montag + 3 Werktage = Donnerstag.
+    expect(
+      geschaetztesLieferdatum(new Date(bestellung.createdAt), DELIVERY_6, now, true),
+    ).toBe("2026-10-08");
+  });
 });
 
 describe("deliveryCountry", () => {
@@ -130,6 +137,13 @@ describe("kundenrezensionenPayload", () => {
     expect(
       kundenrezensionenPayload(bestellung, options),
     ).not.toHaveProperty("products");
+  });
+
+  it("Abholung im Laden: Datum ohne Transport, Lieferland bleibt CH", () => {
+    expect(kundenrezensionenPayload({ ...bestellung, pickup: true }, options)).toMatchObject({
+      delivery_country: "CH",
+      estimated_delivery_date: "2026-10-08",
+    });
   });
 
   it("products: nur gültige GTINs, ohne Doppelte, Leerzeichen bereinigt", () => {

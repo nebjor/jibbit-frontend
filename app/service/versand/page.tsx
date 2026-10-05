@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/Prose";
-import { SHIPPING } from "@/lib/config";
+import { PICKUP, SHIPPING } from "@/lib/config";
+import { formatOpeningHours, pickupAddressLines } from "@/lib/checkout/pickup";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Versand & Lieferung",
   // Eine Adresse je Seite, ohne Parameter (relativ zu `metadataBase`).
   alternates: { canonical: "/service/versand" },
-  description: `Versandkosten, Lieferfristen und Versandgebiet. Gratisversand ab ${formatPrice(SHIPPING.freeThreshold)}.`,
+  description: `Versandkosten, Lieferfristen und Versandgebiet. Gratisversand ab ${formatPrice(SHIPPING.freeThreshold)} — oder gratis abholen im Laden in Winterthur.`,
 };
 
 export default function VersandPage() {
+  const hours = formatOpeningHours(PICKUP.hours);
   return (
     <Prose
       title="Versand & Lieferung"
-      intro={`Ein Preis für jede Bestellung: ${formatPrice(SHIPPING.rate)} — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Keine versteckten Zuschläge an der Kasse.`}
-      updated="21. September 2026"
+      intro={`Ein Preis für jede Bestellung: ${formatPrice(SHIPPING.rate)} — ab ${formatPrice(SHIPPING.freeThreshold)} Bestellwert versenden wir gratis. Oder du holst deine Bestellung gratis bei uns im Laden in Winterthur ab. Keine versteckten Zuschläge an der Kasse.`}
+      updated="5. Oktober 2026"
     >
       <h2>Versandkosten</h2>
       <ul>
@@ -34,6 +36,36 @@ export default function VersandPage() {
         Anzahl und Gewicht der Artikel. Im Warenkorb siehst du jederzeit, wie
         viel dir noch bis zum Gratisversand fehlt.
       </p>
+
+      {PICKUP.enabled && (
+        <>
+          <h2 id="abholung">Abholung im Laden</h2>
+          <p>
+            Du kannst deine Bestellung auch <strong>gratis</strong> bei uns im
+            Laden abholen. Wähle an der Kasse «{PICKUP.label}» — dann brauchen
+            wir nur Name, E-Mail und Telefonnummer, keine Lieferadresse.
+          </p>
+          <ul>
+            <li>
+              Adresse: {pickupAddressLines().slice(1).join(", ")}
+            </li>
+            <li>
+              Abholzeiten:{" "}
+              {hours ? (
+                <strong>{hours}</strong>
+              ) : (
+                <>nach Vereinbarung — wir melden uns, sobald die Bestellung bereit ist</>
+              )}
+            </li>
+            <li>Bezahlt wird wie beim Versand online, an der Kasse im Shop.</li>
+          </ul>
+          <p>
+            {PICKUP.note} Bitte warte diese Mail ab, bevor du vorbeikommst — so
+            ist alles bereit, wenn du da bist. Nimm die Bestellbestätigung mit,
+            auf dem Handy reicht.
+          </p>
+        </>
+      )}
 
       <h2>Passt es in einen Brief? Dann bekommst du Geld zurück</h2>
       <p>

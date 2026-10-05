@@ -8,13 +8,14 @@ import styles from "./FreeShippingMeter.module.css";
 
 /**
  * "Noch CHF X bis Gratisversand" — the single strongest AOV lever in the cart.
- * Reads straight off local cart state.
+ * Reads straight off local cart state. Nichts davon bei Abholung im Laden:
+ * Dort gibt es keinen Versand, den man freischalten könnte.
  */
 export function FreeShippingMeter() {
-  const { subtotal, remainingForFreeShipping, freeShippingProgress, count } =
+  const { subtotal, remainingForFreeShipping, freeShippingProgress, count, pickup } =
     useCart();
 
-  if (count === 0) return null;
+  if (count === 0 || pickup) return null;
 
   const reached = remainingForFreeShipping <= 0;
 

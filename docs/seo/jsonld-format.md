@@ -604,6 +604,16 @@ Anbieterangaben (Adresse, Telefon …) hier gekürzt.
   `includesObject.typeOfGood` des Displays verweist auf das Einzelstück desselben Produkts (vorher: auf
   sich selbst).
 - **Versand am Angebot, je Packung:** ein Versandpreis fest (`value`, `SHIPPING.rate`); Packung ≥ CHF 69 → 0.
+- **Abholung im Laden (seit 2026-10-05):** Google hat KEIN Markup für Abholung — weder in
+  `OfferShippingDetails` noch in `ShippingService` (Merchant-Center-Doku, «Versand»). Die Versanddetails
+  bleiben deshalb unverändert. Zusätzlich trägt jedes Angebot `availableDeliveryMethod` mit
+  `https://schema.org/ParcelService` und `https://schema.org/OnSitePickup` (schema.org `DeliveryMethod`;
+  Google ignoriert es, andere Leser nicht), und die Organisation ist auf jibbits Domain auch ein
+  `Store` (LocalBusiness) mit `openingHoursSpecification` aus `PICKUP.hours` (`lib/config.ts`) —
+  dieselben Zeiten wie im Google-Unternehmensprofil «Jibbit .ch - Headshop» (Mo–Sa 09:00–17:00). Ohne
+  Zeiten (`PICKUP.hours = null`) fällt der `Store`-Typ weg: ein LocalBusiness ohne Zeiten ist ein halber
+  Eintrag. Kein `hasMap`/`sameAs` zum Profil: die Place-ID/CID war nicht sicher bekannt — nachtragen,
+  sobald die Maps-URL vorliegt.
 - **Welche Ebene gewinnt:** Angebot schlägt Organisation; Merchant Center/Search Console schlagen beide.
   Rückgabe: eine Regel an der Organisation, die Angebote verweisen. Versand: allgemeine Regel an der
   Organisation (mit Schwelle), genauerer Satz am Angebot.

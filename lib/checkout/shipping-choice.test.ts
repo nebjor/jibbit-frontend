@@ -61,3 +61,54 @@ describe("pickShippingOption", () => {
     ).toBeNull();
   });
 });
+
+describe("pickShippingOption — Abholung im Laden", () => {
+  // Wie im Staging-Admin: Abholung ist flat CHF 0 auf demselben Provider.
+  const options = [
+    { id: "so_swiss", providerId: SWISS, amount: null },
+    {
+      id: "so_pickup",
+      providerId: SWISS,
+      amount: 0,
+      metadata: { pickup: true },
+      data: { id: "swiss-pickup", pickup: true },
+      type: { code: "pickup" },
+    },
+  ];
+
+  it("Lieferung: die gratis Abholung gewinnt NICHT als «günstigste» Option", async () => {
+    const priceOf = vi.fn(async () => 4.5);
+    expect(await pickShippingOption(options, priceOf)).toBe("so_swiss");
+    // Nur eine Versandoption übrig — kein Preisvergleich nötig.
+    expect(priceOf).not.toHaveBeenCalled();
+  });
+
+  it("Abholung: genau die Option mit dem Marker, egal wie sie heisst", async () => {
+    expect(await pickShippingOption(options, noPrice, "pickup")).toBe("so_pickup");
+    expect(
+      await pickShippingOption(
+        [{ id: "so_a", providerId: SWISS }, { id: "so_b", type: { code: "pickup" } }],
+        noPrice,
+        "pickup",
+      ),
+    ).toBe("so_b");
+    expect(
+      await pickShippingOption(
+        [{ id: "so_a", providerId: SWISS }, { id: "so_b", data: { pickup: true } }],
+        noPrice,
+        "pickup",
+      ),
+    ).toBe("so_b");
+  });
+
+  it("Abholung ohne passende Option: null — nie stillschweigend Versand", async () => {
+    expect(await pickShippingOption([{ id: "so_swiss", providerId: SWISS }], noPrice, "pickup")).toBeNull();
+    expect(
+      await pickShippingOption([{ ...options[1], insufficientInventory: true }], noPrice, "pickup"),
+    ).toBeNull();
+  });
+
+  it("Lieferung ohne Versandoption (nur Abholung im Angebot): null", async () => {
+    expect(await pickShippingOption([options[1]], noPrice)).toBeNull();
+  });
+});

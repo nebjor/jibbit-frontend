@@ -5,6 +5,7 @@ import {
   normalizeAddress,
   validateAddress,
   validateEmail,
+  validatePickupContact,
 } from "./address";
 import type { CheckoutAddress } from "@/lib/cart/types";
 
@@ -76,6 +77,40 @@ describe("validateAddress", () => {
 
   it("uses Swiss spelling in its messages — ss, never sharp s", () => {
     const all = Object.values(validateAddress(EMPTY_ADDRESS, "")).join(" ");
+    expect(all).not.toMatch(/ß/);
+  });
+});
+
+describe("validatePickupContact — Abholung im Laden", () => {
+  it("braucht Name, E-Mail und Telefon, aber keine Adresse", () => {
+    expect(
+      validatePickupContact(
+        { firstName: "Max", lastName: "Muster", phone: "076 414 08 90" },
+        "max@example.ch",
+      ),
+    ).toEqual({});
+    expect(
+      validatePickupContact({ ...EMPTY_ADDRESS, firstName: "Max", lastName: "Muster", phone: "+41 76 414 08 90" }, "max@example.ch"),
+    ).toEqual({});
+  });
+
+  it("nennt, was fehlt — das Telefon ist hier Pflicht", () => {
+    const errors = validatePickupContact({ firstName: "", lastName: "", phone: "" }, "");
+    expect(errors.email).toBeDefined();
+    expect(errors.firstName).toBe("Vorname fehlt.");
+    expect(errors.lastName).toBe("Nachname fehlt.");
+    expect(errors.phone).toMatch(/Telefonnummer fehlt/);
+    expect(errors.address1).toBeUndefined();
+    expect(errors.postalCode).toBeUndefined();
+    expect(errors.city).toBeUndefined();
+    expect(errors.countryCode).toBeUndefined();
+  });
+
+  it("weist eine offensichtlich unvollständige Nummer zurück", () => {
+    expect(
+      validatePickupContact({ firstName: "Max", lastName: "Muster", phone: "0764" }, "max@example.ch").phone,
+    ).toMatch(/nicht vollständig/);
+    const all = Object.values(validatePickupContact({ firstName: "", lastName: "", phone: "" }, "")).join(" ");
     expect(all).not.toMatch(/ß/);
   });
 });
