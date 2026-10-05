@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { getOrders } from "@/lib/auth/customer"
 import { formatMoney } from "@/lib/format"
-import { STORE } from "@/lib/config"
+import { PICKUP, STORE } from "@/lib/config"
+import { pickupAddressLines, pickupHoursText } from "@/lib/checkout/pickup"
 import styles from "../../konto.module.css"
 
 export const metadata: Metadata = {
@@ -41,8 +42,27 @@ const STATUS_DE: Record<string, string> = {
   returned: "zurückgeschickt",
 }
 
+/**
+ * Bei Abholung im Laden heisst «versandt» etwas anderes: Das Team markiert
+ * die bereitgelegte Ware im Admin als versendet, und das ist der Moment, in
+ * dem sie abgeholt werden kann (Backend, docs/abholung-im-laden.md).
+ */
+const PICKUP_STATUS_DE: Record<string, string> = {
+  not_fulfilled: "wird vorbereitet",
+  partially_fulfilled: "teilweise vorbereitet",
+  fulfilled: "wird bereitgelegt",
+  partially_shipped: "teilweise abholbereit",
+  shipped: "abholbereit",
+  delivered: "abgeholt",
+  partially_delivered: "teilweise abgeholt",
+}
+
 function de(status: string): string {
   return STATUS_DE[status] ?? status.replace(/_/g, " ")
+}
+
+function fulfillmentDe(status: string, pickup: boolean): string {
+  return (pickup ? PICKUP_STATUS_DE[status] : undefined) ?? de(status)
 }
 
 const datum = new Intl.DateTimeFormat(STORE.locale, {
@@ -87,8 +107,16 @@ export default async function BestellungenPage() {
               <div className={styles.orderStates}>
                 <span className={styles.state}>{de(o.status)}</span>
                 <span className={styles.state}>Zahlung: {de(o.paymentStatus)}</span>
-                <span className={styles.state}>Versand: {de(o.fulfillmentStatus)}</span>
+                <span className={styles.state}>
+                  {o.pickup ? "Abholung" : "Versand"}: {fulfillmentDe(o.fulfillmentStatus, o.pickup)}
+                </span>
               </div>
+
+              {o.pickup ? (
+                <p className={styles.footNote}>
+                  {PICKUP.label}: {pickupAddressLines().slice(1).join(", ")} · {pickupHoursText()}
+                </p>
+              ) : null}
 
               {o.items.length ? (
                 <ul className={styles.lines}>

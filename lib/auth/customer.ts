@@ -114,8 +114,9 @@ export async function getOrders(limit = 20): Promise<OrderView[]> {
       {
         limit,
         order: "-created_at",
+        // `metadata` und `*shipping_methods` für die Abhol-Erkennung (lib/checkout/pickup.ts).
         fields:
-          "id,display_id,status,payment_status,fulfillment_status,currency_code,total,created_at,*items",
+          "id,display_id,status,payment_status,fulfillment_status,currency_code,total,created_at,metadata,*items,*shipping_methods",
       },
       bearer(session.token),
     )

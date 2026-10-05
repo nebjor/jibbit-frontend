@@ -211,6 +211,85 @@
   line-height: 1.6;
 }
 
+/* ---- Lieferung oder Abholung ------------------------------------------ */
+
+.choices {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.choices legend {
+  margin-bottom: var(--s-2);
+  padding: 0;
+}
+
+.choice {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  padding: var(--s-3);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  cursor: pointer;
+}
+
+.choice[data-checked="true"] {
+  border-color: var(--c-ink);
+  outline: var(--border-w) solid var(--c-ink);
+  outline-offset: calc(-1 * var(--border-w));
+}
+
+.choice:has(.choiceInput:focus-visible) {
+  outline: 2px solid var(--c-ink);
+  outline-offset: 2px;
+}
+
+.choiceInput {
+  margin: 3px 0 0;
+  accent-color: var(--c-ink);
+  flex: none;
+}
+
+.choiceBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.choiceHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-weight: 600;
+}
+
+.choicePrice {
+  white-space: nowrap;
+}
+
+.choiceDetail {
+  font-size: 13px;
+  color: var(--c-muted);
+  line-height: 1.5;
+}
+
+.pickupBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin-bottom: var(--s-3);
+  padding: var(--s-3);
+  border: var(--border-w) dashed var(--c-line);
+  border-radius: var(--radius);
+}
+
 /* ---- CTAs -------------------------------------------------------------- */
 
 .primaryCta {

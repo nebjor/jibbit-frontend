@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/Prose";
-import { STORE, SHIPPING, MIN_AGE, BUSINESS } from "@/lib/config";
+import { STORE, SHIPPING, MIN_AGE, BUSINESS, PICKUP } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -87,6 +87,15 @@ export default function AgbPage() {
         Können wir eine Bestellung als Brief versenden, schreiben wir dir die
         Differenz als Gutscheincode für den Shop gut.
       </p>
+      {PICKUP.enabled && (
+        <p>
+          Alternativ kannst du deine Bestellung kostenlos in unserem Laden
+          abholen ({PICKUP.address.street}, {PICKUP.address.postalCode}{" "}
+          {PICKUP.address.city}). Wir informieren dich per E-Mail, sobald sie
+          abholbereit ist; die Gefahr geht mit der Übergabe im Laden auf dich
+          über.
+        </p>
+      )}
       <p>
         Wir versenden in der Regel innerhalb von 1–3 Werktagen nach
         Bestelleingang. Angegebene Lieferfristen sind Richtwerte und nicht

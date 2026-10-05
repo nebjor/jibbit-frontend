@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/Prose";
-import { BUSINESS } from "@/lib/config";
+import { BUSINESS, PICKUP } from "@/lib/config";
+import { formatOpeningHours } from "@/lib/checkout/pickup";
 import { SUPPORT } from "@/lib/content/kundenservice";
 import { displayPhone } from "@/lib/format";
 
@@ -14,11 +15,34 @@ export const metadata: Metadata = {
 };
 
 export default function KontaktPage() {
+  const hours = formatOpeningHours(PICKUP.hours);
   return (
     <Prose
       title="Kontakt"
       intro={`Frage zur Bestellung, Produktwunsch, oder einfach eine Rückmeldung? Schreib uns — wir antworten ${SUPPORT.replyTime}.`}
     >
+      {/* Laden: Name, Adresse, Telefon und Zeiten EXAKT wie im Google-
+          Unternehmensprofil (NAP-Konsistenz) — die Werte kommen aus
+          BUSINESS/PICKUP, nicht aus freiem Text. */}
+      {PICKUP.enabled && (
+        <>
+          <h2>Unser Laden in Winterthur</h2>
+          <address>
+            {BUSINESS.legalName} — {BUSINESS.street}, {BUSINESS.postalCode} {BUSINESS.city}
+            <br />
+            Telefon{" "}
+            <a href={`tel:${BUSINESS.telephone}`}>{displayPhone(BUSINESS.telephone)}</a>
+            <br />
+            Öffnungszeiten: {hours || "nach Vereinbarung"}
+          </address>
+          <p>
+            Abholung von Onlinebestellungen möglich — wähle an der Kasse «
+            {PICKUP.label}», Details unter{" "}
+            <Link href="/service/versand#abholung">Versand &amp; Lieferung</Link>.
+          </p>
+        </>
+      )}
+
       <h2>Schreib uns</h2>
       <dl>
         <div>

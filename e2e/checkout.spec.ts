@@ -42,6 +42,58 @@ test("Kasse: Adresse erfassen, Versand wird automatisch gewählt, Summe stimmt",
   ).toBeEnabled();
 });
 
+test("Kasse: Abholung im Laden — nur Name und Telefon, CHF 0.00, kein Gratisversand-Hinweis", async ({
+  page,
+}) => {
+  const email = uniqueEmail();
+  await registerAccount(page, email);
+
+  await page.goto(`/products/${papers.handle}`);
+  await page.getByRole("button", { name: new RegExp(papers.tierLabel) }).click();
+  await page.getByRole("button", { name: /In den Warenkorb/ }).click();
+  const drawer = page.getByRole("dialog", { name: "Warenkorb" });
+  // Vor der Wahl: Lieferung ist die Vorgabe, der Hinweis steht.
+  await expect(drawer).toContainText("bis Gratisversand");
+  await drawer.getByRole("link", { name: "Zur Kasse" }).click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Kasse" })).toBeVisible();
+  const summary = page.getByRole("complementary", { name: "Bestellübersicht" });
+  await expect(summary).toContainText("Versand");
+
+  await page.getByRole("radio", { name: /Abholung im Laden/ }).check();
+
+  // Die Adressfelder sind weg, der Abholort steht da.
+  await expect(page.getByLabel(/^Strasse und Nummer/)).toHaveCount(0);
+  await expect(page.getByLabel(/^PLZ/)).toHaveCount(0);
+  await expect(page.getByTestId("pickup-address")).toContainText("Unterwegli 1");
+  await expect(page.getByTestId("pickup-address")).toContainText("8404 Winterthur");
+  await expect(page.getByTestId("pickup-address")).toContainText("Mo–Sa 09:00–17:00");
+
+  // Ohne Telefon geht es nicht weiter.
+  await page.getByLabel(/^E-Mail/).fill(email);
+  await page.getByLabel(/^Vorname/).fill("Jana");
+  await page.getByLabel(/^Nachname/).fill("Muster");
+  await page.getByRole("button", { name: "Weiter" }).click();
+  await expect(page.getByText("Telefonnummer fehlt")).toBeVisible();
+
+  await page.getByLabel(/^Telefon/).fill("076 414 08 90");
+  await page.getByRole("button", { name: "Weiter" }).click();
+
+  await expect(page.getByRole("heading", { name: "2 · Kaufen" })).toBeVisible();
+  await expect(page.getByTestId("pickup-summary")).toContainText("Abholung im Laden");
+  await expect(page.getByTestId("pickup-summary")).toContainText("Unterwegli 1");
+
+  await expect(summary).toContainText("Abholung");
+  await expect(summary).toContainText(chf("0.00"));
+  await expect(summary).not.toContainText("Versand");
+  await expect(summary).not.toContainText("Gratisversand");
+  await expect(summary).not.toContainText("(geschätzt)");
+  // Total = Warenwert, kein Porto.
+  await expect(
+    page.getByRole("button", { name: new RegExp(`Jetzt kaufen · CHF\\s*${papers.lineTotal}`) }),
+  ).toBeEnabled();
+});
+
 test("Die Kasse verlangt ein Konto", async ({ page }) => {
   await page.goto(`/products/${SHOP.ashtray.handle}`);
   await page.getByRole("button", { name: /In den Warenkorb/ }).click();

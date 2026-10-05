@@ -117,6 +117,7 @@ function createCart() {
     shipping_address: null,
     billing_address: null,
     payment_collection: null,
+    metadata: null,
   };
   carts.set(cart.id, cart);
   return cart;
@@ -237,6 +238,10 @@ const routes = [
       if (body.email !== undefined) cart.email = body.email;
       if (body.shipping_address) cart.shipping_address = body.shipping_address;
       if (body.billing_address) cart.billing_address = body.billing_address;
+      // Wie Medusa: Metadaten werden zusammengeführt, nicht ersetzt.
+      if (body.metadata !== undefined) {
+        cart.metadata = body.metadata === null ? null : { ...(cart.metadata ?? {}), ...body.metadata };
+      }
       return { cart: priceCart(cart) };
     },
   ],
@@ -321,8 +326,19 @@ const routes = [
       if (!cart) return notFound("Cart");
       const option = SHIPPING_OPTIONS.find((o) => o.id === body.option_id);
       if (!option) return error(400, "Unknown shipping option");
+      // `data` wie Medusa über den Provider (`validateFulfillmentData` des
+      // swiss-shipping-Providers): was der Client schickt, plus der
+      // Abhol-Stempel, wenn die Option die Abholung ist.
+      const data = { ...(body.data ?? {}) };
+      if (option.data?.pickup === true) data.pickup = true;
       cart.shipping_methods = [
-        { id: `sm_${randomUUID()}`, shipping_option_id: option.id, name: option.name, amount: 0 },
+        {
+          id: `sm_${randomUUID()}`,
+          shipping_option_id: option.id,
+          name: option.name,
+          amount: 0,
+          data,
+        },
       ];
       return { cart: priceCart(cart) };
     },
@@ -387,6 +403,11 @@ const routes = [
           };
         }),
         shipping_address: cart.shipping_address,
+        // Wie Medusas completeCartWorkflow: Methoden samt `data` und die
+        // Cart-Metadaten wandern auf die Bestellung — daran erkennt die
+        // Bestellseite die Abholung.
+        shipping_methods: cart.shipping_methods.map((m) => ({ ...m })),
+        metadata: cart.metadata,
         item_total: cart.item_total,
         shipping_total: cart.shipping_total,
         total: cart.total,

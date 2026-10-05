@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "./Logo";
 import { PaymentIcons } from "./PaymentIcons";
 import { CookieSettingsLink } from "./consent/CookieSettingsLink";
-import { STORE, SHIPPING, MIN_AGE, BUSINESS } from "@/lib/config";
+import { STORE, SHIPPING, MIN_AGE, BUSINESS, PICKUP } from "@/lib/config";
 import { FOOTER_GROUPS, SUPPORT } from "@/lib/content/kundenservice";
 import { displayPhone, formatPrice } from "@/lib/format";
 import styles from "./Footer.module.css";
@@ -26,6 +26,12 @@ export function Footer({ domain }: { domain: string }) {
           <p className={styles.small}>
             Versand {formatPrice(SHIPPING.rate)} &middot; gratis ab{" "}
             {formatPrice(SHIPPING.freeThreshold)}
+            {PICKUP.enabled && (
+              <>
+                {" "}
+                &middot; <Link href="/service/versand#abholung">Abholung in Winterthur gratis</Link>
+              </>
+            )}
           </p>
 
           {own && (
