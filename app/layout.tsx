@@ -3,7 +3,6 @@ import "./globals.css";
 import { CartProvider } from "@/components/CartProvider";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Header } from "@/components/Header";
-import { TrustBar } from "@/components/TrustBar";
 import { Footer } from "@/components/Footer";
 import { ConsentGate } from "@/components/consent/ConsentGate";
 import { AnalyticsGate } from "@/components/analytics/AnalyticsGate";
@@ -130,9 +129,6 @@ export default async function RootLayout({
           <a href="#main" className="srOnly">
             Zum Inhalt springen
           </a>
-          {/* Vertrauensleiste ÜBER der klebenden Kopfleiste: sie scrollt mit
-              dem Inhalt weg, der Header bleibt. Texte: lib/trust.ts. */}
-          <TrustBar />
           <Header />
           <main id="main">{children}</main>
           <Footer domain={tenant.theme.domain} />

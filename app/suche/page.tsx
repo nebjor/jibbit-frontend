@@ -4,6 +4,7 @@ import { getProducts, getCategories } from "@/lib/data";
 import { toSearchDoc } from "@/lib/search/server";
 import { buildIndex, search } from "@/lib/search/engine";
 import { ProductCard } from "@/components/ProductCard";
+import { ShopTrust } from "@/components/ShopTrust";
 import type { ProductView } from "@/lib/types";
 import styles from "./suche.module.css";
 
@@ -50,6 +51,8 @@ export default async function SuchePage({
         <h1 className={styles.title}>
           {q ? `Treffer für «${q}»` : "Suche"}
         </h1>
+        {/* Dieselbe Vertrauenszeile wie im Katalogkopf (app/page.tsx). */}
+        <ShopTrust />
       </header>
 
       {/* Plain GET form: works without JavaScript, refines the query here. */}

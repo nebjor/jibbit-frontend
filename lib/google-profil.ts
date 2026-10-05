@@ -1,37 +1,39 @@
 import { unstable_cache } from "next/cache";
-import { GOOGLE_PROFIL, type GoogleProfilRating } from "./trust";
+import { GOOGLE_PROFIL, profilOhneZahl, type GoogleProfil } from "./trust";
 
 /**
- * GOOGLE-UNTERNEHMENSPROFIL — Bewertung und Anzahl Rezensionen, wahlweise
- * live über die Places API (New), sonst aus der Konstante GOOGLE_PROFIL
- * (lib/trust.ts). Für die Vertrauensleiste (components/TrustBar.tsx).
+ * GOOGLE-UNTERNEHMENSPROFIL — Bewertung und Anzahl Rezensionen, live über
+ * die Places API (New). Für die Vertrauenszeile im Shop-Kopf
+ * (components/ShopTrust.tsx).
  *
- * Abruf: `GET https://places.googleapis.com/v1/places/{placeId}?fields=rating,userRatingCount`
- * mit `X-Goog-Api-Key` (Places API (New), Place Details). Nur diese zwei
- * Felder (Feldmaske) — welche Preisstufe Google dafür verrechnet, steht in
- * Googles Preisliste; bei 6 Stunden Cache sind es ohnehin 4 Abrufe pro Tag.
+ * NORMALWEG: `GET https://places.googleapis.com/v1/places/{placeId}?fields=rating,userRatingCount`
+ * mit `X-Goog-Api-Key` (Place Details (New)), nur diese zwei Felder
+ * (Feldmaske). Gecacht 6 Stunden (`unstable_cache`, Muster wie
+ * app/merchant-feed.tsv/route.ts) — also rund 4 Abrufe pro Tag.
  *
- * ZWEI UMGEBUNGSVARIABLEN, beide standardmässig leer:
- *   GOOGLE_PLACES_API_KEY — Schlüssel aus der Google Cloud Console, auf
- *     «Places API (New)» beschränkt. Serverseitig, nie NEXT_PUBLIC_.
- *   GOOGLE_PLACE_ID — die Place-ID des Profils. Maps zeigt nur die
- *     Knowledge-Graph-ID `/g/11p1f3mtw4`, die ist KEINE Place-ID; ermitteln
- *     über https://developers.google.com/maps/documentation/places/web-service/place-id
- *     (Place ID Finder) mit «Jibbit .ch - Headshop, Winterthur».
+ * UMGEBUNG (beide nötig, sonst wird OHNE Zahl gerendert):
+ *   GOOGLE_PLACES_API_KEY — Schlüssel aus der Google Cloud Console,
+ *     beschränkt auf «Places API (New)». Serverseitig, nie NEXT_PUBLIC_.
+ *   GOOGLE_PLACE_ID — Place-ID des Profils; ermitteln mit
+ *     `npm run google-profil:place-id` (scripts/google-place-id.mjs).
+ *   GOOGLE_PLACES_ENDPOINT — nur für Tests (E2E-Mock); Standard ist Google.
  *
- * RÜCKFALL: fehlt eine der beiden, antwortet Google mit Fehler, oder die
- * Antwort ist unbrauchbar (keine Zahl, Bewertung ausserhalb 1–5, null
- * Rezensionen — fast sicher eine falsche Place-ID) => die Konstante, mit
- * einem Hinweis im Serverlog. Die Leiste zeigt also nie «undefined bei
- * Google», höchstens die zuletzt von Hand gepflegte Zahl.
+ * KEINE VERALTETE ZAHL, NIE: Es gibt keine von Hand gepflegte Zahl im Code.
+ * Ohne Schlüssel/Place-ID zeigt die Zeile «Bewertungen auf Google» als Link
+ * — ehrlich und prüfbar, aber ohne Note. Fällt die API AUS, während der
+ * Shop läuft, bleibt der letzte erfolgreich abgerufene Wert stehen: zuerst
+ * über den Cache (die gecachte Funktion WIRFT bei Fehlern, darum bleibt der
+ * alte Eintrag im Next-Cache und wird weiter ausgeliefert), zusätzlich über
+ * einen In-Memory-Merker je Prozess (`lastGood`, mit Zeitstempel) für den
+ * Fall, dass der Cache-Eintrag selbst verfallen oder geleert ist. Erst wenn
+ * es nie einen erfolgreichen Abruf gab, erscheint die Zeile ohne Zahl.
  *
- * CACHE: `unstable_cache`, 6 Stunden, kein Mandantenbezug — es gibt genau
- * ein Profil (jibbit). Dasselbe Muster wie app/merchant-feed.tsv/route.ts.
  * Innerhalb des Cache-Scopes keine Request-APIs (cookies/headers) — hier
- * werden keine gebraucht.
+ * werden keine gebraucht; der Cache-Schlüssel enthält die Place-ID, NICHT
+ * den API-Schlüssel (der würde sonst im Dateisystem-Cache landen).
  */
 
-export const PLACES_ENDPOINT = "https://places.googleapis.com/v1/places/";
+export const DEFAULT_PLACES_ENDPOINT = "https://places.googleapis.com/v1/places/";
 export const REVALIDATE_SECONDS = 6 * 3600;
 
 export interface PlacesRating {
@@ -54,6 +56,7 @@ export function parsePlacesResponse(json: unknown): PlacesRating | null {
 export interface FetchOptions {
   apiKey: string;
   placeId: string;
+  endpoint?: string;
   fetchImpl?: typeof fetch;
 }
 
@@ -61,9 +64,10 @@ export interface FetchOptions {
 export async function fetchGoogleProfilRating({
   apiKey,
   placeId,
+  endpoint = DEFAULT_PLACES_ENDPOINT,
   fetchImpl = fetch,
 }: FetchOptions): Promise<PlacesRating | null> {
-  const url = `${PLACES_ENDPOINT}${encodeURIComponent(placeId)}?fields=rating,userRatingCount`;
+  const url = `${endpoint}${encodeURIComponent(placeId)}?fields=rating,userRatingCount`;
   try {
     const res = await fetchImpl(url, {
       headers: {
@@ -73,21 +77,19 @@ export async function fetchGoogleProfilRating({
       },
     });
     if (!res.ok) {
-      console.warn(
-        `[google-profil] Places API antwortet ${res.status} — Rückfall auf GOOGLE_PROFIL.`,
-      );
+      console.warn(`[google-profil] Places API antwortet ${res.status}.`);
       return null;
     }
     const parsed = parsePlacesResponse(await res.json());
     if (!parsed) {
       console.warn(
-        "[google-profil] Places-Antwort ohne brauchbare rating/userRatingCount — Rückfall auf GOOGLE_PROFIL (Place-ID prüfen).",
+        "[google-profil] Places-Antwort ohne brauchbare rating/userRatingCount — Place-ID prüfen.",
       );
     }
     return parsed;
   } catch (err) {
     console.warn(
-      `[google-profil] Places API nicht erreichbar (${err instanceof Error ? err.message : String(err)}) — Rückfall auf GOOGLE_PROFIL.`,
+      `[google-profil] Places API nicht erreichbar (${err instanceof Error ? err.message : String(err)}).`,
     );
     return null;
   }
@@ -96,56 +98,107 @@ export async function fetchGoogleProfilRating({
 export interface ProfilEnv {
   GOOGLE_PLACES_API_KEY?: string;
   GOOGLE_PLACE_ID?: string;
+  GOOGLE_PLACES_ENDPOINT?: string;
 }
 
-/** Die Konstante als vollständiges Profil. */
-export function fallbackProfil(): GoogleProfilRating {
-  return { ...GOOGLE_PROFIL, source: "konstante" };
-}
-
-let hinted = false;
-
-/**
- * Entscheidung ohne Cache: Umgebung lesen, bei vollständiger Konfiguration
- * abrufen, sonst oder bei Fehler die Konstante. Rein, damit testbar.
- */
-export async function resolveGoogleProfil(
+/** Live abrufen; WIRFT bei Fehler (damit ein Cache den alten Wert behält). */
+export async function liveProfil(
   env: ProfilEnv,
   fetchImpl: typeof fetch = fetch,
   today: () => Date = () => new Date(),
-): Promise<GoogleProfilRating> {
-  const apiKey = env.GOOGLE_PLACES_API_KEY?.trim();
-  const placeId = env.GOOGLE_PLACE_ID?.trim();
-
-  if (!apiKey || !placeId) {
-    if (!hinted) {
-      hinted = true;
-      console.info(
-        "[google-profil] GOOGLE_PLACES_API_KEY/GOOGLE_PLACE_ID nicht gesetzt — die Vertrauensleiste zeigt die von Hand gepflegten Zahlen aus GOOGLE_PROFIL.",
-      );
-    }
-    return fallbackProfil();
-  }
-
-  const live = await fetchGoogleProfilRating({ apiKey, placeId, fetchImpl });
-  if (!live) return fallbackProfil();
-
+): Promise<GoogleProfil> {
+  const apiKey = env.GOOGLE_PLACES_API_KEY?.trim() ?? "";
+  const placeId = env.GOOGLE_PLACE_ID?.trim() ?? "";
+  const live = await fetchGoogleProfilRating({
+    apiKey,
+    placeId,
+    endpoint: env.GOOGLE_PLACES_ENDPOINT?.trim() || DEFAULT_PLACES_ENDPOINT,
+    fetchImpl,
+  });
+  if (!live) throw new Error("Places API lieferte keine Bewertung");
   return {
+    url: GOOGLE_PROFIL.url,
     rating: live.rating,
     count: live.count,
     stand: today().toISOString().slice(0, 10),
-    url: GOOGLE_PROFIL.url,
     source: "places",
   };
 }
 
-/** Für die Leiste: gecacht, 6 Stunden. */
-export const getGoogleProfil = unstable_cache(
-  () =>
-    resolveGoogleProfil({
-      GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
-      GOOGLE_PLACE_ID: process.env.GOOGLE_PLACE_ID,
-    }),
+export function isProfilConfigured(env: ProfilEnv): boolean {
+  return Boolean(env.GOOGLE_PLACES_API_KEY?.trim() && env.GOOGLE_PLACE_ID?.trim());
+}
+
+export interface LoaderDeps {
+  env: () => ProfilEnv;
+  /** Die (gecachte) Live-Funktion — wirft bei Fehler. */
+  live: (placeId: string) => Promise<GoogleProfil>;
+  now?: () => number;
+}
+
+/**
+ * Baut den Lader: Umgebung prüfen → gecachter Live-Abruf → bei Fehler der
+ * letzte gute Wert aus dem Speicher → sonst ohne Zahl. Als Fabrik, damit
+ * Tests einen eigenen Lader ohne Next-Cache und ohne Netz bauen können.
+ */
+export function createGoogleProfilLoader({ env, live, now = Date.now }: LoaderDeps) {
+  let lastGood: { profil: GoogleProfil; at: number } | null = null;
+  let hinted = false;
+
+  return async function getGoogleProfil(): Promise<GoogleProfil> {
+    const e = env();
+    if (!isProfilConfigured(e)) {
+      if (!hinted) {
+        hinted = true;
+        console.info(
+          "[google-profil] GOOGLE_PLACES_API_KEY/GOOGLE_PLACE_ID nicht gesetzt — die Vertrauenszeile zeigt «Bewertungen auf Google» ohne Zahl.",
+        );
+      }
+      return profilOhneZahl();
+    }
+
+    try {
+      const profil = await live(e.GOOGLE_PLACE_ID!.trim());
+      lastGood = { profil, at: now() };
+      return profil;
+    } catch (err) {
+      if (lastGood) {
+        const hours = Math.round((now() - lastGood.at) / 36e5);
+        console.warn(
+          `[google-profil] Abruf fehlgeschlagen (${err instanceof Error ? err.message : String(err)}) — zeige den letzten Wert (vor ${hours} h).`,
+        );
+        return { ...lastGood.profil, source: "letzter-wert" };
+      }
+      console.warn(
+        `[google-profil] Abruf fehlgeschlagen (${err instanceof Error ? err.message : String(err)}) und kein früherer Wert — Zeile ohne Zahl.`,
+      );
+      return profilOhneZahl();
+    }
+  };
+}
+
+function readEnv(): ProfilEnv {
+  return {
+    GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
+    GOOGLE_PLACE_ID: process.env.GOOGLE_PLACE_ID,
+    GOOGLE_PLACES_ENDPOINT: process.env.GOOGLE_PLACES_ENDPOINT,
+  };
+}
+
+/**
+ * Gecachter Live-Abruf, 6 h. Der Schlüssel enthält nur die Place-ID; der
+ * API-Schlüssel wird INNERHALB gelesen. Wirft bei Fehler — dann bleibt der
+ * vorherige Cache-Eintrag bestehen (Next liefert ihn weiter aus).
+ */
+const cachedLive = unstable_cache(
+  (placeId: string) =>
+    liveProfil({ ...readEnv(), GOOGLE_PLACE_ID: placeId }),
   ["google-profil"],
   { revalidate: REVALIDATE_SECONDS, tags: ["google-profil"] },
 );
+
+/** Für den Shop-Kopf. */
+export const getGoogleProfil = createGoogleProfilLoader({
+  env: readEnv,
+  live: cachedLive,
+});

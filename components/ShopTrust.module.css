@@ -1,0 +1,119 @@
+/* Vertrauenszeile im Shop-Kopf: Google-Bewertung (Tinte) und daneben die
+   drei Fakten (gedämpft). Eine Flex-Zeile mit Umbruch — mobil rutscht die
+   Faktengruppe als Ganzes unter die Google-Zeile. Serverseitig gerendert,
+   feste Zeilenhöhen: nichts springt beim Hydrieren. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--s-4);
+  row-gap: var(--s-1);
+  margin-top: var(--s-2);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.google {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--c-ink);
+  white-space: nowrap;
+  /* Trefffläche in der Höhe, ohne die Zeile zu verbreitern. */
+  min-height: 24px;
+}
+
+.google:hover {
+  text-decoration: none;
+}
+
+.google:hover .googleText {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.googleText {
+  font-weight: 600;
+}
+
+/* Fünf Sterne: Umrisse unten, die gefüllte Schicht oben auf `rating/5`
+   Breite geschnitten. Beide Reihen sind gleich breit (5 × 14 px + 4 × 2 px),
+   darum liegt jeder gefüllte Stern exakt auf seinem Umriss. */
+.stars {
+  position: relative;
+  display: inline-block;
+  height: 14px;
+  width: 78px;
+  flex: none;
+}
+
+.starRow {
+  display: flex;
+  gap: 2px;
+  width: 78px;
+}
+
+.starFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+}
+
+.star,
+.starSingle {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* Ohne Zahl: ein einzelner Umriss-Stern als Symbol, keine Bewertungsgrafik. */
+.starSingle {
+  color: var(--c-muted);
+}
+
+.facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--s-3);
+  row-gap: var(--s-1);
+  font-size: 12px;
+  color: var(--c-muted);
+}
+
+.fact {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* Trennpunkt zwischen den Fakten, kein eigenes Element — erst ab 640 px:
+   darunter bricht die Gruppe um, und ein Punkt am Zeilenanfang sähe nach
+   Fehler aus; die Symbole trennen die Einträge dort allein. */
+@media (min-width: 640px) {
+  .fact + .fact::before {
+    content: "·";
+    margin-right: var(--s-3);
+  }
+}
+
+.factLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  min-height: 24px;
+}
+
+.factLink:hover {
+  color: var(--c-ink);
+}
+
+.icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}

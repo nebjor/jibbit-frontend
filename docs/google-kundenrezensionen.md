@@ -179,57 +179,94 @@ starten; es ist keine Code-Änderung nötig. Prüfen: auf jibbit.ch mit «Alle a
 den DevTools ein Request an `gstatic.com/shopping/merchant/merchantwidget.js` stehen und unten
 links das Widget erscheinen. Fällt die Bewertung später unter die Schwelle, wieder auf `0`.
 
-## 10. Vertrauensleiste (TrustBar)
+## 10. Vertrauenszeile im Shop-Kopf (ShopTrust) und Google-Unternehmensprofil
 
-`components/TrustBar.tsx` zeigt über dem Header auf jeder Seite eine schmale Zeile mit vier
-Zusagen; sie hat den früheren dunklen Promo-Streifen abgelöst (ein Streifen, nicht zwei; das
-Preisversprechen `PRICE_CLAIM` steht weiter als Untertitel auf der Startseite). Server-
-Komponente, feste Höhe (28/32 px), kein Client-JS.
+`components/ShopTrust.tsx` steht im Kopf des Katalogs — unter Titel und Beschreibung auf der
+Startseite und den Kategorieseiten (`app/page.tsx`) sowie auf der Suchseite
+(`app/suche/page.tsx`). Eine kompakte Zeile: links **«★★★★★ 5.0 bei Google · 26
+Bewertungen»** (fünf Sterne, gefüllt im Verhältnis zur Bewertung; Link aufs
+Unternehmensprofil, neuer Tab, `rel="noopener"`), daneben klein und gedämpft die drei
+Fakten **Versand aus der Schweiz · Gratisversand ab CHF 69.00 · Sichere Zahlung**. Mobil
+bricht die Faktengruppe unter die Google-Zeile. Async Server-Komponente, kein Client-JS,
+nichts springt. Der dunkle Promo-Streifen über der Kopfleiste bleibt, wie er ist.
 
 **Die Texte stehen an genau einer Stelle: `lib/trust.ts`.** Jede Zeile ist eine Zusage und an
 ihre Quelle gebunden (`lib/trust.test.ts` prüft das):
 
 | Zeile | Quelle |
 |---|---|
-| ★ 5.0 bei Google · 26 Bewertungen | **Google-Unternehmensprofil** «Jibbit .ch - Headshop», Unterwegli 1, Winterthur (Google Maps, öffentlich) — `GOOGLE_PROFIL` in `lib/trust.ts` oder live über die Places API (unten); verlinkt direkt auf das Profil (neuer Tab, `rel="noopener"`) |
+| ★★★★★ 5.0 bei Google · 26 Bewertungen | **Google-Unternehmensprofil** «Jibbit .ch - Headshop», Unterwegli 1, Winterthur (Google Maps, öffentlich). Zahlen **nur live** über die Places API (unten); ohne Schlüssel/Place-ID steht «Bewertungen auf Google» **ohne Zahl** |
 | Versand aus der Schweiz | `BUSINESS.countryCode` = CH (`lib/config.ts`); FAQ «Wie lange dauert die Lieferung?», `/service/versand` |
-| Gratisversand ab CHF 69.00 | `SHIPPING.freeThreshold` (`lib/config.ts`) — derselbe Wert wie Footer, Warenkorb, Backend |
-| Sichere Zahlung: TWINT, Karte, PostFinance | `PAYMENT_METHODS` (`lib/config.ts`); Zahlung auf der gehosteten zahls.ch-Bezahlseite (`/service/zahlungsarten`, «Sicherheit») |
-
-Das Profil steht **zuerst**: mobil sind ohne Wischen nur die ersten zwei Einträge zu sehen.
+| Gratisversand ab CHF 69.00 | `SHIPPING.freeThreshold` (`lib/config.ts`) — derselbe Wert wie Promo-Streifen, Footer, Warenkorb, Backend |
+| Sichere Zahlung | `PAYMENT_METHODS` (`lib/config.ts`); gehostete zahls.ch-Bezahlseite (`/service/zahlungsarten`, «Sicherheit») |
 
 ### Zwei Google-Bewertungen, sauber getrennt
 
 | | Google-Unternehmensprofil | Google Kundenrezensionen (Merchant Center) |
 |---|---|---|
 | Was | Bewertung des Ladenlokals/Betriebs auf Google Maps | Shopbewertung aus Umfragen nach Online-Bestellungen (dieses Dokument) |
-| Stand 2026-10-05 | **5.0 Sterne, 26 Rezensionen**, öffentlich | 0 Rezensionen; Sterne erst ab ~100 in 24 Monaten |
-| In der Leiste | ja — echte, prüfbare Zahl, Link aufs Profil | nein (nichts anzudeuten); später das Store Widget (Abschnitt 9) |
+| Stand 2026-10-05 | 5.0 Sterne, 26 Rezensionen, öffentlich | 0 Rezensionen; Sterne erst ab ~100 in 24 Monaten |
+| Im Shop-Kopf | ja — live abgerufene, prüfbare Zahl, Link aufs Profil | nein (nichts anzudeuten); später das Store Widget (Abschnitt 9) |
 
-Die Leiste zeigt also die Profil-Zahl und **nichts** aus dem Merchant Center. Die FAQ-Antwort
-«Kann ich jibbit bewerten?» (`/service/faq#bewertungen`) erklärt beide Wege.
+Die FAQ-Antwort «Kann ich jibbit bewerten?» (`/service/faq#bewertungen`) erklärt beide Wege.
 
-### Woher die Zahl kommt — `lib/google-profil.ts`
+### Woher die Zahl kommt — `lib/google-profil.ts` (Normalweg: Places API)
 
-1. **Konstante `GOOGLE_PROFIL`** (`lib/trust.ts`): `rating`, `count`, `stand`, `url`. **Von
-   Hand nachführen**, bis die Places-Anbindung läuft — alle paar Wochen auf Google Maps
-   nachsehen. Nie «aufrunden»: eine zu tiefe alte Zahl ist unschön, eine zu hohe ist falsch.
-2. **Places API (New), optional**, zwei Umgebungsvariablen (beide standardmässig leer):
-   - `GOOGLE_PLACES_API_KEY` — Schlüssel aus der Google Cloud Console, auf «Places API (New)»
-     beschränkt; serverseitig, nie `NEXT_PUBLIC_`.
-   - `GOOGLE_PLACE_ID` — die Place-ID des Profils. Maps zeigt nur die Knowledge-Graph-Kennung
-     `/g/11p1f3mtw4`, das ist **keine** Place-ID. Ermitteln über
-     https://developers.google.com/maps/documentation/places/web-service/place-id (Place ID
-     Finder, Suche «Jibbit .ch - Headshop, Winterthur»).
+Es gibt **keine von Hand gepflegte Zahl im Code** — damit nie eine veraltete steht. Die Zahl
+kommt serverseitig von der **Places API (New), Place Details**:
+`GET https://places.googleapis.com/v1/places/{placeId}?fields=rating,userRatingCount` mit
+`X-Goog-Api-Key`, gecacht **6 Stunden** (`unstable_cache`, ≈ 4 Abrufe pro Tag).
 
-   Abruf: `GET https://places.googleapis.com/v1/places/{placeId}?fields=rating,userRatingCount`
-   mit `X-Goog-Api-Key`, gecacht **6 Stunden** (`unstable_cache`, 4 Abrufe/Tag). Bei fehlendem
-   Schlüssel, Fehlerstatus oder unbrauchbarer Antwort (keine Zahl, Bewertung ausserhalb 1–5,
-   0 Rezensionen = vermutlich falsche Place-ID) → **Rückfall auf die Konstante**, Hinweis im
-   Serverlog `[google-profil] …`. Tests: `lib/google-profil.test.ts` (gemockter fetch).
+Verhalten bei Störungen, in dieser Reihenfolge:
 
-   Einschalten: beide Variablen im Repo `medusa-ecom`, Dienst `storefront`, `environment:`
-   eintragen; prüfen im Serverlog (kein `[google-profil]`-Hinweis mehr) und an der Leiste.
+1. **Kein Schlüssel oder keine Place-ID** → Zeile **ohne Zahl**: ein Umriss-Stern und
+   «Bewertungen auf Google» als Link. Hinweis im Serverlog `[google-profil] … nicht gesetzt`.
+2. **API-Fehler nach einem erfolgreichen Abruf** → der **letzte gute Wert bleibt stehen**:
+   die gecachte Funktion wirft bei Fehlern, darum liefert Next den alten Cache-Eintrag weiter
+   aus (stale-while-revalidate); zusätzlich merkt sich der Prozess den letzten Wert mit
+   Zeitstempel (`lastGood`), falls der Cache-Eintrag selbst weg ist. Log: `… zeige den
+   letzten Wert (vor N h)`.
+3. **API-Fehler ohne je einen erfolgreichen Abruf** → Zeile ohne Zahl (nie eine erfundene).
+
+Antworten werden streng geprüft (Bewertung 1–5, Anzahl ganzzahlig ≥ 1; 0 Rezensionen gilt
+als falsche Place-ID). Tests: `lib/google-profil.test.ts` (gemockter fetch, kein Netz);
+E2E: `e2e/trust.spec.ts` gegen eine Places-Attrappe im Mock-Backend
+(`GOOGLE_PLACES_ENDPOINT`, nur für Tests).
+
+### Einrichten — Schritt für Schritt für den Inhaber
+
+1. **Google Cloud Console** (https://console.cloud.google.com) → Projekt wählen oder neu
+   anlegen (z. B. «jibbit-shop»). Abrechnung muss im Projekt eingerichtet sein (Google
+   verlangt das für Places, auch wenn das Freikontingent reicht).
+2. **APIs & Dienste → Bibliothek** → «Places API (New)» suchen → **Aktivieren**. (Nicht die
+   alte «Places API» ohne «New».)
+3. **APIs & Dienste → Anmeldedaten → Anmeldedaten erstellen → API-Schlüssel**. Schlüssel
+   kopieren.
+4. Schlüssel **einschränken** (Stift-Symbol): *API-Einschränkungen* → «Schlüssel
+   einschränken» → nur **Places API (New)**. *Anwendungseinschränkungen*: «Keine» oder
+   «IP-Adressen» mit der IP des Servers — der Schlüssel wird nur serverseitig benutzt und
+   steht nie im Browser.
+5. **Place-ID ermitteln**, lokal im Repo-Verzeichnis:
+   ```
+   GOOGLE_PLACES_API_KEY=<Schlüssel> npm run google-profil:place-id
+   ```
+   Das Script sucht «Jibbit Unterwegli 1 Winterthur» (Text Search) und gibt je Treffer
+   Place-ID, Name, Adresse und Bewertung aus. Die Place-ID des Ladenlokals übernehmen. Ein
+   anderer Suchtext geht als Argument: `npm run google-profil:place-id -- "…"`.
+6. Auf dem Server in **`/opt/jibbit/medusa-ecom/.env`** eintragen:
+   ```
+   GOOGLE_PLACES_API_KEY=<Schlüssel>
+   GOOGLE_PLACE_ID=<Place-ID>
+   ```
+   und sicherstellen, dass beide beim Dienst `storefront` unter `environment:` in der
+   Compose-Datei aufgeführt sind (Compose reicht nur weiter, was dort steht).
+7. **Storefront neu starten.** Prüfen: im Shop-Kopf stehen Sterne und Zahl; im Serverlog kein
+   `[google-profil]`-Hinweis mehr; im HTML der Seite `data-trust-source="places"`.
+
+**Kosten:** Place Details mit `rating`/`userRatingCount` fällt bei Google unter die
+«Atmosphere»-/Pro-Felder und wird je Abruf verrechnet. Mit 6 Stunden Cache sind das rund
+**4 Abrufe pro Tag (≈ 120 im Monat)** — weit innerhalb des monatlichen Freikontingents, also
+praktisch gratis. Das Text-Search-Script wird nur einmal zum Einrichten gebraucht.
 
 ### Kein `aggregateRating` im JSON-LD
 
