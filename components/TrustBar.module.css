@@ -1,0 +1,87 @@
+/* Vertrauensleiste über dem Header. Feste Höhe: 28 px mobil, 32 px ab 768 —
+   SSR-gerendert, kein Client-JS, keine Layoutverschiebung. Flächen und
+   Farben nur aus den Tokens: Sand-Grund mit Haarlinie, die weisse
+   Kopfleiste darunter setzt sich ohne zweite Linie ab. */
+.bar {
+  height: 28px;
+  background: var(--c-ground);
+  border-bottom: var(--border-w) solid var(--c-line);
+  color: var(--c-ink);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Die Liste ist IMMER eine einzige, nicht umbrechende Zeile. Mobil scrollt
+   sie waagrecht (ohne sichtbaren Balken) und rastet je Eintrag ein; ab 768
+   passt alles nebeneinander und wird zentriert — `safe center` fällt bei
+   Überlauf auf Start-Ausrichtung zurück, statt links abzuschneiden. */
+.list {
+  list-style: none;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  white-space: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--page-pad);
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+.item {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  scroll-snap-align: start;
+}
+
+/* Trennpunkt zwischen den Einträgen, kein eigenes Element. */
+.item + .item::before {
+  content: "·";
+  color: var(--c-muted);
+  margin-right: var(--s-3);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  /* Mindest-Trefffläche in der Höhe (die Zeile ist nur 28 px hoch). */
+  min-height: 28px;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+@media (min-width: 768px) {
+  .bar {
+    height: 32px;
+  }
+
+  .list {
+    justify-content: safe center;
+    gap: var(--s-4);
+  }
+
+  .item + .item::before {
+    margin-right: var(--s-4);
+  }
+
+  .link {
+    min-height: 32px;
+  }
+}

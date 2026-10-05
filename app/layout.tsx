@@ -3,14 +3,20 @@ import "./globals.css";
 import { CartProvider } from "@/components/CartProvider";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Header } from "@/components/Header";
+import { TrustBar } from "@/components/TrustBar";
 import { Footer } from "@/components/Footer";
 import { ConsentGate } from "@/components/consent/ConsentGate";
 import { AnalyticsGate } from "@/components/analytics/AnalyticsGate";
+import { GoogleKundenrezensionenBadge } from "@/components/GoogleKundenrezensionenBadge";
 import { STORE } from "@/lib/config";
 import { getTenantContext } from "@/lib/tenant/context";
 import { readCartState } from "@/lib/cart/server";
 import { readConsentCookies } from "@/lib/consent/server";
 import { getAnalyticsRuntimeConfig } from "@/lib/analytics/server";
+import {
+  getKundenrezensionenMerchantId,
+  isKundenrezensionenBadgeEnabled,
+} from "@/lib/google-kundenrezensionen/server";
 import { JsonLd } from "@/components/JsonLd";
 import { graph, organizationJsonLd, webSiteJsonLd } from "@/lib/seo/jsonld";
 import { robotsMetadata } from "@/lib/seo/indexing";
@@ -110,6 +116,12 @@ export default async function RootLayout({
   // Einwilligung; das entscheidet lib/analytics/gate.ts, nicht dieses Layout.
   const analytics = getAnalyticsRuntimeConfig();
 
+  // Google Store Widget («Badge»): Schalter und Merchant-ID ebenfalls zur
+  // Laufzeit aus der Umgebung; ob und wann geladen wird, entscheidet die
+  // Komponente (Domain, Einwilligung) — components/GoogleKundenrezensionenBadge.tsx.
+  const badgeEnabled = isKundenrezensionenBadgeEnabled();
+  const merchantId = badgeEnabled ? getKundenrezensionenMerchantId() : null;
+
   return (
     <html lang="de-CH">
       <body>
@@ -118,6 +130,9 @@ export default async function RootLayout({
           <a href="#main" className="srOnly">
             Zum Inhalt springen
           </a>
+          {/* Vertrauensleiste ÜBER der klebenden Kopfleiste: sie scrollt mit
+              dem Inhalt weg, der Header bleibt. Texte: lib/trust.ts. */}
+          <TrustBar />
           <Header />
           <main id="main">{children}</main>
           <Footer domain={tenant.theme.domain} />
@@ -126,6 +141,11 @@ export default async function RootLayout({
           <AnalyticsGate
             posthogKey={analytics.key}
             posthogHost={analytics.host}
+          />
+          <GoogleKundenrezensionenBadge
+            enabled={badgeEnabled}
+            merchantId={merchantId}
+            domain={tenant.theme.domain}
           />
         </CartProvider>
       </body>

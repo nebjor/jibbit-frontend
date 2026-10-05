@@ -6,13 +6,16 @@ import { AccountLink } from "./AccountLink";
 import { CategoryNav } from "./CategoryNav";
 import { SearchBar } from "./search/SearchBar";
 import { getCategories } from "@/lib/data";
-import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
-import { formatPrice } from "@/lib/format";
 import styles from "./Header.module.css";
 
 /**
  * Site-Header. Kategorien kommen aus der Datenschicht (Backend zuerst,
  * Mock-Fallback) — nie hartkodiert.
+ *
+ * Über dem Header steht die Vertrauensleiste (components/TrustBar.tsx, aus
+ * app/layout.tsx) — sie hat den früheren Promo-Streifen («Dauertiefpreise ·
+ * Gratisversand …») abgelöst; das Preisversprechen steht als Untertitel auf
+ * der Startseite.
  *
  * Aufbau auf ALLEN Breiten (Grid-Areas in Header.module.css):
  *
@@ -35,59 +38,41 @@ export async function Header() {
   const categories = await getCategories();
 
   return (
-    <>
-      {/* Utility-Streifen — Preis- und Versandversprechen, seitenweit. Die
-          Zusatzargumente sind mobil ausgeblendet, damit der Streifen dort
-          eine Zeile bleibt statt umzubrechen. */}
-      <div className={styles.promo}>
-        <p className="page">
-          <strong>{PRICE_CLAIM.short}</strong> &middot; Gratisversand ab{" "}
-          <strong className="tnum">
-            {formatPrice(SHIPPING.freeThreshold)}
-          </strong>
-          <span className={styles.promoExtra}>
-            {" "}
-            &middot; Versand aus der Schweiz &middot; TWINT &amp; Kreditkarte
-          </span>
-        </p>
-      </div>
+    <header className={styles.header}>
+      <div className={`page ${styles.bar}`}>
+        <Link
+          href="/"
+          className={styles.brand}
+          /* Landeplatz des Intro-Logos: IntroOverlay.tsx misst diese
+             Position zur LAUFZEIT (FLIP), intro-global.css versteckt
+             das Logo hier, bis das Intro-Logo gelandet ist. */
+          data-intro-logo-target
+          aria-label="jibbit — Startseite"
+        >
+          <Logo size="md" />
+        </Link>
 
-      <header className={styles.header}>
-        <div className={`page ${styles.bar}`}>
-          <Link
-            href="/"
-            className={styles.brand}
-            /* Landeplatz des Intro-Logos: IntroOverlay.tsx misst diese
-               Position zur LAUFZEIT (FLIP), intro-global.css versteckt
-               das Logo hier, bis das Intro-Logo gelandet ist. */
-            data-intro-logo-target
-            aria-label="jibbit — Startseite"
-          >
-            <Logo size="md" />
-          </Link>
+        {/* Instant search — self-contained (own CSS module), deliberately a
+            single element here. Sizing lives in SearchBox.module.css, not
+            Header.css. */}
+        <SearchBar />
 
-          {/* Instant search — self-contained (own CSS module), deliberately a
-              single element here. Sizing lives in SearchBox.module.css, not
-              Header.css. */}
-          <SearchBar />
-
-          <div className={styles.actions}>
-            <AccountLink />
-            <CartButton />
-          </div>
-
-          {/*
-           * Suspense wegen useSearchParams in der Client-Komponente: bei
-           * dynamischem Rendern (alle Routen hier lesen Cookies) löst sie
-           * nie aus, aber ein statischer Prerender-Pfad darf den Build
-           * nicht brechen. Die Links stehen dadurch nicht doppelt im HTML:
-           * der Fallback würde nur bei tatsächlichem Suspendieren gestreamt.
-           */}
-          <Suspense fallback={null}>
-            <CategoryNav categories={categories} />
-          </Suspense>
+        <div className={styles.actions}>
+          <AccountLink />
+          <CartButton />
         </div>
-      </header>
-    </>
+
+        {/*
+         * Suspense wegen useSearchParams in der Client-Komponente: bei
+         * dynamischem Rendern (alle Routen hier lesen Cookies) löst sie
+         * nie aus, aber ein statischer Prerender-Pfad darf den Build
+         * nicht brechen. Die Links stehen dadurch nicht doppelt im HTML:
+         * der Fallback würde nur bei tatsächlichem Suspendieren gestreamt.
+         */}
+        <Suspense fallback={null}>
+          <CategoryNav categories={categories} />
+        </Suspense>
+      </div>
+    </header>
   );
 }
