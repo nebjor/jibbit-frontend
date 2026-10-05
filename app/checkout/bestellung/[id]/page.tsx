@@ -3,8 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClearCartOnMount } from "@/components/checkout/ClearCartOnMount";
 import { TrackOrderCompleted } from "@/components/analytics/TrackOrderCompleted";
+import { GoogleKundenrezensionen } from "@/components/GoogleKundenrezensionen";
 import { formatPrice } from "@/lib/format";
 import { getOrder } from "@/lib/checkout/order";
+import { getKundenrezensionenMerchantId } from "@/lib/google-kundenrezensionen/server";
+import { getTenantContext } from "@/lib/tenant/context";
 import styles from "@/components/checkout/checkout.module.css";
 
 export const metadata: Metadata = {
@@ -30,13 +33,31 @@ export default async function OrderConfirmationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = await getOrder(id);
+  const [order, tenant] = await Promise.all([getOrder(id), getTenantContext()]);
   if (!order) notFound();
 
   return (
     <div className={styles.confirmation}>
       {/* The cart lives in client state; the cookie is already gone. */}
       <ClearCartOnMount />
+
+      {/* Google Kundenrezensionen: «Möchtest du jibbit nach der Lieferung
+          bewerten?» — nur auf jibbit.ch, nur mit Einwilligung, und die
+          Merchant-ID zur Laufzeit aus der Umgebung. Anders als beim
+          Analyse-Ereignis gehört die E-Mail hier DAZU: ohne Adresse kann
+          Google niemanden einladen (components/GoogleKundenrezensionen.tsx). */}
+      <GoogleKundenrezensionen
+        merchantId={getKundenrezensionenMerchantId()}
+        domain={tenant.theme.domain}
+        order={{
+          id: order.id,
+          displayId: order.displayId,
+          email: order.email,
+          countryCode: order.address?.countryCode,
+          createdAt: order.createdAt,
+          gtins: order.lines.map((l) => l.gtin),
+        }}
+      />
 
       {/* «Bestellung abgeschlossen» — mit Wert und Währung für Trichter und
           Umsatz. Die Props werden hier Feld für Feld gebaut: order.email,

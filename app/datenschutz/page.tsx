@@ -15,7 +15,7 @@ export default function DatenschutzPage() {
     <Prose
       title="Datenschutzerklärung"
       intro="Diese Erklärung beschreibt, welche Personendaten wir bearbeiten, zu welchem Zweck, und welche Rechte du hast. Sie richtet sich nach dem Schweizer Datenschutzgesetz (DSG, in Kraft seit 1. September 2023)."
-      updated="21. September 2026"
+      updated="5. Oktober 2026"
     >
       <h2>1. Verantwortliche Stelle</h2>
       <p>
@@ -118,6 +118,13 @@ export default function DatenschutzPage() {
           auf Servern in der Europäischen Union verarbeitet. Was dabei erfasst
           wird, steht in Ziffer 7.
         </li>
+        <li>
+          <strong>Google Kundenrezensionen:</strong> Google Ireland Limited
+          (Dublin) bzw. Google LLC (USA) — nur mit deiner Einwilligung und nur
+          auf der Bestellbestätigung: Google fragt dich, ob du den Shop nach
+          der Lieferung bewerten möchtest. Was dabei übermittelt wird, steht
+          in Ziffer 7.
+        </li>
       </ul>
 
       <h2>6. Bekanntgabe ins Ausland</h2>
@@ -128,10 +135,14 @@ export default function DatenschutzPage() {
         Standardvertragsklauseln bestehen (Art. 16 f. DSG). Hosting
         (Infomaniak, Genf) und Zahlungsabwicklung (zahls.ch, siebenberge gmbh,
         Schweiz) liegen beide in der Schweiz. Eine Bekanntgabe ins Ausland
-        findet nur bei der Webanalyse statt — und nur, wenn du eingewilligt
-        hast: Die Analyse-Daten werden von PostHog auf Servern in der
-        Europäischen Union verarbeitet. Die EU-Mitgliedstaaten gewährleisten
-        nach der Liste des Bundesrates einen angemessenen Datenschutz.
+        findet nur bei der Webanalyse und bei Google Kundenrezensionen statt
+        — und nur, wenn du eingewilligt hast: Die Analyse-Daten werden von
+        PostHog auf Servern in der Europäischen Union verarbeitet. Die
+        EU-Mitgliedstaaten gewährleisten nach der Liste des Bundesrates einen
+        angemessenen Datenschutz. Google Ireland Limited kann Daten an Google
+        LLC in die USA weitergeben; die USA gelten für Unternehmen, die nach
+        dem Swiss-U.S. Data Privacy Framework zertifiziert sind, als Staat mit
+        angemessenem Datenschutz — Google LLC ist dort zertifiziert.
       </p>
 
       <h2>7. Cookies, Altersabfrage und Analyse</h2>
@@ -180,14 +191,34 @@ export default function DatenschutzPage() {
         gespeichert, aus ihr wird lediglich der ungefähre Standort (Land,
         Stadt) abgeleitet, bevor sie verworfen wird.
       </p>
+      <h3>Google Kundenrezensionen</h3>
+      <p>
+        Mit derselben Einwilligung binden wir auf der Seite, die deine
+        Bestellung bestätigt, das Opt-in-Modul von Google Kundenrezensionen
+        ein (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4,
+        Irland). Es fragt dich, ob du den Shop nach der Lieferung bewerten
+        möchtest — das ist eine zweite, freiwillige Entscheidung. Damit Google
+        dich einladen kann, übermittelt dein Browser beim Einblenden des
+        Moduls deine E-Mail-Adresse, die Bestellnummer, das Lieferland, das
+        voraussichtliche Lieferdatum und die Artikelnummern (GTIN) der
+        bestellten Produkte an Google; Google setzt dabei eigene Cookies.
+        Lehnst du im Modul ab, verwendet Google die Daten nicht für eine
+        Umfrage. Stimmst du zu, schickt dir Google nach dem Liefertermin eine
+        E-Mail mit der Bewertungsfrage; deine Bewertung erscheint anonym als
+        Teil der Shopbewertung von jibbit bei Google. Ohne Cookie-Einwilligung
+        wird das Modul nicht geladen und nichts an Google übermittelt. Mehr
+        dazu in der Datenschutzerklärung von Google unter
+        policies.google.com/privacy.
+      </p>
       <h3>Widerruf</h3>
       <p>
         Deine Einwilligung kannst du jederzeit widerrufen oder nachträglich
         erteilen: Der Link «Cookie-Einstellungen» im Footer öffnet die Wahl
         erneut. Ein Widerruf wirkt sofort — die Erfassung durch PostHog stoppt,
-        ohne dass du die Seite neu laden musst — und ist genauso einfach wie
-        das Erteilen. Die Altersabfrage kannst du zurücksetzen, indem du die
-        Cookies dieser Website in deinem Browser löschst.
+        ohne dass du die Seite neu laden musst, und das Google-Modul wird
+        nicht mehr eingebunden — und ist genauso einfach wie das Erteilen.
+        Die Altersabfrage kannst du zurücksetzen, indem du die Cookies dieser
+        Website in deinem Browser löschst.
       </p>
 
       <h2>8. Aufbewahrungsdauer</h2>
