@@ -39,8 +39,16 @@ export const CONSENT_COOKIE = "jibbit_cookie_consent";
  * Version des Einwilligungsformats. Wird sie erhöht (z. B. weil neue
  * Kategorien dazukommen), sind alte Cookies ungültig und der Hinweis
  * fragt erneut — eine Einwilligung zu Frage A gilt nicht für Frage B.
+ *
+ * Historie:
+ *   1  Analyse (PostHog).
+ *   2  Analyse umfasst zusätzlich Google Kundenrezensionen auf der
+ *      Bestätigungsseite (components/GoogleKundenrezensionen.tsx): ein
+ *      Google-Skript und die E-Mail-Adresse an Google. Wer unter Version 1
+ *      «Alle akzeptieren» gewählt hat, hat dazu nichts gesagt — also wird
+ *      einmal neu gefragt.
  */
-export const CONSENT_VERSION = 1;
+export const CONSENT_VERSION = 2;
 
 /** «Ja» merken wir uns ein Jahr — die Frage nervt sonst bei jedem Besuch. */
 export const AGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

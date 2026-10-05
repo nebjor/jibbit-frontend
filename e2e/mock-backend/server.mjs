@@ -372,7 +372,20 @@ const routes = [
         email: cart.email,
         currency_code: cart.currency_code,
         customer_id: cart.customer_id,
-        items: cart.items,
+        // Wie Medusa: die Bestellposition trägt eine Momentaufnahme der
+        // Variante (`variant_barcode`) und — mit `*items.variant` angefragt —
+        // die Variante selbst. Die Bestätigungsseite liest daraus die GTIN
+        // (lib/cart/adapter.ts).
+        items: cart.items.map((item) => {
+          const variant = VARIANTS.get(item.variant_id)?.variant ?? null;
+          return {
+            ...item,
+            variant_barcode: variant?.barcode ?? null,
+            variant: variant
+              ? { id: variant.id, ean: variant.ean, upc: variant.upc, barcode: variant.barcode }
+              : null,
+          };
+        }),
         shipping_address: cart.shipping_address,
         item_total: cart.item_total,
         shipping_total: cart.shipping_total,

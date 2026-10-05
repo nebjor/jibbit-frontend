@@ -10,13 +10,21 @@ import { test as base, expect, type BrowserContext, type Page } from "@playwrigh
  * overlays themselves are exercised for real, once, in `consent.spec.ts`.
  */
 
-const AGE_COOKIE = "jibbit_alterscheck";
-const CONSENT_COOKIE = "jibbit_cookie_consent";
+export const AGE_COOKIE = "jibbit_alterscheck";
+export const CONSENT_COOKIE = "jibbit_cookie_consent";
 const INTRO_SESSION_KEY = "jibbit-intro-seen";
 
-const CONSENT_VALUE = encodeURIComponent(
-  JSON.stringify({ v: 1, analytics: false, ts: "2026-01-01T00:00:00.000Z" }),
-);
+// `v` muss CONSENT_VERSION in lib/consent/state.ts entsprechen — ein
+// veraltetes Cookie gilt als «nie gefragt», und der Hinweis käme wieder.
+const CONSENT_VERSION = 2;
+
+export function consentCookieValue(analytics: boolean): string {
+  return encodeURIComponent(
+    JSON.stringify({ v: CONSENT_VERSION, analytics, ts: "2026-01-01T00:00:00.000Z" }),
+  );
+}
+
+const CONSENT_VALUE = consentCookieValue(false);
 
 async function skipIntro(context: BrowserContext) {
   await context.addInitScript((key: string) => {

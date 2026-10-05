@@ -45,6 +45,10 @@ const appEnv = {
   CHECKOUT_REQUIRE_ACCOUNT: "true",
   LOCAL_TENANT_ENABLED: "false",
   POSTHOG_KEY: "",
+  // Bewusst GESETZT, obwohl der Mandant test.jibbit.ch heisst: so prüft
+  // e2e/bestellung.spec.ts die Domain-Sperre des Google-Opt-ins und nicht
+  // bloss eine fehlende Variable.
+  GOOGLE_KUNDENREZENSIONEN_MERCHANT_ID: "5618479597",
   E2E_BACKEND_PORT: String(BACKEND_PORT),
 };
 

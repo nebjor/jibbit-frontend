@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCartState, type MedusaCartLike } from "./adapter";
+import { toCartLineView, toCartState, type MedusaCartLike } from "./adapter";
 import { EMPTY_CART } from "./types";
 import { lineTotal as localLineTotal } from "@/lib/pricing";
 import type { CartLine } from "@/lib/types";
@@ -156,5 +156,36 @@ describe("toCartState", () => {
     const state = toCartState(medusaCart({ shipping_address: { city: "Zürich" } }));
     expect(state.hasShippingAddress).toBe(false);
     expect(state.address).toBeNull();
+  });
+});
+
+describe("toCartLineView — GTIN der Position", () => {
+  const item = medusaCart().items![0];
+
+  it("undefined, wenn weder Variante noch Momentaufnahme etwas Gültiges hat", () => {
+    expect(toCartLineView(item).gtin).toBeUndefined();
+    expect(
+      toCartLineView({ ...item, variant: { ean: null, upc: null, barcode: null } })
+        .gtin,
+    ).toBeUndefined();
+  });
+
+  it("nimmt die erste GTIN, die die Prüfziffer besteht — ean vor upc vor barcode", () => {
+    expect(
+      toCartLineView({
+        ...item,
+        variant: { ean: "8 595134 501285", upc: null, barcode: "LAGER-7" },
+      }).gtin,
+    ).toBe("8595134501285");
+    // `barcode` darf ein hauseigener Lagercode sein — der fällt durch.
+    expect(
+      toCartLineView({ ...item, variant: { barcode: "LAGER-7" } }).gtin,
+    ).toBeUndefined();
+  });
+
+  it("fällt auf Medusas Momentaufnahme variant_barcode zurück", () => {
+    expect(
+      toCartLineView({ ...item, variant: null, variant_barcode: "96385074" }).gtin,
+    ).toBe("96385074");
   });
 });
