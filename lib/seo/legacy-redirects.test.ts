@@ -329,16 +329,11 @@ describe("Ziele der Odoo-Weiterleitungen", () => {
     expect(UNPUBLISHED_TARGETS.filter((h) => published.has(h))).toEqual([]);
   });
 
-  it("kennt die drei IDs, deren Produkte noch Entwurf sind", () => {
-    expect([...UNPUBLISHED_TARGETS].sort()).toEqual([
-      "black-leaf-el-humeros-konische-huelsen-ks-100x",
-      "ocb-bio-slim-organic-hemp-rolls",
-    ]);
-    expect(
-      Object.entries(ODOO_PRODUCTS)
-        .filter(([, handle]) => UNPUBLISHED_TARGETS.includes(handle))
-        .map(([id]) => id),
-    ).toEqual(["23", "40", "47"]);
+  // Seit 2026-10-02 sind alle Ziele veröffentlicht (zuletzt die IDs 23, 40, 47).
+  it("führt kein Ziel mehr als Entwurf", () => {
+    expect(UNPUBLISHED_TARGETS).toEqual([]);
+    expect(published.has("black-leaf-el-humeros-konische-huelsen-ks-100x")).toBe(true);
+    expect(published.has("ocb-bio-slim-organic-hemp-rolls")).toBe(true);
   });
 });
 
