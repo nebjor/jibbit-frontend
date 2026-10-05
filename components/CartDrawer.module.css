@@ -1,9 +1,19 @@
+/* ---- Öffnen/Schliessen ---------------------------------------------------
+   Gesteuert über `data-state` auf .overlay (CartDrawer.tsx, usePresence):
+   «closed» ist der Ausgangs- UND Endzustand (Panel rechts ausserhalb, Scrim
+   durchsichtig), «open» der Ruhezustand. Es animieren NUR transform und
+   opacity — kein Layout, kein Repaint der Seite dahinter. Hinein
+   abbremsend (--ease), hinaus beschleunigend und etwas kürzer (--ease-in):
+   was weggeht, soll nicht nachhängen. `overflow: clip` statt hidden: das
+   hinausgeschobene Panel macht den Overlay sonst zu einem Scroll-Container,
+   den ein focus() verschieben könnte. */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
   justify-content: flex-end;
+  overflow: clip;
 }
 
 .scrim {
@@ -13,6 +23,8 @@
   border: 0;
   padding: 0;
   cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-overlay-out) var(--ease-in);
 }
 
 .panel {
@@ -23,6 +35,33 @@
   display: flex;
   flex-direction: column;
   max-height: 100dvh;
+  transform: translateX(100%);
+  transition: transform var(--dur-overlay-out) var(--ease-in);
+}
+
+.overlay[data-state="open"] .scrim {
+  opacity: 1;
+  transition: opacity var(--dur-overlay) var(--ease);
+}
+
+.overlay[data-state="open"] .panel {
+  transform: none;
+  transition: transform var(--dur-overlay) var(--ease);
+}
+
+/* Reduzierte Bewegung: kein Schieben, nur das (von globals.css auf 0.01 ms
+   gekürzte, also faktisch sofortige) Auf-/Abblenden. */
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transform: none;
+    opacity: 0;
+    transition-property: opacity;
+  }
+
+  .overlay[data-state="open"] .panel {
+    opacity: 1;
+    transition-property: opacity;
+  }
 }
 
 .head {
