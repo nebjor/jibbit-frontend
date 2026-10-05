@@ -16,6 +16,7 @@
 
 import type { CartLineView, CartState, CheckoutAddress } from "./types";
 import { EMPTY_CART } from "./types";
+import { normalizeGtin } from "@/lib/gtin";
 
 /** The subset of a Medusa store cart this adapter reads. */
 export interface MedusaCartLike {
@@ -50,6 +51,19 @@ export interface MedusaLineItemLike {
    */
   total?: number | null;
   original_total?: number | null;
+  /**
+   * Medusas Momentaufnahme von `variant.barcode` auf der Position — bei
+   * Bestellungen immer da, bei Warenkörben nicht. Der Katalog-Import legt
+   * die GTIN aber in `ean` ab (lib/adapters.ts, `toGtin`), darum braucht es
+   * zusätzlich die Variante selbst — die holt lib/checkout/order.ts mit
+   * `*items.variant`.
+   */
+  variant_barcode?: string | null;
+  variant?: {
+    ean?: string | null;
+    upc?: string | null;
+    barcode?: string | null;
+  } | null;
 }
 
 export interface MedusaAddressLike {
@@ -66,6 +80,26 @@ export interface MedusaAddressLike {
 
 function num(value: number | null | undefined): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * GTIN einer Position: der erste Kandidat, der die Prüfziffer besteht
+ * (lib/gtin.ts) — gleiche Reihenfolge und gleiche Begründung wie `toGtin`
+ * in lib/adapters.ts; `variant_barcode` ist Medusas Momentaufnahme für den
+ * Fall, dass die Variante nicht mitgeladen wurde. Nichts Gültiges -> undefined.
+ */
+function lineGtin(item: MedusaLineItemLike): string | undefined {
+  const candidates = [
+    item.variant?.ean,
+    item.variant?.upc,
+    item.variant?.barcode,
+    item.variant_barcode,
+  ];
+  for (const raw of candidates) {
+    const gtin = normalizeGtin(raw);
+    if (gtin) return gtin;
+  }
+  return undefined;
 }
 
 export function toCartLineView(item: MedusaLineItemLike): CartLineView {
@@ -93,6 +127,7 @@ export function toCartLineView(item: MedusaLineItemLike): CartLineView {
         ? item.compare_at_unit_price
         : undefined,
     thumbnail: item.thumbnail ?? undefined,
+    gtin: lineGtin(item),
   };
 }
 
