@@ -31,6 +31,13 @@ export interface CartLineView {
   /** Struck-through original, when Medusa reports a higher one. */
   compareAtUnitPrice?: number;
   thumbnail?: string;
+  /**
+   * Geprüfte GTIN der Variante (lib/gtin.ts) — nur gesetzt, wenn die
+   * Variante mitgeladen wurde (Bestellungen, lib/checkout/order.ts) und der
+   * Wert die Prüfziffer besteht. Einziger Abnehmer: Google Kundenrezensionen
+   * auf der Bestätigungsseite (Produktbewertungen je GTIN).
+   */
+  gtin?: string;
 }
 
 /**

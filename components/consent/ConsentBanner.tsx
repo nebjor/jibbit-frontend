@@ -75,7 +75,8 @@ export function ConsentBanner({
 
         <p id="consent-text" className={styles.text}>
           Zwingend notwendige Cookies (Warenkorb, Anmeldung) laufen immer.
-          Analyse-Cookies helfen uns zu verstehen, wie der Shop genutzt wird
+          Analyse-Cookies helfen uns zu verstehen, wie der Shop genutzt wird,
+          und erlauben nach einer Bestellung die Einladung zur Google-Bewertung
           — sie laufen nur, wenn du zustimmst. Deine Wahl kannst du jederzeit
           über «Cookie-Einstellungen» im Footer ändern.{" "}
           <Link
