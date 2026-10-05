@@ -26,8 +26,9 @@ keinen Platz im Layout.
 | MC-PROD | https://support.google.com/merchants/answer/14632920 (Opt-in um Produktrezensionen erweitern) |
 | MC-FAQ | https://support.google.com/merchants/answer/14635620 (FAQ Produktrezensionen) |
 | MC-RATING | https://support.google.com/merchants/answer/190657 (Shopbewertungen) |
+| MC-WIDGET | https://support.google.com/merchants/answer/7105655 (Store Widget / ehem. Badge einbinden) |
 
-Geprüft am 2026-10-05 (MC-OPTIN, MC-RATING im Volltext; MC-PROD/MC-FAQ über die
+Geprüft am 2026-10-05 (MC-OPTIN, MC-RATING, MC-WIDGET im Volltext; MC-PROD/MC-FAQ über die
 Suchzusammenfassung, die Seiten liefern ohne Anmeldung 404).
 
 ## 3. Felder
@@ -98,8 +99,8 @@ eingeladen — die Zahl der Rezensionen ist entsprechend kleiner als die der Bes
    `environment:` als `GOOGLE_KUNDENREZENSIONEN_MERCHANT_ID` stehen (Compose reicht nur
    weiter, was dort aufgeführt ist) — und zwar **nur in der Produktion**; auf Staging
    schadet sie nicht (Domain-Sperre), bringt aber auch nichts.
-4. Optional, später: das **Badge** («Google Kundenrezensionen»-Abzeichen) — ein zweites
-   Skript, bewusst nicht Teil dieses PRs; es zeigt erst mit genügend Bewertungen etwas an.
+4. Optional, später: das **Store Widget** (ehemals «Badge») — eingebaut, aber per Schalter
+   AUS; wann einschalten, steht in Abschnitt 9.
 5. Prüfen, dass im Merchant Center dieselbe Domain (`jibbit.ch`) **bestätigt und
    beansprucht** ist, auf der die Bestätigungsseite liegt — Googles Voraussetzung: Warenkorb,
    Kasse und Bestätigung auf der eigenen Domain, HTTPS, `<!DOCTYPE html>` (Next.js setzt
@@ -134,3 +135,105 @@ Google bietet **keinen Sandbox-Modus**; ein Test-Merchant-Konto gibt es nicht.
 - Erscheint das Fenster nicht: Reihenfolge der vier Wächter prüfen (Abschnitt 4) — Serverlog
   `[kundenrezensionen] … nicht gesetzt`, Cookie `jibbit_cookie_consent` mit `"analytics":true`
   und `"v":2`, Host exakt `jibbit.ch`/`www.jibbit.ch` (Tenant-Theme-Domain `jibbit.ch`).
+
+## 9. Store Widget («Badge») — Schalter `GOOGLE_KUNDENREZENSIONEN_BADGE`
+
+Umsetzung: `components/GoogleKundenrezensionenBadge.tsx` (Einbindung, aus `app/layout.tsx`),
+`lib/google-kundenrezensionen/badge.ts` (Snippet-Konstanten und die vier Wächter, Tests in
+`badge.test.ts`), Schalter in `lib/google-kundenrezensionen/server.ts`. E2E: `e2e/trust.spec.ts`.
+
+**Was Google heute anbietet.** Das frühere «Google Kundenrezensionen»-Badge
+(`platform.js?onload=renderBadge`, `gapi.ratingbadge`) ist laut MC-WIDGET **abgelöst**; Google
+verlangt, den alten Code zu entfernen. Nachfolger ist das **Store Widget**:
+`https://www.gstatic.com/shopping/merchant/merchantwidget.js`, nach dem Laden
+`merchantwidget.start({ position, … })`. Es kennt keine Merchant-ID im Code — Google ordnet
+die Seite über die im Merchant Center **beanspruchte Domain** zu. Das Widget schwebt als
+Google-eigenes Element in einer unteren Ecke (mobil mittig), lässt sich aufklappen (Panel mit
+Shopbewertung, Rezensionen, «Store Quality») und nicht schliessen. Je nach Datenlage zeigt es
+eine von drei Varianten (Top Quality Store / Store Rating / Store Quality); **ohne genügend
+Rezensionen gibt es nichts zu zeigen**, das Widget bleibt dann leer bzw. meldet «nicht
+verfügbar».
+
+Weil das Opt-in-Modul (Abschnitt 4) weiterhin `platform.js` nutzt und das Widget ein anderes
+Skript ist, gibt es **keinen Konflikt** und keinen gemeinsamen Loader; #60 bleibt unverändert.
+
+**Vier Wächter** — fällt einer, wird das Skript GAR NICHT geladen:
+
+1. `GOOGLE_KUNDENREZENSIONEN_BADGE` ist `1` oder `true` (alles andere = AUS, Standard AUS).
+2. `GOOGLE_KUNDENREZENSIONEN_MERCHANT_ID` gesetzt (Programm eingerichtet).
+3. Eigene Domain (`tenant.theme.domain === STORE.domain`, also nur `jibbit.ch`).
+4. Analyse-Einwilligung erteilt (Abschnitt 5) — `merchantwidget.js` ist ein Google-Drittskript
+   und erhebt laut MC-WIDGET aggregierte Nutzungsdaten. Wird die Einwilligung später erteilt,
+   lädt das Widget in dem Moment; ein Widerruf wirkt ab dem nächsten Seitenaufruf.
+
+Position: **unten links** (`LEFT_BOTTOM`, Abstand 24 px) — rechts liegen Warenkorb-Button
+und Schublade. Mobil zentriert Google das Widget; `mobileBottomMargin: 88` hebt es über die
+fixe Kaufleiste der Produktseite (Google: «Don't obscure the widget»).
+
+**Wann der Inhaber einschaltet.** Erst wenn das Merchant Center unter *Google
+Kundenrezensionen* bzw. *Store Quality* eine **Shopbewertung ausweist** (MC-RATING: ab rund
+100 Rezensionen in 24 Monaten, Schnitt ≥ 3,5). Vorher wäre ein Abzeichen mit «Bewertung nicht
+verfügbar» Werbung gegen sich selbst. Einschalten = im Repo `medusa-ecom`, Dienst
+`storefront`, `environment:` die Zeile `GOOGLE_KUNDENREZENSIONEN_BADGE=1` ergänzen und neu
+starten; es ist keine Code-Änderung nötig. Prüfen: auf jibbit.ch mit «Alle akzeptieren» muss in
+den DevTools ein Request an `gstatic.com/shopping/merchant/merchantwidget.js` stehen und unten
+links das Widget erscheinen. Fällt die Bewertung später unter die Schwelle, wieder auf `0`.
+
+## 10. Vertrauensleiste (TrustBar)
+
+`components/TrustBar.tsx` zeigt über dem Header auf jeder Seite eine schmale Zeile mit vier
+Zusagen; sie hat den früheren dunklen Promo-Streifen abgelöst (ein Streifen, nicht zwei; das
+Preisversprechen `PRICE_CLAIM` steht weiter als Untertitel auf der Startseite). Server-
+Komponente, feste Höhe (28/32 px), kein Client-JS.
+
+**Die Texte stehen an genau einer Stelle: `lib/trust.ts`.** Jede Zeile ist eine Zusage und an
+ihre Quelle gebunden (`lib/trust.test.ts` prüft das):
+
+| Zeile | Quelle |
+|---|---|
+| ★ 5.0 bei Google · 26 Bewertungen | **Google-Unternehmensprofil** «Jibbit .ch - Headshop», Unterwegli 1, Winterthur (Google Maps, öffentlich) — `GOOGLE_PROFIL` in `lib/trust.ts` oder live über die Places API (unten); verlinkt direkt auf das Profil (neuer Tab, `rel="noopener"`) |
+| Versand aus der Schweiz | `BUSINESS.countryCode` = CH (`lib/config.ts`); FAQ «Wie lange dauert die Lieferung?», `/service/versand` |
+| Gratisversand ab CHF 69.00 | `SHIPPING.freeThreshold` (`lib/config.ts`) — derselbe Wert wie Footer, Warenkorb, Backend |
+| Sichere Zahlung: TWINT, Karte, PostFinance | `PAYMENT_METHODS` (`lib/config.ts`); Zahlung auf der gehosteten zahls.ch-Bezahlseite (`/service/zahlungsarten`, «Sicherheit») |
+
+Das Profil steht **zuerst**: mobil sind ohne Wischen nur die ersten zwei Einträge zu sehen.
+
+### Zwei Google-Bewertungen, sauber getrennt
+
+| | Google-Unternehmensprofil | Google Kundenrezensionen (Merchant Center) |
+|---|---|---|
+| Was | Bewertung des Ladenlokals/Betriebs auf Google Maps | Shopbewertung aus Umfragen nach Online-Bestellungen (dieses Dokument) |
+| Stand 2026-10-05 | **5.0 Sterne, 26 Rezensionen**, öffentlich | 0 Rezensionen; Sterne erst ab ~100 in 24 Monaten |
+| In der Leiste | ja — echte, prüfbare Zahl, Link aufs Profil | nein (nichts anzudeuten); später das Store Widget (Abschnitt 9) |
+
+Die Leiste zeigt also die Profil-Zahl und **nichts** aus dem Merchant Center. Die FAQ-Antwort
+«Kann ich jibbit bewerten?» (`/service/faq#bewertungen`) erklärt beide Wege.
+
+### Woher die Zahl kommt — `lib/google-profil.ts`
+
+1. **Konstante `GOOGLE_PROFIL`** (`lib/trust.ts`): `rating`, `count`, `stand`, `url`. **Von
+   Hand nachführen**, bis die Places-Anbindung läuft — alle paar Wochen auf Google Maps
+   nachsehen. Nie «aufrunden»: eine zu tiefe alte Zahl ist unschön, eine zu hohe ist falsch.
+2. **Places API (New), optional**, zwei Umgebungsvariablen (beide standardmässig leer):
+   - `GOOGLE_PLACES_API_KEY` — Schlüssel aus der Google Cloud Console, auf «Places API (New)»
+     beschränkt; serverseitig, nie `NEXT_PUBLIC_`.
+   - `GOOGLE_PLACE_ID` — die Place-ID des Profils. Maps zeigt nur die Knowledge-Graph-Kennung
+     `/g/11p1f3mtw4`, das ist **keine** Place-ID. Ermitteln über
+     https://developers.google.com/maps/documentation/places/web-service/place-id (Place ID
+     Finder, Suche «Jibbit .ch - Headshop, Winterthur»).
+
+   Abruf: `GET https://places.googleapis.com/v1/places/{placeId}?fields=rating,userRatingCount`
+   mit `X-Goog-Api-Key`, gecacht **6 Stunden** (`unstable_cache`, 4 Abrufe/Tag). Bei fehlendem
+   Schlüssel, Fehlerstatus oder unbrauchbarer Antwort (keine Zahl, Bewertung ausserhalb 1–5,
+   0 Rezensionen = vermutlich falsche Place-ID) → **Rückfall auf die Konstante**, Hinweis im
+   Serverlog `[google-profil] …`. Tests: `lib/google-profil.test.ts` (gemockter fetch).
+
+   Einschalten: beide Variablen im Repo `medusa-ecom`, Dienst `storefront`, `environment:`
+   eintragen; prüfen im Serverlog (kein `[google-profil]`-Hinweis mehr) und an der Leiste.
+
+### Kein `aggregateRating` im JSON-LD
+
+Googles Richtlinie für Rezensions-Snippets verbietet, Bewertungen, die Google selbst erhoben
+hat, als eigene strukturierte Daten auszuzeichnen. `lib/seo/jsonld.ts` enthält deshalb
+bewusst **kein** `aggregateRating`/`review`; `lib/trust.test.ts` und `e2e/trust.spec.ts`
+prüfen das. Die Zahl steht sichtbar auf der Seite und verlinkt zur Quelle — das genügt.

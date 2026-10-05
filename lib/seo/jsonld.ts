@@ -736,8 +736,13 @@ function variantNode(
  *
  * Kein `AggregateOffer`: Google — «Don't use AggregateOffer to describe a
  * set of product variants», und Händlereinträge verlangen ein `Offer`.
- * Kein `aggregateRating` und keine `review`: es gibt noch keine Bewertungen.
- * Erfundene Sterne sind der kürzeste Weg zu einer manuellen Massnahme.
+ * Kein `aggregateRating` und keine `review` — weder hier noch bei der
+ * Organization: Produktbewertungen gibt es keine, und die Bewertung des
+ * Google-Unternehmensprofils (Vertrauensleiste, lib/trust.ts) ist Googles
+ * eigene — die darf ein Shop nicht als eigene strukturierte Daten
+ * ausgeben (Richtlinie Rezensions-Snippets). Erfundene oder abgeschriebene
+ * Sterne sind der kürzeste Weg zu einer manuellen Massnahme; lib/trust.test.ts
+ * wacht darüber.
  */
 export function productJsonLd({
   product,
