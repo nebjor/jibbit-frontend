@@ -1,17 +1,18 @@
 import { test, expect, AGE_COOKIE, CONSENT_COOKIE, consentCookieValue } from "./fixtures";
-import { GOOGLE_PROFIL, formatRating, formatReviewCount } from "../lib/trust";
+import { GOOGLE_PROFIL } from "../lib/trust";
 
 /**
- * Vertrauensleiste (components/TrustBar.tsx) und Google Store Widget
- * (components/GoogleKundenrezensionenBadge.tsx).
+ * Vertrauenszeile im Shop-Kopf (components/ShopTrust.tsx) und Google Store
+ * Widget (components/GoogleKundenrezensionenBadge.tsx).
  *
- * Die Leiste steht auf jeder Seite über dem Header, fertig im HTML, ohne
- * Client-JS. Geprüft wird, dass die vier Zusagen aus lib/trust.ts sichtbar
- * sind — mobil die ersten zwei direkt, die übrigen per Wischen — und dass
- * die Google-Zahl GENAU die aus GOOGLE_PROFIL ist (die Suite läuft ohne
- * GOOGLE_PLACES_API_KEY, also mit der Konstante) und auf das öffentliche
- * Profil verlinkt, wo jede Kundin sie prüfen kann. Die anderen Zeilen
- * tragen keine Sterne und keine Noten.
+ * Die Zeile steht unter Titel/Beschreibung des Katalogs (Startseite,
+ * Kategorien) und der Suche, fertig im HTML, ohne Client-JS. Die Google-Zahl
+ * kommt in dieser Suite aus dem Mock-Backend (playwright.config.ts:
+ * GOOGLE_PLACES_ENDPOINT → e2e/mock-backend, Fixture 4.8 / 27) — geprüft
+ * wird also die echte Darstellung mit Sternen und Zahl, der Link aufs
+ * öffentliche Profil, die drei Fakten daneben und dass der Promo-Streifen im
+ * Header unverändert steht. Keine Google-Requests aus dem Browser: der
+ * Abruf ist serverseitig.
  *
  * Das Store Widget ist standardmässig AUS (GOOGLE_KUNDENREZENSIONEN_BADGE in
  * playwright.config.ts nicht gesetzt) und bliebe auf dem Staging-Mandanten
@@ -19,54 +20,69 @@ import { GOOGLE_PROFIL, formatRating, formatReviewCount } from "../lib/trust";
  * Request an gstatic.com, auch mit erteilter Einwilligung.
  */
 
-const BAR = (page: import("@playwright/test").Page) =>
-  page.getByRole("list", { name: "Unsere Versprechen" });
+const FIXTURE_TEXT = "4.8 bei Google · 27 Bewertungen";
 
-const GOOGLE_TEXT = `${formatRating(GOOGLE_PROFIL.rating)} bei Google · ${formatReviewCount(GOOGLE_PROFIL.count)}`;
-
-test("Vertrauensleiste nennt Google-Profil, Versand, Gratisversand und Zahlung", async ({ page }) => {
+test("Shop-Kopf: Sterne, Zahl und Link aufs Google-Profil — unter dem Titel", async ({ page }) => {
   await page.goto("/");
 
-  const bar = BAR(page);
-  await expect(bar).toBeVisible();
-  const items = bar.getByRole("listitem");
-  await expect(items).toHaveCount(4);
+  const head = page.locator("header").filter({ has: page.getByRole("heading", { level: 1, name: "Shop" }) });
+  const google = head.locator("[data-trust='google']");
+  await expect(google).toBeVisible();
+  await expect(google).toHaveText(FIXTURE_TEXT);
+  await expect(google).toHaveAttribute("href", GOOGLE_PROFIL.url);
+  await expect(google).toHaveAttribute("target", "_blank");
+  await expect(google).toHaveAttribute("rel", "noopener");
+  await expect(google).toHaveAttribute("aria-label", /4\.8 von 5 Sternen bei Google, 27 Bewertungen/);
 
-  await expect(items.nth(0)).toHaveText(GOOGLE_TEXT);
-  await expect(items.nth(1)).toHaveText("Versand aus der Schweiz");
-  await expect(items.nth(2)).toHaveText(/Gratisversand ab CHF\s69\.00/);
-  await expect(items.nth(3)).toHaveText("Sichere Zahlung: TWINT, Karte, PostFinance");
-
-  // Mobil ist die Leiste eine scrollbare Zeile; jeder Eintrag muss
-  // erreichbar sein, der letzte durch Wischen.
-  await items.nth(3).scrollIntoViewIfNeeded();
-  await expect(items.nth(3)).toBeInViewport();
+  // Fünf Umriss-Sterne, Füllschicht auf 96 % (4.8 / 5).
+  await expect(google.locator("svg")).toHaveCount(10);
+  await expect(google.locator("span[style]")).toHaveAttribute("style", /width:\s*96%/);
+  await expect(head.locator("[data-trust-source]")).toHaveAttribute("data-trust-source", "places");
 });
 
-test("Google-Zahl verlinkt auf das öffentliche Unternehmensprofil (neuer Tab, noopener)", async ({
+test("Shop-Kopf: die drei Fakten daneben, intern verlinkt", async ({ page }) => {
+  await page.goto("/");
+
+  const facts = page.getByRole("list", { name: "Unsere Versprechen" }).getByRole("listitem");
+  await expect(facts).toHaveCount(3);
+  await expect(facts.nth(0)).toHaveText("Versand aus der Schweiz");
+  await expect(facts.nth(1)).toHaveText(/Gratisversand ab CHF\s69\.00/);
+  await expect(facts.nth(2)).toHaveText("Sichere Zahlung");
+  await expect(facts.nth(2).getByRole("link")).toHaveAttribute("href", "/service/zahlungsarten");
+  for (let i = 0; i < 3; i++) await expect(facts.nth(i)).toBeVisible();
+
+  const text = (await facts.allTextContents()).join(" ");
+  expect(text).not.toMatch(/[★☆⭐]/);
+  expect(text).not.toMatch(/\d+\s*(Sterne|Bewertungen|Rezensionen)/i);
+});
+
+test("auch auf Kategorieseite und Suche; Promo-Streifen im Header bleibt", async ({ page }) => {
+  await page.goto("/?kategorie=papers");
+  await expect(page.getByRole("heading", { level: 1, name: "Papers" })).toBeVisible();
+  await expect(page.locator("[data-trust='google']")).toHaveText(FIXTURE_TEXT);
+
+  await page.goto("/suche?q=papers");
+  await expect(page.locator("[data-trust='google']")).toHaveText(FIXTURE_TEXT);
+
+  // Der dunkle Promo-Streifen über der Kopfleiste steht wie auf main.
+  await expect(page.getByText("Dauertiefpreise", { exact: false }).first()).toBeVisible();
+  await expect(page.locator("body")).toContainText(/Gratisversand ab CHF\s69\.00/);
+});
+
+test("kein aggregateRating in den strukturierten Daten, keine Google-Requests aus dem Browser", async ({
   page,
 }) => {
+  const google: string[] = [];
+  page.on("request", (req) => {
+    if (/google\.com|gstatic\.com|googleapis\.com/.test(req.url())) google.push(req.url());
+  });
   await page.goto("/");
+  await expect(page.locator("[data-trust='google']")).toBeVisible();
+  await page.waitForLoadState("networkidle");
 
-  const link = BAR(page).locator("[data-trust='google'] a");
-  await expect(link).toHaveAttribute("href", GOOGLE_PROFIL.url);
-  await expect(link).toHaveAttribute("target", "_blank");
-  await expect(link).toHaveAttribute("rel", "noopener");
-  await expect(link).toHaveAttribute("aria-label", /von 5 Sternen bei Google/);
-});
-
-test("ausser dem Profil trägt keine Zeile Sterne oder Noten", async ({ page }) => {
-  await page.goto("/");
-
-  const others = BAR(page).locator("li:not([data-trust='google'])");
-  await expect(others).toHaveCount(3);
-  const text = (await others.allTextContents()).join(" ");
-  expect(text).not.toMatch(/[★☆⭐]/);
-  expect(text).not.toMatch(/\d\s*[.,]\s*\d\s*(\/|von|bei)\s*(5|Google)/);
-  expect(text).not.toMatch(/\d+\s*(Sterne|Bewertungen|Rezensionen)/i);
-  // Kein aggregateRating in den strukturierten Daten der Seite.
   const jsonld = await page.locator("script[type='application/ld+json']").allTextContents();
   expect(jsonld.join("\n")).not.toMatch(/aggregateRating|ratingValue/);
+  expect(google).toEqual([]);
 });
 
 test("Store Widget: ohne Schalter kein Google — auch mit Einwilligung", async ({
@@ -84,7 +100,7 @@ test("Store Widget: ohne Schalter kein Google — auch mit Einwilligung", async 
   });
 
   await page.goto("/");
-  await expect(BAR(page)).toBeVisible();
+  await expect(page.locator("[data-trust='google']")).toBeVisible();
   await page.waitForLoadState("networkidle");
 
   expect(google).toEqual([]);

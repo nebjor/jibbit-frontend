@@ -57,7 +57,7 @@ const FAQS: { id?: string; q: string; a: string }[] = [
     // (Opt-in nach der Bestellung, docs/google-kundenrezensionen.md).
     id: "bewertungen",
     q: "Kann ich jibbit bewerten?",
-    a: `Ja, auf zwei Wegen. Jederzeit über unser Google-Unternehmensprofil («Jibbit .ch - Headshop» auf Google Maps) — die Bewertung oben in der Leiste stammt von dort. Und über Google Kundenrezensionen: Hast du im Cookie-Hinweis «Alle akzeptieren» gewählt, fragt dich Google nach der Bestellung auf der Bestätigungsseite, ob du den Shop nach der Lieferung bewerten möchtest; die Einladung kommt dann per E-Mail von Google. Beide Bewertungen sammelt Google unabhängig von uns — wir können sie weder auswählen noch bearbeiten.`,
+    a: `Ja, auf zwei Wegen. Jederzeit über unser Google-Unternehmensprofil («Jibbit .ch - Headshop» auf Google Maps) — die Bewertung im Kopf des Shops stammt von dort. Und über Google Kundenrezensionen: Hast du im Cookie-Hinweis «Alle akzeptieren» gewählt, fragt dich Google nach der Bestellung auf der Bestätigungsseite, ob du den Shop nach der Lieferung bewerten möchtest; die Einladung kommt dann per E-Mail von Google. Beide Bewertungen sammelt Google unabhängig von uns — wir können sie weder auswählen noch bearbeiten.`,
   },
 ];
 

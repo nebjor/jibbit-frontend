@@ -181,6 +181,27 @@ function addLineItem(cart, variantId, quantity) {
 const routes = [
   ["GET", /^\/health$/, () => ({ status: "ok" })],
 
+  /**
+   * Google Places API (New), Place Details — nachgespielt für die
+   * Vertrauenszeile im Shop-Kopf (lib/google-profil.ts). Der Storefront
+   * zeigt hierhin über GOOGLE_PLACES_ENDPOINT (playwright.config.ts).
+   * Verlangt den Schlüssel-Header wie Google (sonst 403), antwortet mit den
+   * zwei Feldern der Feldmaske. Fixture-Werte, keine Live-Daten.
+   */
+  [
+    "GET",
+    /^\/places\/v1\/places\/([^/]+)$/,
+    ([placeId], { request }) => {
+      if (!request.headers["x-goog-api-key"]) {
+        return { __status: 403, body: { error: { message: "API key missing" } } };
+      }
+      if (placeId !== "e2e-place") {
+        return { __status: 404, body: { error: { message: "Place not found" } } };
+      }
+      return { rating: 4.8, userRatingCount: 27 };
+    },
+  ],
+
   ["GET", /^\/store\/regions$/, () => ({ regions: [REGION], count: 1 })],
 
   [

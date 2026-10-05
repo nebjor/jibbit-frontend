@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seo:probe": "node tools/seo/probe-jsonld.mjs",
+    "google-profil:place-id": "node scripts/google-place-id.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "smoke": "node tools/smoke.mjs"
