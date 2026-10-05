@@ -25,9 +25,10 @@
  * zieht ihn in der Datendatei im selben Zug nach.
  *
  * AUSNAHME AUF ZEIT: die Handles unter `unveroeffentlicht` sind im Admin
- * angelegt, aber noch Entwurf (IDs 23, 40, 47). Bis sie veröffentlicht sind,
- * antworten ihre Seiten mit 404 — das MUSS vor dem Go-live erledigt sein.
- * Der Smoke-Test nennt sie als eigene Warnung.
+ * angelegt, aber noch Entwurf. Bis sie veröffentlicht sind, antworten ihre
+ * Seiten mit 404 — das MUSS vor dem Go-live erledigt sein. Der Smoke-Test
+ * nennt sie als eigene Warnung. Seit 2026-10-02 ist die Liste leer: die
+ * letzten beiden Entwürfe (IDs 23, 40, 47) sind veröffentlicht.
  *
  * Zu ID 60: Odoo 60 ist «PURIZE Aktivkohlefilter ø 9mm». Das Ziel hiess
  * bis 2026-09-29 `purize-aktivkohlefilter-6mm`, trug aber den Titel
