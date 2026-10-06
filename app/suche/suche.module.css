@@ -6,11 +6,13 @@
 }
 
 .head {
-  max-width: 60ch;
   margin-bottom: var(--s-5);
 }
 
+/* Der Titel bleibt schmal; die Vertrauenszeile (ShopTrust) darunter nutzt
+   die volle Breite — wie im Katalogkopf (app/page.module.css). */
 .title {
+  max-width: 60ch;
   font-size: clamp(28px, 7vw, 48px);
   margin: var(--s-2) 0;
   overflow-wrap: anywhere;

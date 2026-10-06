@@ -6,6 +6,7 @@ import { PageLoading } from "@/components/PageLoading";
 import type { CategoryView } from "@/lib/types";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
+import { ShopTrust } from "@/components/ShopTrust";
 import { HomeIntro } from "@/components/intro/HomeIntro";
 import { JsonLd } from "@/components/JsonLd";
 import { CategoryComingSoon } from "./CategoryComingSoon";
@@ -156,6 +157,9 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
             )}
           </div>
           {description ? <p className={styles.desc}>{description}</p> : null}
+          {/* Vertrauenszeile: Google-Bewertung des Ladenlokals + drei
+              Fakten — Texte in lib/trust.ts, Zahl aus lib/google-profil.ts. */}
+          <ShopTrust />
           {related.length > 0 && (
             <p className={styles.related}>
               Passt dazu:{" "}

@@ -49,6 +49,12 @@ const appEnv = {
   // e2e/bestellung.spec.ts die Domain-Sperre des Google-Opt-ins und nicht
   // bloss eine fehlende Variable.
   GOOGLE_KUNDENREZENSIONEN_MERCHANT_ID: "5618479597",
+  // Vertrauenszeile im Shop-Kopf: die Google-Profilbewertung kommt aus dem
+  // Mock-Backend (Route /places/v1/places/…), nicht von Google — so wird
+  // die Sterne-Darstellung mit Zahl geprüft, ohne Netz und ohne Schlüssel.
+  GOOGLE_PLACES_API_KEY: "e2e-key",
+  GOOGLE_PLACE_ID: "e2e-place",
+  GOOGLE_PLACES_ENDPOINT: `${BACKEND_URL}/places/v1/places/`,
   E2E_BACKEND_PORT: String(BACKEND_PORT),
 };
 

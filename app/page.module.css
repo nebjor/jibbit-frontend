@@ -7,7 +7,6 @@
    Beschreibung, Filterreihe und eigener Zählzeile hat zusammen mit dem
    Header die halbe Notebook-Höhe gefüllt, bevor ein Produkt sichtbar war. */
 .head {
-  max-width: 72ch;
   margin-bottom: var(--s-3);
 }
 
@@ -28,7 +27,11 @@
   color: var(--c-muted);
 }
 
+/* Die Textzeilen bleiben lesbar schmal; die Vertrauenszeile (ShopTrust)
+   darunter darf die volle Breite nutzen, damit Bewertung und Fakten auf dem
+   Desktop nebeneinander stehen. */
 .desc {
+  max-width: 72ch;
   margin-top: var(--s-1);
   color: var(--c-muted);
   font-size: 14px;
@@ -36,6 +39,7 @@
 
 /* Verweis auf die verwandte Kategorie («Filter» <-> «Filter & Tips»). */
 .related {
+  max-width: 72ch;
   margin-top: var(--s-1);
   color: var(--c-muted);
   font-size: 14px;

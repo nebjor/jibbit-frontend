@@ -1,5 +1,6 @@
 import "server-only";
 
+import { parseBadgeSwitch } from "./badge";
 import { parseMerchantId } from "./payload";
 
 /**
@@ -31,4 +32,15 @@ export function getKundenrezensionenMerchantId(): number | null {
   }
 
   return id;
+}
+
+/**
+ * Schalter für das Store Widget («Badge») — `GOOGLE_KUNDENREZENSIONEN_BADGE=1`.
+ * Standard AUS: das Widget zeigt erst mit genügend Rezensionen eine
+ * Bewertung, davor nur «nicht verfügbar». Wann der Inhaber einschaltet:
+ * docs/google-kundenrezensionen.md, Abschnitt «Store Widget». Wie die
+ * Merchant-ID zur LAUFZEIT gelesen, nicht in den Build gebacken.
+ */
+export function isKundenrezensionenBadgeEnabled(): boolean {
+  return parseBadgeSwitch(process.env.GOOGLE_KUNDENREZENSIONEN_BADGE);
 }

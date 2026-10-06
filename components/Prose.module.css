@@ -35,6 +35,12 @@
   line-height: 1.65;
 }
 
+/* Ankerziele (z. B. /service/faq#bewertungen aus der Vertrauensleiste) dürfen
+   nicht unter der klebenden Kopfleiste (Logo-Zeile + Kategorien) landen. */
+.body section[id] {
+  scroll-margin-top: calc(var(--header-h) + var(--s-8));
+}
+
 .body h2 {
   font-size: 20px;
   margin-top: var(--s-5);
