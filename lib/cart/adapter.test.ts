@@ -157,6 +157,21 @@ describe("toCartState", () => {
     expect(state.hasShippingAddress).toBe(false);
     expect(state.address).toBeNull();
   });
+
+  it("Abholung im Laden: am Marker der Methode, sonst an der gespeicherten Wahl", () => {
+    expect(toCartState(medusaCart()).pickup).toBe(false);
+    expect(
+      toCartState(medusaCart({ shipping_methods: [{ id: "sm", data: { pickup: true } }] })).pickup,
+    ).toBe(true);
+    expect(toCartState(medusaCart({ metadata: { pickup: true } })).pickup).toBe(true);
+    // Eine Versandmethode ohne Marker schlägt ein veraltetes Metadatum.
+    expect(
+      toCartState(
+        medusaCart({ shipping_methods: [{ id: "sm", data: {} }], metadata: { pickup: true } }),
+      ).pickup,
+    ).toBe(false);
+    expect(EMPTY_CART.pickup).toBe(false);
+  });
 });
 
 describe("toCartLineView — GTIN der Position", () => {

@@ -46,10 +46,12 @@
 import {
   BUSINESS,
   DELIVERY,
+  PICKUP,
   RETURNS,
   SHIPPING,
   STORE,
 } from "../config";
+import { openingHoursSpecification } from "../checkout/pickup";
 import { gtinProperty, normalizeGtin } from "../gtin";
 import { toMediaSrc } from "../media";
 import { knownBrand } from "../placeholder";
@@ -314,6 +316,13 @@ export interface SiteIdentity {
  * app/layout.tsx); eine fremde Storefront mit jibbits Adresse und
  * Telefonnummer auszuzeichnen, ist jedoch etwas anderes als ein geteilter
  * Slogan: sie benennt maschinenlesbar den falschen Verkäufer.
+ *
+ * LADEN: jibbit hat ein Ladenlokal (Abholung im Laden, `PICKUP`). Auf der
+ * eigenen Domain ist die Organisation deshalb zusätzlich ein `Store`
+ * (LocalBusiness) mit `openingHoursSpecification` — dieselben Zeiten wie im
+ * Google-Unternehmensprofil, sonst widerspricht sich der Betrieb selbst.
+ * Ohne bekannte Zeiten (`PICKUP.hours === null`) bleibt der `Store`-Typ weg:
+ * ein LocalBusiness ohne Öffnungszeiten ist für Google ein halber Eintrag.
  */
 export function organizationJsonLd({
   domain,
@@ -321,20 +330,22 @@ export function organizationJsonLd({
 }: SiteIdentity): JsonLdObject {
   const base = origin(domain);
   const own = domain === STORE.domain;
+  const hours = own && PICKUP.enabled ? openingHoursSpecification(PICKUP.hours) : undefined;
 
   return prune({
-    "@type": ["Organization", "OnlineStore"],
+    "@type": hours ? ["Organization", "OnlineStore", "Store"] : ["Organization", "OnlineStore"],
     "@id": organizationId(domain),
     name: storeName,
     url: base,
     description: STORE.tagline,
     areaServed: { "@type": "Country", name: BUSINESS.countryCode },
-    // Kein `currenciesAccepted`/`paymentAccepted` mehr: beide gehören zu
-    // `LocalBusiness`, nicht zu `Organization`/`OnlineStore` — der schema.org-
-    // Validator streicht sie hier an, und ein Ladengeschäft ist jibbit nicht.
+    // Kein `currenciesAccepted`/`paymentAccepted`: Zahlarten stehen auf
+    // /service/zahlungsarten und gehören nicht ins Schema, solange sie nicht
+    // als Enum sauber abbildbar sind (TWINT ist keins).
     // `logo` fehlt absichtlich — es gibt noch keine Logodatei, nur den
     // Platzhalter in components/Logo.tsx. Sobald sie unter public/ liegt:
     // logo: `${base}/logo.png` (Google will mindestens 112 × 112 px).
+    openingHoursSpecification: hours,
     legalName: own ? BUSINESS.legalName : undefined,
     founder: own ? { "@type": "Person", name: BUSINESS.owner } : undefined,
     email: own ? BUSINESS.email : undefined,
@@ -642,10 +653,23 @@ function offerFor(
           }
         : undefined,
     shippingDetails: shippingDetailsJsonLd(ctx.currency, unit),
+    // Paketversand UND Abholung im Laden. Google liest das Feld nicht
+    // (Händlereinträge kennen nur `shippingDetails`), schema.org kennt es als
+    // `DeliveryMethod`-Aufzählung — und es ist die einzige maschinenlesbare
+    // Stelle, die sagt, dass man hier auch abholen kann. Die Versanddetails
+    // bleiben unverändert: Google hat kein Markup für Abholung.
+    availableDeliveryMethod: deliveryMethods(ctx.domain),
     // Nur der Verweis — die Regel selbst hängt an der Organisation. Genau
     // diese Form («using only the @id keyword») beschreibt Google.
     hasMerchantReturnPolicy: { "@id": returnPolicyId(ctx.domain) },
   });
+}
+
+/** schema.org `DeliveryMethod`: Post immer; Abholung nur auf jibbits Domain. */
+export function deliveryMethods(domain: string): string[] {
+  const methods = [`${SCHEMA}/ParcelService`];
+  if (domain === STORE.domain && PICKUP.enabled) methods.push(`${SCHEMA}/OnSitePickup`);
+  return methods;
 }
 
 /** Marke, Kategorie, Altershinweis — was für ALLE Packungen gleich ist. */

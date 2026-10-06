@@ -3,8 +3,10 @@
 /**
  * THE KASSENSTRECKE — two steps on one page.
  *
- *   1. Kontakt + Lieferadresse (the server also puts the delivery method on
- *      the cart — the customer never picks one, see lib/checkout/shipping-choice.ts)
+ *   1. Kontakt + Lieferung: the customer picks Lieferung or Abholung im Laden
+ *      (lib/checkout/pickup.ts) and gives the address — or, for pickup, only
+ *      name and phone. The server maps the choice onto a Medusa option
+ *      (lib/checkout/shipping-choice.ts); the customer never sees option ids.
  *   2. Übersicht + Bestellabschluss
  *
  * One page rather than routes: the basket, the price and the progress stay
@@ -34,8 +36,14 @@ import {
   saveAddressAction,
 } from "@/app/actions/checkout";
 import { EMPTY_ADDRESS, SUPPORTED_COUNTRIES, type AddressErrors } from "@/lib/checkout/address";
+import {
+  pickupAddressLines,
+  pickupHoursText,
+  type DeliveryChoice,
+} from "@/lib/checkout/pickup";
 import type { CartState, CheckoutAddress } from "@/lib/cart/types";
 import { EMPTY_CART } from "@/lib/cart/types";
+import { PICKUP, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { ShippingSplitNote } from "@/components/ShippingSplitNote";
 import styles from "./checkout.module.css";
@@ -43,7 +51,7 @@ import styles from "./checkout.module.css";
 type Step = "address" | "review";
 
 const STEP_LABELS: Record<Step, string> = {
-  address: "Adresse",
+  address: "Lieferung",
   review: "Kaufen",
 };
 
@@ -72,9 +80,21 @@ export function CheckoutFlow({
   // Was der Cart schon trägt, gewinnt: eine halb ausgefüllte Kasse darf das
   // Konto-Vorausfüllen nicht überschreiben.
   const [email, setEmail] = useState(initialCart.email ?? prefillEmail ?? "");
-  const [address, setAddress] = useState<CheckoutAddress>(
-    initialCart.address ?? prefillAddress ?? EMPTY_ADDRESS,
+  // Lieferung oder Abholung: was der Cart schon trägt (metadata.pickup),
+  // sonst Lieferung. Ohne freigeschaltete Abholung gibt es keine Wahl.
+  const [delivery, setDelivery] = useState<DeliveryChoice>(
+    PICKUP.enabled && initialCart.pickup ? "pickup" : "shipping",
   );
+  // Bei Abholung steht auf dem Cart die LADENADRESSE (lib/checkout/pickup.ts)
+  // — die darf das Formular nicht als Adresse der Kundin übernehmen. Name
+  // und Telefon stammen aber von ihr und bleiben.
+  const [address, setAddress] = useState<CheckoutAddress>(() => {
+    if (initialCart.pickup && initialCart.address) {
+      const { firstName, lastName, company, phone } = initialCart.address;
+      return { ...(prefillAddress ?? EMPTY_ADDRESS), firstName, lastName, company, phone };
+    }
+    return initialCart.address ?? prefillAddress ?? EMPTY_ADDRESS;
+  });
   const [errors, setErrors] = useState<AddressErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -123,7 +143,7 @@ export function CheckoutFlow({
     setFormError(null);
     setNotice(null);
     startTransition(async () => {
-      const result = await saveAddressAction(email, address);
+      const result = await saveAddressAction(email, address, delivery);
       if (!result.ok) {
         // A rebuilt cart (unavailable items dropped) replaces the stale summary.
         if (result.cart?.id) cart.applyCart(result.cart);
@@ -163,11 +183,42 @@ export function CheckoutFlow({
   }
 
   const addressComplete = cart.hasShippingAddress && Boolean(cart.email);
+  const isPickup = delivery === "pickup";
+
+  function deliveryOption(
+    value: DeliveryChoice,
+    title: string,
+    price: string,
+    detail: React.ReactNode,
+  ) {
+    return (
+      <label className={styles.choice} data-checked={delivery === value ? "true" : "false"}>
+        <input
+          type="radio"
+          name="delivery"
+          value={value}
+          className={styles.choiceInput}
+          checked={delivery === value}
+          onChange={() => {
+            setDelivery(value);
+            setErrors({});
+          }}
+        />
+        <span className={styles.choiceBody}>
+          <span className={styles.choiceHead}>
+            <span className={styles.choiceTitle}>{title}</span>
+            <span className={`${styles.choicePrice} tnum`}>{price}</span>
+          </span>
+          <span className={styles.choiceDetail}>{detail}</span>
+        </span>
+      </label>
+    );
+  }
 
   function field(
     name: keyof CheckoutAddress,
     label: string,
-    options: { required?: boolean; autoComplete?: string; type?: string } = {},
+    options: { required?: boolean; autoComplete?: string; type?: string; hint?: string } = {},
   ) {
     const value = address[name] ?? "";
     return (
@@ -186,6 +237,7 @@ export function CheckoutFlow({
             setAddress((prev) => ({ ...prev, [name]: e.target.value }))
           }
         />
+        {options.hint && <span className={styles.hint}>{options.hint}</span>}
         {errors[name] && <span className={styles.fieldError}>{errors[name]}</span>}
       </label>
     );
@@ -231,11 +283,11 @@ export function CheckoutFlow({
             </p>
           )}
 
-          {/* ── Schritt 1 — Kontakt + Lieferadresse ───────────────────── */}
+          {/* ── Schritt 1 — Kontakt + Lieferung ───────────────────────── */}
           <section className={styles.card} aria-labelledby="step-address">
             <div className={styles.cardHead}>
               <h2 id="step-address" className={styles.cardTitle}>
-                1 · Kontakt und Lieferadresse
+                1 · Kontakt und Lieferung
               </h2>
               {step !== "address" && addressComplete && (
                 <button
@@ -269,6 +321,34 @@ export function CheckoutFlow({
                   )}
                 </label>
 
+                {/* Lieferung oder Abholung — die Kundin wählt die ART, die
+                    Medusa-Option dahinter wählt der Server. Ohne
+                    freigeschaltete Abholung gibt es nur die Lieferung, und
+                    die wird dann nicht als Wahl inszeniert. */}
+                {PICKUP.enabled && (
+                  <fieldset className={styles.choices}>
+                    <legend className={styles.label}>Lieferung oder Abholung *</legend>
+                    {deliveryOption(
+                      "shipping",
+                      "Lieferung",
+                      `${formatPrice(SHIPPING.rate)}`,
+                      <>
+                        Schweizerische Post, gratis ab {formatPrice(SHIPPING.freeThreshold)}{" "}
+                        Bestellwert.
+                      </>,
+                    )}
+                    {deliveryOption(
+                      "pickup",
+                      PICKUP.label,
+                      "gratis",
+                      <>
+                        {pickupAddressLines().slice(1).join(", ")} · {pickupHoursText()}.{" "}
+                        {PICKUP.note}
+                      </>,
+                    )}
+                  </fieldset>
+                )}
+
                 <div className={styles.row}>
                   {field("firstName", "Vorname", {
                     required: true,
@@ -283,52 +363,78 @@ export function CheckoutFlow({
                 {field("company", "Firma (optional)", {
                   autoComplete: "organization",
                 })}
-                {field("address1", "Strasse und Nummer", {
-                  required: true,
-                  autoComplete: "address-line1",
-                })}
-                {field("address2", "Adresszusatz (optional)", {
-                  autoComplete: "address-line2",
-                })}
 
-                <div className={styles.row}>
-                  {field("postalCode", "PLZ", {
-                    required: true,
-                    autoComplete: "postal-code",
-                  })}
-                  {field("city", "Ort", {
-                    required: true,
-                    autoComplete: "address-level2",
-                  })}
-                </div>
+                {isPickup ? (
+                  <>
+                    {field("phone", "Telefon", {
+                      required: true,
+                      type: "tel",
+                      autoComplete: "tel",
+                      hint: "Für Rückfragen zur Abholung.",
+                    })}
+                    <div className={styles.pickupBox} data-testid="pickup-address">
+                      <span className={styles.label}>Abholort</span>
+                      <address className={styles.address}>
+                        {pickupAddressLines().map((line) => (
+                          <span key={line}>
+                            {line}
+                            <br />
+                          </span>
+                        ))}
+                        {pickupHoursText()}
+                      </address>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {field("address1", "Strasse und Nummer", {
+                      required: true,
+                      autoComplete: "address-line1",
+                    })}
+                    {field("address2", "Adresszusatz (optional)", {
+                      autoComplete: "address-line2",
+                    })}
 
-                <label className={styles.field}>
-                  <span className={styles.label}>Land *</span>
-                  <select
-                    className={styles.input}
-                    value={address.countryCode}
-                    onChange={(e) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        countryCode: e.target.value,
-                      }))
-                    }
-                  >
-                    {SUPPORTED_COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.countryCode && (
-                    <span className={styles.fieldError}>{errors.countryCode}</span>
-                  )}
-                </label>
+                    <div className={styles.row}>
+                      {field("postalCode", "PLZ", {
+                        required: true,
+                        autoComplete: "postal-code",
+                      })}
+                      {field("city", "Ort", {
+                        required: true,
+                        autoComplete: "address-level2",
+                      })}
+                    </div>
 
-                {field("phone", "Telefon (optional)", {
-                  type: "tel",
-                  autoComplete: "tel",
-                })}
+                    <label className={styles.field}>
+                      <span className={styles.label}>Land *</span>
+                      <select
+                        className={styles.input}
+                        value={address.countryCode}
+                        onChange={(e) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            countryCode: e.target.value,
+                          }))
+                        }
+                      >
+                        {SUPPORTED_COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.countryCode && (
+                        <span className={styles.fieldError}>{errors.countryCode}</span>
+                      )}
+                    </label>
+
+                    {field("phone", "Telefon (optional)", {
+                      type: "tel",
+                      autoComplete: "tel",
+                    })}
+                  </>
+                )}
 
                 <button type="submit" className={styles.primaryCta} disabled={busy}>
                   {busy ? "Einen Moment …" : "Weiter"}
@@ -336,7 +442,24 @@ export function CheckoutFlow({
               </form>
             ) : (
               addressComplete &&
-              cart.lines.length > 0 && (
+              cart.lines.length > 0 &&
+              (cart.pickup ? (
+                <address className={styles.address} data-testid="pickup-summary">
+                  {cart.email}
+                  <br />
+                  {address.firstName} {address.lastName}
+                  {address.phone && (
+                    <>
+                      <br />
+                      {address.phone}
+                    </>
+                  )}
+                  <br />
+                  <strong>{PICKUP.label}</strong> — {pickupAddressLines().slice(1).join(", ")}
+                  <br />
+                  {pickupHoursText()}
+                </address>
+              ) : (
                 <address className={styles.address}>
                   {cart.email}
                   <br />
@@ -346,7 +469,7 @@ export function CheckoutFlow({
                   <br />
                   {address.postalCode} {address.city}
                 </address>
-              )
+              ))
             )}
           </section>
 
@@ -403,8 +526,8 @@ export function CheckoutFlow({
             </div>
             <div>
               <dt>
-                Versand
-                {cart.shippingIsEstimate && (
+                {cart.pickup ? "Abholung" : "Versand"}
+                {cart.shippingIsEstimate && !cart.pickup && (
                   <span className={styles.estimate}> (geschätzt)</span>
                 )}
                 {cart.shipping !== 0 && (
@@ -412,7 +535,11 @@ export function CheckoutFlow({
                 )}
               </dt>
               <dd className="tnum">
-                {cart.shipping === 0 ? "gratis" : formatPrice(cart.shipping)}
+                {cart.pickup
+                  ? formatPrice(0)
+                  : cart.shipping === 0
+                    ? "gratis"
+                    : formatPrice(cart.shipping)}
               </dd>
             </div>
             <div className={styles.grand}>

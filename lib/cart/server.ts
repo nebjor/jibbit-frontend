@@ -49,7 +49,7 @@ import { EMPTY_CART, type CartActionResult, type CartState } from "./types";
  * `quantity` itself, which can drift a rappen from `item_total`.
  */
 const CART_FIELDS =
-  "+items.total,+items.original_total,*payment_collection,+customer_id";
+  "+items.total,+items.original_total,*payment_collection,+customer_id,+shipping_methods.data";
 
 const UNAVAILABLE_ITEM =
   "Dieser Artikel ist leider nicht mehr erhältlich. Lade die Seite neu, um das aktuelle Sortiment zu sehen.";

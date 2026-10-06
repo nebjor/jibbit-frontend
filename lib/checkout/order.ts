@@ -17,6 +17,7 @@ import {
 } from "@/lib/cart/adapter";
 import { cartContext, logCartError } from "@/lib/cart/server";
 import type { CartLineView, CheckoutAddress } from "@/lib/cart/types";
+import { isPickup } from "./pickup";
 
 export interface OrderView {
   id: string;
@@ -30,6 +31,13 @@ export interface OrderView {
   shipping: number;
   total: number;
   address: CheckoutAddress | null;
+  /**
+   * Abholung im Laden statt Versand — aus `shipping_methods[].data.pickup`
+   * bzw. `metadata.pickup` (lib/checkout/pickup.ts). Dann ist `address` die
+   * Ladenadresse mit dem Namen der Kundin und darf nicht als Lieferadresse
+   * erscheinen.
+   */
+  pickup: boolean;
   /**
    * Bestellzeitpunkt, ISO-8601 — Grundlage für das voraussichtliche
    * Lieferdatum, das die Bestätigungsseite an Google Kundenrezensionen
@@ -48,7 +56,7 @@ export interface OrderView {
  * Präfix würde die Standardfelder ersetzen und die Seite verlöre Summen
  * und Adresse.
  */
-const ORDER_FIELDS = "*items.variant";
+const ORDER_FIELDS = "*items.variant,*shipping_methods,+metadata";
 
 function isoDate(value: Date | string | null | undefined): string {
   if (!value) return "";
@@ -79,6 +87,7 @@ export async function getOrder(orderId: string): Promise<OrderView | null> {
       address: toCheckoutAddress(
         order.shipping_address as unknown as MedusaAddressLike | null,
       ),
+      pickup: isPickup(order),
     };
   } catch (error) {
     logCartError("order:retrieve", error);

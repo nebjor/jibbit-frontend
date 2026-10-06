@@ -56,6 +56,8 @@ export interface OrderView {
   status: string
   paymentStatus: string
   fulfillmentStatus: string
+  /** Abholung im Laden statt Versand (lib/checkout/pickup.ts). */
+  pickup: boolean
   currency: string
   total: number
   items: OrderLineView[]

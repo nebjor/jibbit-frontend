@@ -41,6 +41,7 @@ export function CartDrawer() {
     subtotal,
     shipping,
     shippingIsEstimate,
+    pickup,
     total,
     isOpen,
     closeCart,
@@ -214,13 +215,17 @@ export function CartDrawer() {
                 </div>
                 <div>
                   <dt>
-                    Versand
-                    {shippingIsEstimate && (
+                    {pickup ? "Abholung" : "Versand"}
+                    {shippingIsEstimate && !pickup && (
                       <span className={styles.estimate}> (geschätzt)</span>
                     )}
                   </dt>
                   <dd className="tnum">
-                    {shipping === 0 ? "Gratis" : formatPrice(shipping)}
+                    {pickup
+                      ? formatPrice(0)
+                      : shipping === 0
+                        ? "Gratis"
+                        : formatPrice(shipping)}
                   </dd>
                 </div>
                 <div className={styles.grand}>
@@ -236,7 +241,7 @@ export function CartDrawer() {
               >
                 Zur Kasse
               </Link>
-              {shippingIsEstimate && (
+              {shippingIsEstimate && !pickup && (
                 <p className={styles.soon}>
                   Versandkosten werden an der Kasse definitiv berechnet.
                 </p>

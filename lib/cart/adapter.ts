@@ -17,6 +17,7 @@
 import type { CartLineView, CartState, CheckoutAddress } from "./types";
 import { EMPTY_CART } from "./types";
 import { normalizeGtin } from "@/lib/gtin";
+import { isPickup } from "@/lib/checkout/pickup";
 
 /** The subset of a Medusa store cart this adapter reads. */
 export interface MedusaCartLike {
@@ -27,8 +28,11 @@ export interface MedusaCartLike {
   shipping_total?: number | null;
   total?: number | null;
   items?: MedusaLineItemLike[] | null;
-  shipping_methods?: { id: string }[] | null;
+  /** `data` nur mit `+shipping_methods.data` in den Feldern (lib/cart/server.ts). */
+  shipping_methods?: { id: string; data?: Record<string, unknown> | null }[] | null;
   shipping_address?: MedusaAddressLike | null;
+  /** `pickup: true`, wenn die Kasse die Abholung gewählt hat. */
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface MedusaLineItemLike {
@@ -165,6 +169,7 @@ export function toCartState(cart: MedusaCartLike | null | undefined): CartState 
     shipping: num(cart.shipping_total),
     total: num(cart.total),
     hasShippingMethod: (cart.shipping_methods ?? []).length > 0,
+    pickup: isPickup(cart),
     currency: (cart.currency_code ?? "chf").toUpperCase(),
     email: cart.email ?? null,
     hasShippingAddress: Boolean(cart.shipping_address?.country_code),

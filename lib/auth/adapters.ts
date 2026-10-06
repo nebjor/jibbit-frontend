@@ -4,6 +4,7 @@ import type {
   StoreOrder,
 } from "@medusajs/types"
 import type { AddressView, CustomerView, OrderView } from "./types"
+import { isPickup } from "@/lib/checkout/pickup"
 
 /**
  * ADAPTER — Medusa-Entitäten aus dem Kontobereich zu Sichttypen.
@@ -61,6 +62,8 @@ export function toOrderView(o: StoreOrder): OrderView {
     status: o.status ?? "",
     paymentStatus: o.payment_status ?? "",
     fulfillmentStatus: o.fulfillment_status ?? "",
+    // Nur mit `*shipping_methods` bzw. `metadata` in den Feldern (customer.ts).
+    pickup: isPickup(o as Parameters<typeof isPickup>[0]),
     currency: (o.currency_code ?? "chf").toUpperCase(),
     total: o.total ?? 0,
     items: (o.items ?? []).map((i) => ({

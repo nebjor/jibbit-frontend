@@ -227,10 +227,26 @@ export const SHIPPING_OPTIONS = [
     amount: null,
     insufficient_inventory: false,
   },
+  // Abholung im Laden — wie im Staging-Admin angelegt (so_01M45H9J4SFSZ6WMABCR0BBNER):
+  // flat, CHF 0, erkennbar an metadata/data/type, NICHT am Namen. Der Name
+  // ist hier absichtlich anders als im Admin, damit ein Namensvergleich im
+  // Code auffiele.
+  {
+    id: "so_pickup",
+    name: "Selbstabholung (Mock)",
+    provider_id: "swiss-shipping_swiss-shipping",
+    price_type: "flat",
+    amount: 0,
+    insufficient_inventory: false,
+    data: { id: "swiss-pickup", pickup: true, address: "Unterwegli 1, 8404 Winterthur" },
+    metadata: { pickup: true, address: "Unterwegli 1, 8404 Winterthur" },
+    type: { id: "sotype_pickup", label: "Abholung", description: "", code: "pickup" },
+  },
 ];
 
 /** Mirrors the backend's swiss-shipping provider: CHF 4.50, free from CHF 69. */
 export const SHIPPING_RATES = {
   so_swiss_standard: { rate: 4.5, freeFrom: 69 },
   so_swiss_express: { rate: 12, freeFrom: null },
+  so_pickup: { rate: 0, freeFrom: null },
 };
