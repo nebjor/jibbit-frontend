@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/Prose";
 import { JsonLd } from "@/components/JsonLd";
-import { SHIPPING, MIN_AGE, STORE } from "@/lib/config";
+import { PICKUP, SHIPPING, MIN_AGE, STORE } from "@/lib/config";
+import { formatOpeningHours, pickupAddressLines } from "@/lib/checkout/pickup";
 import { formatPrice } from "@/lib/format";
+
+const PICKUP_HOURS = formatOpeningHours(PICKUP.hours);
 
 export const metadata: Metadata = {
   title: "Häufige Fragen",
@@ -18,6 +21,14 @@ const FAQS: { id?: string; q: string; a: string }[] = [
     q: "Was kostet der Versand?",
     a: `Jede Bestellung kostet ${formatPrice(SHIPPING.rate)} Versand, ab einem Bestellwert von ${formatPrice(SHIPPING.freeThreshold)} versenden wir gratis. Das Paketporto kostet uns ${formatPrice(SHIPPING.postage)}; die Hälfte davon übernehmen wir. Passt deine Bestellung in einen Brief, schicken wir sie als Brief und schreiben dir die Differenz als Gutscheincode für den Shop gut.`,
   },
+  ...(PICKUP.enabled
+    ? [
+        {
+          q: "Kann ich meine Bestellung abholen?",
+          a: `Ja, gratis in unserem Laden: ${pickupAddressLines().slice(1).join(", ")}. Wähle an der Kasse «${PICKUP.label}», dann brauchen wir nur Name, E-Mail und Telefonnummer. ${PICKUP.note} Abholzeiten: ${PICKUP_HOURS || "nach Vereinbarung"}.`,
+        },
+      ]
+    : []),
   {
     q: "Wie kann ich bezahlen?",
     a: "Mit TWINT, Kreditkarte (Visa/Mastercard), PostFinance oder dem Wallet auf deinem Handy (Apple Pay, Google Pay). Die Zahlung läuft über den Schweizer Zahlungsdienstleister zahls.ch. Kauf auf Rechnung bieten wir derzeit nicht an.",

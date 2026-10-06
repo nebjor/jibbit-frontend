@@ -39,6 +39,11 @@
  *    nicht gerechnet (die Post stellt an den meisten kantonalen Feiertagen
  *    zu, und eine Schätzung, die einen Tag zu früh liegt, ist verzeihlich).
  *
+ *  - Abholung im Laden: kein Transport, also Bestelldatum + Bearbeitung
+ *    (max.) — der Tag, an dem die Ware spätestens bereitliegt. Das
+ *    `delivery_country` bleibt CH; Google kennt keinen Abholbegriff, und
+ *    der Laden steht in der Schweiz.
+ *
  *  - Liegt das so berechnete Datum bereits in der Vergangenheit (die
  *    Bestätigungsseite wird Wochen später aus der Mail wieder geöffnet),
  *    gilt «heute»: Google soll kein vergangenes Datum bekommen, und die
@@ -71,6 +76,8 @@ export interface GcrOrderInput {
   countryCode: string | null | undefined;
   /** Bestellzeitpunkt, ISO-8601 (Medusas `created_at`). */
   createdAt: string;
+  /** Abholung im Laden: nur Bearbeitungszeit, kein Transport. */
+  pickup?: boolean;
   /** Rohe GTIN-Kandidaten je Position — werden hier geprüft, nicht vorher. */
   gtins: ReadonlyArray<string | null | undefined>;
 }
@@ -117,15 +124,17 @@ export function addBusinessDays(start: Date, days: number): Date {
 /**
  * Voraussichtliches Lieferdatum: Bestelldatum + Bearbeitung + Transport,
  * beides am oberen Ende und in Werktagen; nie in der Vergangenheit (`now`).
+ * Bei Abholung (`pickup`) entfällt der Transport.
  */
 export function geschaetztesLieferdatum(
   orderDate: Date,
   delivery: DeliveryWindow,
   now: Date = new Date(),
+  pickup = false,
 ): string {
   const estimated = addBusinessDays(
     orderDate,
-    delivery.handlingDaysMax + delivery.transitDaysMax,
+    delivery.handlingDaysMax + (pickup ? 0 : delivery.transitDaysMax),
   );
   const today = formatIsoDate(now);
   const estimatedIso = formatIsoDate(estimated);
@@ -182,6 +191,7 @@ export function kundenrezensionenPayload(
       createdAt,
       options.delivery,
       options.now,
+      order.pickup === true,
     ),
   };
   if (gtins.length > 0) payload.products = gtins.map((gtin) => ({ gtin }));

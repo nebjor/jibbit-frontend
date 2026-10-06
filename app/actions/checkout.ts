@@ -21,12 +21,17 @@ import {
   completePendingOrder,
   type PendingOrderResult,
 } from "@/lib/checkout/return";
+import type { DeliveryChoice } from "@/lib/checkout/pickup";
 
+/** `delivery`: Lieferung oder Abholung im Laden (lib/checkout/pickup.ts). */
 export async function saveAddressAction(
   email: string,
   address: CheckoutAddress,
+  delivery: DeliveryChoice = "shipping",
 ): Promise<SaveAddressResult> {
-  return saveContactAndAddress(email, address);
+  // Nur die zwei bekannten Werte durchlassen — das ist eine Server Action,
+  // der Aufruf kommt aus dem Browser.
+  return saveContactAndAddress(email, address, delivery === "pickup" ? "pickup" : "shipping");
 }
 
 export async function ensureShippingAction(): Promise<CartActionResult> {

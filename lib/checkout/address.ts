@@ -78,6 +78,33 @@ export function validateAddress(
   return errors;
 }
 
+/**
+ * Abholung im Laden: kein Lieferort zu prüfen, aber ein Mensch, den man
+ * erreicht — Name, E-Mail und Telefon. Das Telefon ist hier Pflicht (beim
+ * Versand nicht): Wer die Ware bereitlegt, muss nachfragen können, und ein
+ * Anruf ist schneller als eine Mail, die ungelesen bleibt.
+ */
+export function validatePickupContact(
+  address: Pick<CheckoutAddress, "firstName" | "lastName" | "phone">,
+  email: string,
+): AddressErrors {
+  const errors: AddressErrors = {};
+
+  const emailError = validateEmail(email);
+  if (emailError) errors.email = emailError;
+
+  if (!address.firstName.trim()) errors.firstName = "Vorname fehlt.";
+  if (!address.lastName.trim()) errors.lastName = "Nachname fehlt.";
+  const phone = address.phone?.trim() ?? "";
+  if (!phone) {
+    errors.phone = "Telefonnummer fehlt — für Rückfragen zur Abholung.";
+  } else if (phone.replace(/\D/g, "").length < 9) {
+    errors.phone = "Diese Telefonnummer sieht nicht vollständig aus.";
+  }
+
+  return errors;
+}
+
 export function hasErrors(errors: AddressErrors): boolean {
   return Object.keys(errors).length > 0;
 }

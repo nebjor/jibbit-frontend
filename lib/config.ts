@@ -76,6 +76,45 @@ export const BUSINESS = {
 } as const;
 
 /**
+ * Abholung im Laden («Abholung im Laden»): Onlinebestellungen können im
+ * Ladenlokal in Winterthur gratis abgeholt werden (Entscheid des Inhabers,
+ * 2026-10-05). Die Kasse bietet sie als zweite Lieferart neben dem Versand.
+ *
+ * Adresse = `BUSINESS` — Laden und Anbieterkennzeichnung sind dieselbe
+ * Adresse. Öffnungszeiten identisch mit dem Google-Unternehmensprofil
+ * («Jibbit .ch - Headshop»); ändern sie sich dort, hier mitziehen — Google
+ * gleicht `openingHoursSpecification` (lib/seo/jsonld.ts) und die Seiten
+ * gegen das Profil ab. Dieselben Angaben stehen für die Mails im Backend
+ * (`medusa-ecom/backend/src/lib/pickup.ts`).
+ *
+ * Erkannt wird die Abholung in Medusa NIE am Namen, sondern an der Shipping
+ * Option (`metadata.pickup`, `data.pickup`, `type.code = "pickup"`) — siehe
+ * lib/checkout/pickup.ts.
+ */
+export const PICKUP = {
+  enabled: true,
+  label: "Abholung im Laden",
+  address: {
+    name: "jibbit",
+    street: BUSINESS.street,
+    postalCode: BUSINESS.postalCode,
+    city: BUSINESS.city,
+    countryCode: BUSINESS.countryCode,
+  },
+  /**
+   * Öffnungszeiten als Blöcke; `days` in schema.org-Reihenfolge Mo–So mit
+   * deutschen Kürzeln. Formatiert über `formatOpeningHours` in
+   * lib/checkout/pickup.ts. `null` hiesse: Zeiten unbekannt — dann steht
+   * «nach Vereinbarung» und das Schema trägt keine Zeiten.
+   */
+  hours: [{ days: ["Mo", "Di", "Mi", "Do", "Fr", "Sa"], opens: "09:00", closes: "17:00" }] as
+    | readonly { days: readonly string[]; opens: string; closes: string }[]
+    | null,
+  /** Was die Kundin nach der Bestellung erwartet. */
+  note: "Wir melden uns per E-Mail, sobald deine Bestellung abholbereit ist.",
+} as const;
+
+/**
  * Lieferfristen in Werktagen, für `OfferShippingDetails.deliveryTime`.
  *
  * Bearbeitung: 1–3 Werktage nach Bestelleingang, so auch auf

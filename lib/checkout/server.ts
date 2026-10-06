@@ -4,9 +4,11 @@
  * The order Medusa requires, and the order the UI follows:
  *
  *   1. e-mail + delivery address   -> POST /store/carts/:id
- *      + delivery method, chosen    -> GET  /store/shipping-options
- *        by us, not the customer       POST /store/carts/:id/shipping-methods
- *        (./shipping-choice.ts)
+ *      + delivery method            -> GET  /store/shipping-options
+ *        (Lieferung oder Abholung      POST /store/carts/:id/shipping-methods
+ *        im Laden — the customer
+ *        picks the KIND, we pick the
+ *        Medusa option, ./shipping-choice.ts; pickup: ./pickup.ts)
  *   2. payment                     -> lib/checkout/payment.ts   (SEAM)
  *   3. place order                 -> POST /store/carts/:id/complete
  *
@@ -45,10 +47,16 @@ import {
   hasErrors,
   normalizeAddress,
   validateAddress,
+  validatePickupContact,
   type AddressErrors,
 } from "./address";
 import { attachCartToCustomer, saveAddressToAccount } from "./customer";
 import { PaymentSetupError, preparePayment } from "./payment";
+import {
+  deliveryChoiceOf,
+  pickupMedusaAddress,
+  type DeliveryChoice,
+} from "./pickup";
 import { pickShippingOption } from "./shipping-choice";
 
 const NO_CART =
@@ -57,7 +65,14 @@ const NO_CART =
 const NO_SHIPPING =
   "An diese Adresse können wir gerade nicht liefern. Bitte prüfe die Adresse oder schreib uns — wir helfen weiter.";
 
-class NoShippingOptionError extends Error {}
+const NO_PICKUP =
+  "Die Abholung im Laden ist gerade nicht verfügbar. Bitte wähle die Lieferung oder schreib uns.";
+
+class NoShippingOptionError extends Error {
+  constructor(readonly choice: DeliveryChoice) {
+    super(`no ${choice} option`);
+  }
+}
 
 /** What placing an order can end in. */
 export type PlaceOrderResult =
@@ -102,9 +117,13 @@ export type SaveAddressResult =
 export async function saveContactAndAddress(
   email: string,
   address: CheckoutAddress,
+  delivery: DeliveryChoice = "shipping",
 ): Promise<SaveAddressResult> {
+  const pickup = delivery === "pickup";
   const normalized = normalizeAddress(address);
-  const errors = validateAddress(normalized, email);
+  const errors = pickup
+    ? validatePickupContact(normalized, email)
+    : validateAddress(normalized, email);
   if (hasErrors(errors)) return { ok: false, errors };
 
   const live = await loadCart();
@@ -119,17 +138,21 @@ export async function saveContactAndAddress(
     await attachCartToCustomer(live.sdk, live.cart, sessionToken);
   }
 
-  const medusaAddress = {
-    first_name: normalized.firstName,
-    last_name: normalized.lastName,
-    company: normalized.company,
-    address_1: normalized.address1,
-    address_2: normalized.address2,
-    postal_code: normalized.postalCode,
-    city: normalized.city,
-    country_code: normalized.countryCode,
-    phone: normalized.phone,
-  };
+  // Abholung: Medusa verlangt trotzdem eine Lieferadresse im Liefergebiet —
+  // sie wird mit dem Laden gefüllt (Begründung: ./pickup.ts).
+  const medusaAddress = pickup
+    ? pickupMedusaAddress(normalized)
+    : {
+        first_name: normalized.firstName,
+        last_name: normalized.lastName,
+        company: normalized.company,
+        address_1: normalized.address1,
+        address_2: normalized.address2,
+        postal_code: normalized.postalCode,
+        city: normalized.city,
+        country_code: normalized.countryCode,
+        phone: normalized.phone,
+      };
 
   const writeAddressAndShipping = async (cartId: string) => {
     await live.sdk.store.cart.update(
@@ -141,15 +164,19 @@ export async function saveContactAndAddress(
         // refinement; asking for two addresses up front costs more orders than
         // it saves support tickets.
         billing_address: medusaAddress,
+        // Die Wahl auf dem Cart festhalten: `ensureShippingMethod` liest sie,
+        // und Medusa kopiert sie auf die Bestellung (order.metadata.pickup).
+        metadata: { pickup },
       },
       { fields: "id" },
     );
     // Die Adresse ins Adressbuch, damit die nächste Bestellung sie kennt —
     // der eigentliche Zweck der Kontopflicht. Fehler dort bleiben dort.
-    if (sessionToken) {
+    // Bei Abholung nicht: die Ladenadresse gehört nicht ins Adressbuch der Kundin.
+    if (sessionToken && !pickup) {
       await saveAddressToAccount(live.sdk, sessionToken, normalized);
     }
-    return applyShippingMethod(live.sdk, cartId);
+    return applyShippingMethod(live.sdk, cartId, delivery);
   };
 
   try {
@@ -193,7 +220,12 @@ export async function ensureShippingMethod(): Promise<CartActionResult> {
     return { ok: true, cart: toCartState(live.cart) };
   }
   try {
-    return { ok: true, cart: await applyShippingMethod(live.sdk, live.cart.id) };
+    // Die Wahl steht auf dem Cart (metadata.pickup) — die Kundin soll sie
+    // nicht noch einmal treffen müssen.
+    return {
+      ok: true,
+      cart: await applyShippingMethod(live.sdk, live.cart.id, deliveryChoiceOf(live.cart)),
+    };
   } catch (error) {
     logCartError("checkout:ensure-shipping", error);
     return { ok: false, message: failureReason(error), cart: toCartState(live.cart) };
@@ -201,11 +233,18 @@ export async function ensureShippingMethod(): Promise<CartActionResult> {
 }
 
 function failureReason(error: unknown): string {
-  return error instanceof NoShippingOptionError ? NO_SHIPPING : describeCartFailure(error);
+  if (error instanceof NoShippingOptionError) {
+    return error.choice === "pickup" ? NO_PICKUP : NO_SHIPPING;
+  }
+  return describeCartFailure(error);
 }
 
 /** Puts the delivery method on the cart — see ./shipping-choice.ts. */
-async function applyShippingMethod(sdk: Medusa, cartId: string): Promise<CartState> {
+async function applyShippingMethod(
+  sdk: Medusa,
+  cartId: string,
+  choice: DeliveryChoice,
+): Promise<CartState> {
   const { shipping_options } = await sdk.store.fulfillment.listCartOptions({
     cart_id: cartId,
   });
@@ -215,6 +254,11 @@ async function applyShippingMethod(sdk: Medusa, cartId: string): Promise<CartSta
       providerId: o.provider_id,
       amount: o.amount,
       insufficientInventory: o.insufficient_inventory,
+      // Die Store-API liefert `metadata` (query-config der Route), der
+      // SDK-Typ 2.18 kennt das Feld nur nicht.
+      metadata: (o as { metadata?: Record<string, unknown> | null }).metadata,
+      data: o.data,
+      type: o.type,
     })),
     async (id) => {
       const { shipping_option } = await sdk.store.fulfillment.calculate(id, {
@@ -222,12 +266,18 @@ async function applyShippingMethod(sdk: Medusa, cartId: string): Promise<CartSta
       });
       return shipping_option.amount ?? null;
     },
+    choice,
   );
-  if (!optionId) throw new NoShippingOptionError();
+  if (!optionId) throw new NoShippingOptionError(choice);
 
   const { cart } = await sdk.store.cart.addShippingMethod(
     cartId,
-    { option_id: optionId },
+    {
+      option_id: optionId,
+      // Der Marker auf der Methode — der Provider setzt ihn ebenfalls
+      // (validateFulfillmentData); doppelt hält, falls das Backend älter ist.
+      ...(choice === "pickup" ? { data: { pickup: true } } : {}),
+    },
     { fields: CART_FIELDS },
   );
   return toCartState(cart);
@@ -250,10 +300,10 @@ export async function placeOrder(): Promise<PlaceOrderResult> {
     return { kind: "error", message: "Bitte zuerst die E-Mail-Adresse angeben." };
   }
   if (!cart.shipping_address?.country_code) {
-    return { kind: "error", message: "Bitte zuerst die Lieferadresse angeben." };
+    return { kind: "error", message: "Bitte zuerst Kontakt und Lieferung angeben." };
   }
   if (!cart.shipping_methods?.length) {
-    return { kind: "error", message: "Bitte die Lieferadresse nochmals bestätigen." };
+    return { kind: "error", message: "Bitte Kontakt und Lieferung nochmals bestätigen." };
   }
 
   let handoff;

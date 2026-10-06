@@ -62,6 +62,13 @@ export interface CartState {
   total: number;
   /** True once a shipping method sits on the cart, i.e. `shipping` is binding. */
   hasShippingMethod: boolean;
+  /**
+   * Abholung im Laden statt Versand. Mit Methode auf dem Cart: deren Marker
+   * (`data.pickup`); davor: die in `metadata.pickup` gespeicherte Wahl. Die
+   * Gratisversand-Anzeige und die Versandschätzung richten sich danach —
+   * siehe lib/checkout/pickup.ts.
+   */
+  pickup: boolean;
   currency: string;
   email: string | null;
   /** True once a shipping address with a country is on the cart. */
@@ -101,6 +108,7 @@ export const EMPTY_CART: CartState = Object.freeze({
   shipping: 0,
   total: 0,
   hasShippingMethod: false,
+  pickup: false,
   currency: "CHF",
   email: null,
   hasShippingAddress: false,

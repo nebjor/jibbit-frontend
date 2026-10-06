@@ -94,6 +94,11 @@ interface CartContextValue {
   shippingIsEstimate: boolean;
   /** True once a delivery method is on the cart, i.e. `shipping` is binding. */
   hasShippingMethod: boolean;
+  /**
+   * Abholung im Laden gewählt (lib/checkout/pickup.ts). Dann ist `shipping`
+   * 0 — auch als Schätzung — und der Gratisversand-Hinweis entfällt.
+   */
+  pickup: boolean;
   total: number;
   currency: string;
   /** Guest e-mail on the cart, or null. Set in the checkout's first step. */
@@ -215,9 +220,12 @@ export function CartProvider({
 
   const value = useMemo<CartContextValue>(() => {
     const shippingIsEstimate = !cart.hasShippingMethod && cart.count > 0;
+    // Abholung kostet nichts — auch die Schätzung vor der Methode ist 0.
     const shipping = cart.hasShippingMethod
       ? cart.shipping
-      : estimateShipping(cart.subtotal);
+      : cart.pickup
+        ? 0
+        : estimateShipping(cart.subtotal);
     const total = cart.hasShippingMethod
       ? cart.total
       : round2(cart.subtotal + shipping);
@@ -230,11 +238,14 @@ export function CartProvider({
       shipping,
       shippingIsEstimate,
       hasShippingMethod: cart.hasShippingMethod,
+      pickup: cart.pickup,
       total,
       currency: cart.currency,
       email: cart.email,
       hasShippingAddress: cart.hasShippingAddress,
-      remainingForFreeShipping: remainingForFreeShipping(cart.subtotal),
+      // Bei Abholung gibt es nichts freizuschalten — der Hinweis entfällt
+      // (FreeShippingMeter), die Zahlen bleiben für die Lieferung gültig.
+      remainingForFreeShipping: cart.pickup ? 0 : remainingForFreeShipping(cart.subtotal),
       freeShippingProgress: freeShippingProgress(cart.subtotal),
       isPending,
       error,

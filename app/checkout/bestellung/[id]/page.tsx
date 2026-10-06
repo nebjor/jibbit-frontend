@@ -7,6 +7,8 @@ import { GoogleKundenrezensionen } from "@/components/GoogleKundenrezensionen";
 import { formatPrice } from "@/lib/format";
 import { getOrder } from "@/lib/checkout/order";
 import { getKundenrezensionenMerchantId } from "@/lib/google-kundenrezensionen/server";
+import { pickupAddressLines, pickupHoursText } from "@/lib/checkout/pickup";
+import { PICKUP } from "@/lib/config";
 import { getTenantContext } from "@/lib/tenant/context";
 import styles from "@/components/checkout/checkout.module.css";
 
@@ -55,6 +57,7 @@ export default async function OrderConfirmationPage({
           email: order.email,
           countryCode: order.address?.countryCode,
           createdAt: order.createdAt,
+          pickup: order.pickup,
           gtins: order.lines.map((l) => l.gtin),
         }}
       />
@@ -81,7 +84,18 @@ export default async function OrderConfirmationPage({
       <p className={styles.confirmText}>
         Wir haben deine Bestellung erhalten. Eine Bestätigung geht an{" "}
         <strong>{order.email}</strong>.{" "}
-        {order.address?.phone ? (
+        {order.pickup ? (
+          <>
+            Du holst sie bei uns im Laden ab — wir melden uns per E-Mail
+            {order.address?.phone ? (
+              <>
+                {" "}
+                oder unter <strong>{order.address.phone}</strong>
+              </>
+            ) : null}
+            , sobald sie abholbereit ist.
+          </>
+        ) : order.address?.phone ? (
           <>
             Sobald dein Paket unterwegs ist, melden wir uns per WhatsApp unter{" "}
             <strong>{order.address.phone}</strong>.
@@ -111,9 +125,13 @@ export default async function OrderConfirmationPage({
             <dd className="tnum">{formatPrice(order.subtotal)}</dd>
           </div>
           <div>
-            <dt>Versand</dt>
+            <dt>{order.pickup ? "Abholung" : "Versand"}</dt>
             <dd className="tnum">
-              {order.shipping === 0 ? "Gratis" : formatPrice(order.shipping)}
+              {order.pickup
+                ? formatPrice(0)
+                : order.shipping === 0
+                  ? "Gratis"
+                  : formatPrice(order.shipping)}
             </dd>
           </div>
           <div className={styles.grand}>
@@ -123,7 +141,31 @@ export default async function OrderConfirmationPage({
         </dl>
       </section>
 
-      {order.address && (
+      {order.pickup ? (
+        // Die Lieferadresse der Bestellung ist bei Abholung der Laden selbst
+        // (lib/checkout/pickup.ts) — hier steht deshalb der Abholort, nicht
+        // eine «Lieferadresse».
+        <section className={styles.card} data-testid="pickup-info">
+          <h2 className={styles.cardTitle}>{PICKUP.label}</h2>
+          <address className={styles.address}>
+            {order.address && (
+              <>
+                {order.address.firstName} {order.address.lastName}
+                {order.address.phone && <> · {order.address.phone}</>}
+                <br />
+              </>
+            )}
+            {pickupAddressLines().map((line) => (
+              <span key={line}>
+                {line}
+                <br />
+              </span>
+            ))}
+            {pickupHoursText()}
+          </address>
+          <p className={styles.muted}>{PICKUP.note}</p>
+        </section>
+      ) : order.address && (
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>Lieferadresse</h2>
           <address className={styles.address}>

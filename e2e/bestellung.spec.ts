@@ -20,7 +20,10 @@ import type { APIRequestContext, Page } from "@playwright/test";
 
 const BACKEND_URL = `http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? 9100}`;
 
-async function placeOrder(request: APIRequestContext): Promise<string> {
+async function placeOrder(
+  request: APIRequestContext,
+  { pickup = false }: { pickup?: boolean } = {},
+): Promise<string> {
   const headers = { "x-publishable-api-key": "pk_e2e" };
   const { cart } = await (await request.post(`${BACKEND_URL}/store/carts`, { headers })).json();
 
@@ -32,16 +35,36 @@ async function placeOrder(request: APIRequestContext): Promise<string> {
     headers,
     data: {
       email: "kundin@example.ch",
-      shipping_address: {
-        first_name: "Jana",
-        last_name: "Muster",
-        address_1: "Musterweg 1",
-        postal_code: "8001",
-        city: "Zürich",
-        country_code: "ch",
-      },
+      // Bei Abholung füllt die Kasse die Lieferadresse mit dem Laden
+      // (lib/checkout/pickup.ts) — so sieht die Bestellung dann aus.
+      shipping_address: pickup
+        ? {
+            first_name: "Jana",
+            last_name: "Muster",
+            address_1: "Unterwegli 1",
+            address_2: "Abholung im Laden",
+            postal_code: "8404",
+            city: "Winterthur",
+            country_code: "ch",
+            phone: "076 414 08 90",
+          }
+        : {
+            first_name: "Jana",
+            last_name: "Muster",
+            address_1: "Musterweg 1",
+            postal_code: "8001",
+            city: "Zürich",
+            country_code: "ch",
+          },
+      metadata: { pickup },
     },
   });
+  if (pickup) {
+    await request.post(`${BACKEND_URL}/store/carts/${cart.id}/shipping-methods`, {
+      headers,
+      data: { option_id: "so_pickup", data: { pickup: true } },
+    });
+  }
 
   const completed = await (
     await request.post(`${BACKEND_URL}/store/carts/${cart.id}/complete`, { headers })
@@ -70,6 +93,30 @@ test("zeigt Bestellnummer, Artikel und Adresse", async ({ page, request }) => {
   await expect(page.getByText("kundin@example.ch")).toBeVisible();
   await expect(page.getByText(SHOP.ashtray.title)).toBeVisible();
   await expect(page.getByText("8001 Zürich")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lieferadresse" })).toBeVisible();
+});
+
+test("Abholung im Laden: zeigt Abholort und Zeiten statt einer Lieferadresse", async ({
+  page,
+  request,
+}) => {
+  const orderId = await placeOrder(request, { pickup: true });
+
+  await page.goto(`/checkout/bestellung/${orderId}`);
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Danke — das ist bestellt." }),
+  ).toBeVisible();
+  await expect(page.getByText(/holst sie bei uns im Laden ab/)).toBeVisible();
+  const info = page.getByTestId("pickup-info");
+  await expect(info).toContainText("Abholung im Laden");
+  await expect(info).toContainText("Unterwegli 1");
+  await expect(info).toContainText("8404 Winterthur");
+  await expect(info).toContainText("Mo–Sa 09:00–17:00");
+  await expect(page.getByRole("heading", { name: "Lieferadresse" })).toHaveCount(0);
+  // Kein Porto: die Zeile heisst «Abholung» und kostet CHF 0.00.
+  await expect(page.getByText("Abholung", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Paket unterwegs/)).toHaveCount(0);
 });
 
 test("lädt Googles Opt-in-Modul NICHT auf dem Staging-Mandanten — auch mit Einwilligung", async ({

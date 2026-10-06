@@ -3,6 +3,7 @@ import {
   brandOf,
   offerId,
   breadcrumbJsonLd,
+  deliveryMethods,
   graph,
   itemListJsonLd,
   money,
@@ -319,6 +320,19 @@ describe("Produkt — Versand und Rückgabe", () => {
     );
   });
 
+  it("nennt Post UND Abholung im Laden als Lieferwege — die Versanddetails bleiben", () => {
+    for (const p of packsOf(build())) {
+      expect(p.offers.availableDeliveryMethod).toEqual([
+        "https://schema.org/ParcelService",
+        "https://schema.org/OnSitePickup",
+      ]);
+      // Google liest nur shippingDetails — die dürfen nicht leiden.
+      expect(p.offers.shippingDetails["@type"]).toBe("OfferShippingDetails");
+    }
+    // Fremder Mandant: kein Laden in Winterthur.
+    expect(deliveryMethods("shop.example")).toEqual(["https://schema.org/ParcelService"]);
+  });
+
   it("verspricht KEIN Rückgaberecht bei Sinneswandel", () => {
     // jibbit gewährt keines (/service/rueckgabe). Ein Schema, das eines
     // behauptet, ist ein Abgleichsfehler im Merchant Center — kein Vorteil.
@@ -535,11 +549,29 @@ describe("Organisation", () => {
     }
   });
 
-  it("trägt keine LocalBusiness-Felder — der schema.org-Validator streicht sie an", () => {
+  it("ist auf der eigenen Domain auch ein Store — mit den Öffnungszeiten des Google-Profils", () => {
     const org = organizationJsonLd({ domain: DOMAIN, storeName: "jibbit" });
-    expect(org["@type"]).toEqual(["Organization", "OnlineStore"]);
+    expect(org["@type"]).toEqual(["Organization", "OnlineStore", "Store"]);
+    expect(org.openingHoursSpecification).toEqual([
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        opens: "09:00",
+        closes: "17:00",
+      },
+    ]);
+    // Adresse und Telefon bleiben — NAP wie im Unternehmensprofil.
+    expect(org.telephone).toBe(BUSINESS.telephone);
+    expect(org.address).toMatchObject({ addressLocality: BUSINESS.city });
+    // Keine Zahlarten-Felder: nicht sauber als Enum abbildbar.
     expect("paymentAccepted" in org).toBe(false);
     expect("currenciesAccepted" in org).toBe(false);
+  });
+
+  it("ist auf einer fremden Domain kein Store und hat keine Öffnungszeiten", () => {
+    const org = organizationJsonLd({ domain: "shop.example", storeName: "Beispielshop" });
+    expect(org["@type"]).toEqual(["Organization", "OnlineStore"]);
+    expect("openingHoursSpecification" in org).toBe(false);
   });
 
   it("führt kein Logo, solange es keins gibt", () => {
