@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Antworten zu Versand, Bezahlung, Mindestalter, Mengenrabatten und Rückgabe bei jibbit.",
 };
 
-const FAQS = [
+const FAQS: { id?: string; q: string; a: string }[] = [
   {
     q: "Was kostet der Versand?",
     a: `Jede Bestellung kostet ${formatPrice(SHIPPING.rate)} Versand, ab einem Bestellwert von ${formatPrice(SHIPPING.freeThreshold)} versenden wir gratis. Das Paketporto kostet uns ${formatPrice(SHIPPING.postage)}; die Hälfte davon übernehmen wir. Passt deine Bestellung in einen Brief, schicken wir sie als Brief und schreiben dir die Differenz als Gutscheincode für den Shop gut.`,
@@ -50,6 +50,15 @@ const FAQS = [
     q: "Kann ich meine Bestellung noch ändern?",
     a: "Solange das Paket nicht raus ist, meistens ja. Melde dich möglichst schnell über die Kontaktseite mit deiner Bestellnummer.",
   },
+  {
+    // Zwei getrennte Dinge, ehrlich auseinandergehalten: das Google-
+    // Unternehmensprofil (Ladenlokal, Bewertung in der Vertrauensleiste,
+    // lib/trust.ts) und Google Kundenrezensionen aus dem Merchant Center
+    // (Opt-in nach der Bestellung, docs/google-kundenrezensionen.md).
+    id: "bewertungen",
+    q: "Kann ich jibbit bewerten?",
+    a: `Ja, auf zwei Wegen. Jederzeit über unser Google-Unternehmensprofil («Jibbit .ch - Headshop» auf Google Maps) — die Bewertung im Kopf des Shops stammt von dort. Und über Google Kundenrezensionen: Hast du im Cookie-Hinweis «Alle akzeptieren» gewählt, fragt dich Google nach der Bestellung auf der Bestätigungsseite, ob du den Shop nach der Lieferung bewerten möchtest; die Einladung kommt dann per E-Mail von Google. Beide Bewertungen sammelt Google unabhängig von uns — wir können sie weder auswählen noch bearbeiten.`,
+  },
 ];
 
 export default function FaqPage() {
@@ -77,7 +86,7 @@ export default function FaqPage() {
         intro="Das Meiste ist hier schon beantwortet. Wenn nicht, schreib uns einfach."
       >
         {FAQS.map((f) => (
-          <section key={f.q}>
+          <section key={f.q} id={f.id}>
             <h2>{f.q}</h2>
             <p>{f.a}</p>
           </section>
