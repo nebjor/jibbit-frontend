@@ -7,6 +7,7 @@ import type { CategoryView } from "@/lib/types";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductCard } from "@/components/ProductCard";
 import { ShopTrust } from "@/components/ShopTrust";
+import { ProduktWunsch } from "@/components/ProduktWunsch";
 import { HomeIntro } from "@/components/intro/HomeIntro";
 import { JsonLd } from "@/components/JsonLd";
 import { CategoryComingSoon } from "./CategoryComingSoon";
@@ -195,6 +196,9 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
             ))}
           </div>
         )}
+
+        {/* Am Ende jeder Liste, auch bei leerer Kategorie. */}
+        <ProduktWunsch kategorie={activeCat?.name} />
       </div>
     </>
   );

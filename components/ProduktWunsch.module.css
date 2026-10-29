@@ -1,0 +1,128 @@
+/* Kasten «Nicht gefunden, was du suchst?» am Ende jeder Produktliste.
+   Nur Tokens; Rahmen und Flächen wie die Produktkacheln. */
+
+.box {
+  margin-top: var(--s-7);
+  padding: var(--s-5);
+  max-width: 640px;
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+}
+
+.title {
+  font-size: clamp(22px, 4vw, 28px);
+  margin: 0 0 var(--s-2);
+}
+
+.text {
+  color: var(--c-muted);
+  margin: 0 0 var(--s-4);
+  max-width: 52ch;
+}
+
+.form {
+  display: grid;
+  gap: var(--s-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-ground);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  color: var(--c-ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+textarea.input {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.input:hover,
+.input:focus {
+  border-color: var(--c-ink);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--c-accent);
+}
+
+.fieldError {
+  font-size: 13px;
+  color: var(--c-accent);
+  margin: 0;
+}
+
+/* Honigtopf: aus dem Blickfeld, aber im DOM (Bots füllen ihn). */
+.honig {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.actions {
+  display: flex;
+}
+
+.submit {
+  min-height: 48px;
+  padding: 0 var(--s-5);
+  background: var(--c-ink);
+  color: var(--c-ground);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.submit:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.status:empty {
+  display: none;
+}
+
+.message {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border: var(--border-w) solid var(--c-line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--c-ground);
+  font-size: 15px;
+}
+
+.messageOk {
+  border-left-color: var(--c-success);
+}
+
+.messageError {
+  border-left-color: var(--c-accent);
+}
