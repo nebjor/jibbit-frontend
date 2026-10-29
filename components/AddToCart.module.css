@@ -258,6 +258,18 @@
   border-right: var(--border-w) solid var(--c-line);
   background: var(--c-surface);
   font-size: 16px;
+  font-family: inherit;
+  color: inherit;
+  text-align: center;
+  border-top: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  appearance: none;
+}
+
+.qtyValue:focus-visible {
+  outline: 2px solid var(--c-ink);
+  outline-offset: -2px;
 }
 
 .step {
