@@ -41,6 +41,7 @@ export function CartDrawer() {
   const {
     lines,
     subtotal,
+    discount,
     shipping,
     shippingIsEstimate,
     pickup,
@@ -224,6 +225,12 @@ export function CartDrawer() {
                   <dt>Zwischensumme</dt>
                   <dd className="tnum">{formatPrice(subtotal)}</dd>
                 </div>
+                {discount > 0 && (
+                  <div className={styles.discount}>
+                    <dt>Aktionsrabatt (bereits abgezogen)</dt>
+                    <dd className="tnum">&minus;{formatPrice(discount)}</dd>
+                  </div>
+                )}
                 <div>
                   <dt>
                     {pickup ? "Abholung" : "Versand"}

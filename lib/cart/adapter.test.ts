@@ -119,6 +119,11 @@ describe("toCartState", () => {
     expect(toCartState(medusaCart()).taxTotal).toBe(0);
   });
 
+  it("übernimmt den Aktionsrabatt aus discount_total (0 ohne Rabatt)", () => {
+    expect(toCartState(medusaCart({ discount_total: 8.4 })).discount).toBe(8.4);
+    expect(toCartState(medusaCart()).discount).toBe(0);
+  });
+
   it("falls back to unit price x quantity when a line total is missing", () => {
     const cart = medusaCart();
     cart.items![0].total = undefined;

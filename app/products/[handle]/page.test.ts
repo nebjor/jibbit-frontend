@@ -31,6 +31,7 @@ vi.mock("@/lib/data", () => ({
   getRelatedProducts: vi.fn().mockResolvedValue([]),
   getCategory: vi.fn().mockResolvedValue(undefined),
   getStaticProductHandles: vi.fn().mockReturnValue([]),
+  getAktionen: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/lib/tenant/context", () => ({

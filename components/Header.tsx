@@ -5,6 +5,7 @@ import { CartButton } from "./CartButton";
 import { AccountLink } from "./AccountLink";
 import { CategoryNav } from "./CategoryNav";
 import { SearchBar } from "./search/SearchBar";
+import { AktionsBannerSlot } from "./AktionsBannerSlot";
 import { getCategories } from "@/lib/data";
 import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
@@ -51,6 +52,10 @@ export async function Header() {
           </span>
         </p>
       </div>
+
+      {/* Aktionsbanner — nur solange das Backend eine automatische Aktion
+          meldet (lib/data.ts, getAktionen); sonst rendert er nichts. */}
+      <AktionsBannerSlot />
 
       <header className={styles.header}>
         <div className={`page ${styles.bar}`}>

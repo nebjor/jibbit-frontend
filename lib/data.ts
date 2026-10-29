@@ -30,6 +30,7 @@ import type { TenantConfig } from "./tenant/types";
 import { toProductView, toCategoryView, type TiersByVariant } from "./adapters";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "./mock-catalog";
 import type { CategoryHandle, CategoryView, ProductView } from "./types";
+import { parseAktionen, type Aktion } from "./aktionen";
 import type Medusa from "@medusajs/js-sdk";
 
 export class CatalogUnavailableError extends Error {
@@ -471,4 +472,43 @@ export async function getRelatedProducts(
  */
 export function getStaticProductHandles(): string[] {
   return mockAllowed() ? MOCK_PRODUCTS.map((p) => p.handle) : [];
+}
+
+// ---------------------------------------------------------------------------
+// Aktionen
+// ---------------------------------------------------------------------------
+
+/** So lange darf eine Aktions-Antwort alt sein (Next-Datencache). */
+const AKTIONEN_REVALIDATE_SECONDS = 60;
+
+/**
+ * Laufende automatische Aktionen für den Aktionsbanner.
+ *
+ * `GET /store/aktionen` ist eine eigene Route des Backends
+ * (backend/src/api/store/aktionen/route.ts); wie jede Store-Route verlangt sie
+ * den Publishable-Key, den der SDK-Client des Mandanten mitschickt. Die
+ * Antwort wird 60 s im Next-Datencache gehalten.
+ *
+ * Fällt NIE aus: ein älteres Backend ohne die Route, ein Netzfehler oder eine
+ * unbrauchbare Antwort ergeben eine leere Liste — also keinen Banner. Der
+ * Mock-Katalog kennt keine Aktionen und springt hier bewusst nicht ein: eine
+ * erfundene Aktion wäre schlimmer als keine.
+ */
+export async function getAktionen(): Promise<Aktion[]> {
+  try {
+    const tenant = await getTenantContext();
+    if (!isBackendConfigured(tenant)) return [];
+    const sdk = getSdkForTenant(tenant);
+    const res = await sdk.client.fetch<unknown>("/store/aktionen", {
+      next: { revalidate: AKTIONEN_REVALIDATE_SECONDS },
+    });
+    return parseAktionen(res, Date.now());
+  } catch (err) {
+    try {
+      warnFallback(await getTenantContext(), "aktionen", err);
+    } catch {
+      // Selbst die Warnung darf den Seitenaufbau nicht kippen.
+    }
+    return [];
+  }
 }
