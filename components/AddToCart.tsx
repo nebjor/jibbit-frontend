@@ -10,17 +10,19 @@ import { PriceTable } from "./PriceTable";
 import { formatAmount, formatPrice } from "@/lib/format";
 import {
   activeTier,
+  MAX_QUANTITY,
   defaultVariant,
+  normalizeQuantity,
   packAdvantagePercent,
   pricePerUnit,
+  sanitizeQuantityInput,
   savingAt,
   tierChips,
+  tierForQuantity,
   unitPriceFor,
 } from "@/lib/pricing";
 import type { ProductView } from "@/lib/types";
 import styles from "./AddToCart.module.css";
-
-const MAX_QUANTITY = 999;
 
 /**
  * Variant selection + quantity + add to cart. On mobile the CTA renders as a
@@ -30,8 +32,8 @@ const MAX_QUANTITY = 999;
  * PREISSTUFEN (ein Produkt = eine Variante, Preistabelle im Admin): statt
  * Variantenwahl gibt es grosse Chips je Stufe — «1 Stück», «10 Stück»,
  * «24er Display» — mit Stückpreis und Ersparnis. Tippen setzt die Menge auf
- * die Stufe; +/− springen in Stufengrösse (24 → 48). Chip antippen, dann
- * den Warenkorb-Knopf — eine Tastatur braucht es nie.
+ * die Stufe. Die Menge ist trotzdem jederzeit frei eintippbar (49, 7, …);
+ * +/− ändern um 1, und der Chip folgt der Stufe, in die die Menge fällt.
  *
  * The cheapest variant is PRESELECTED, deliberately. Leaving the choice empty
  * costs a click and dead-ends the CTA; preselecting a display would mean a
@@ -56,11 +58,13 @@ export function AddToCart({ product }: { product: ProductView }) {
 
   // Gewählte Preisstufe — geteilt mit der Galerie (Stufenfoto nach vorn).
   const tierSelection = useTierSelection();
-  const [localTier, setLocalTier] = useState(1);
-  const tier = tierSelection ? tierSelection.tier : localTier;
+  const [, setLocalTier] = useState(1);
   const setTier = tierSelection ? tierSelection.setTier : setLocalTier;
 
-  const [quantity, setQuantity] = useState(1);
+  // Das Mengenfeld hält den getippten Text (leer ist beim Tippen erlaubt);
+  // die gültige Menge (>= 1, <= MAX_QUANTITY) wird daraus abgeleitet.
+  const [qtyText, setQtyText] = useState("1");
+  const quantity = normalizeQuantity(qtyText);
 
   const selected = product.variants.find((v) => v.id === variantId);
   const canAdd = Boolean(selected?.inStock);
@@ -75,8 +79,8 @@ export function AddToCart({ product }: { product: ProductView }) {
     [multi, selected, product.tierExtras],
   );
   const chipMode = chips.length > 1;
-  // +/− springen in Stufengrösse; ohne Stufen in Einerschritten.
-  const step = chipMode ? Math.max(1, tier) : 1;
+  // Der hervorgehobene Chip folgt der Menge, nicht umgekehrt.
+  const activeChip = tierForQuantity(chips, quantity);
 
   const unitPrice = selected
     ? unitPriceFor(selected.tiers, quantity, selected.price)
@@ -86,12 +90,26 @@ export function AddToCart({ product }: { product: ProductView }) {
   const lineTotal = Math.round(unitPrice * quantity * 100) / 100;
   const saving = selected && chipMode ? savingAt(selected.tiers, quantity) : null;
 
-  const setQuantitySafely = (next: number) =>
-    setQuantity(Math.min(MAX_QUANTITY, Math.max(1, Math.floor(next) || 1)));
+  const hasHint = Boolean((saving && saving.amount > 0) || perUnit !== null);
 
-  const pickTier = (minQuantity: number) => {
-    setTier(minQuantity);
-    setQuantitySafely(minQuantity);
+  // Galerie (Stufenfoto) nachziehen, wenn sich die Menge ändert — egal ob
+  // per Chip, +/− oder Tastatur.
+  const syncTier = (q: number) => {
+    if (chipMode) setTier(tierForQuantity(chips, q));
+  };
+
+  const setQuantitySafely = (next: number) => {
+    const q = normalizeQuantity(next);
+    setQtyText(String(q));
+    syncTier(q);
+  };
+
+  const pickTier = (minQuantity: number) => setQuantitySafely(minQuantity);
+
+  const onQtyInput = (raw: string) => {
+    const text = sanitizeQuantityInput(raw);
+    setQtyText(text);
+    syncTier(normalizeQuantity(text));
   };
 
   return (
@@ -113,7 +131,7 @@ export function AddToCart({ product }: { product: ProductView }) {
                     setVariantId(v.id);
                     // A quantity that made sense for singles rarely does for a
                     // display — 24 displays is not what anyone meant to click.
-                    setQuantity(1);
+                    setQuantitySafely(1);
                   }}
                 >
                   {v.title}
@@ -137,7 +155,7 @@ export function AddToCart({ product }: { product: ProductView }) {
                 key={c.minQuantity}
                 type="button"
                 className={styles.chip}
-                aria-pressed={c.minQuantity === tier}
+                aria-pressed={c.minQuantity === activeChip}
                 onClick={() => pickTier(c.minQuantity)}
               >
                 <span className={styles.chipLabel}>{c.label}</span>
@@ -169,35 +187,45 @@ export function AddToCart({ product }: { product: ProductView }) {
       )}
 
       <div className={styles.quantity}>
-        <span className="eyebrow" id="qty-label">
+        <label className="eyebrow" htmlFor="qty-input">
           Menge
-        </span>
-        <div className={styles.stepper} role="group" aria-labelledby="qty-label">
+        </label>
+        <div className={styles.stepper} role="group" aria-label="Menge ändern">
           <button
             type="button"
             className={styles.step}
-            aria-label={step > 1 ? `${step} weniger` : "Menge verringern"}
-            disabled={quantity - step < 1}
-            onClick={() => setQuantitySafely(quantity - step)}
+            aria-label="Menge verringern"
+            disabled={quantity <= 1}
+            onClick={() => setQuantitySafely(quantity - 1)}
           >
             &minus;
           </button>
-          <output className={`${styles.qtyValue} tnum`} aria-live="polite">
-            {quantity}
-          </output>
+          <input
+            id="qty-input"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="off"
+            className={`${styles.qtyValue} tnum`}
+            value={qtyText}
+            aria-describedby={hasHint ? "qty-hint" : undefined}
+            onChange={(e) => onQtyInput(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            onBlur={() => setQuantitySafely(quantity)}
+          />
           <button
             type="button"
             className={styles.step}
-            aria-label={step > 1 ? `${step} mehr` : "Menge erhöhen"}
-            disabled={quantity + step > MAX_QUANTITY}
-            onClick={() => setQuantitySafely(quantity + step)}
+            aria-label="Menge erhöhen"
+            disabled={quantity >= MAX_QUANTITY}
+            onClick={() => setQuantitySafely(quantity + 1)}
           >
             +
           </button>
         </div>
 
         {saving && saving.amount > 0 ? (
-          <span className={styles.perUnit}>
+          <span id="qty-hint" className={styles.perUnit} aria-live="polite">
             {product.currency} {formatAmount(unitPrice)} / Stk. ·{" "}
             <span className={styles.saving}>
               du sparst {formatPrice(saving.amount)}
@@ -206,7 +234,7 @@ export function AddToCart({ product }: { product: ProductView }) {
           </span>
         ) : (
           perUnit !== null && (
-            <span className={styles.perUnit}>
+            <span id="qty-hint" className={styles.perUnit} aria-live="polite">
               {product.currency} {formatAmount(perUnit)} / Stk.
             </span>
           )
