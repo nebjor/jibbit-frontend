@@ -48,7 +48,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
   type ReactNode,
 } from "react";
 import {
@@ -150,7 +149,15 @@ export function CartProvider({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  // Anzahl laufender (oder eingereihter) Änderungen — bewusst KEIN
+  // useTransition: dessen isPending hängt an allem, was React in die
+  // Transition einbindet. Setzt eine Server Action ein Cookie (erstes
+  // Hinzufügen legt den Warenkorb an), rendert Next die Seite danach neu, und
+  // dieses Neurendern gehört zur selben Transition — auf dem Live-System
+  // Sekunden, in denen die Knöpfe grau blieben, obwohl die Änderung längst
+  // angekommen war. Gesperrt sein soll nur, wer wirklich auf SEINE Änderung wartet.
+  const [inFlight, setInFlight] = useState(0);
+  const isPending = inFlight > 0;
 
   /** Serialises mutations; see the header. */
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -169,7 +176,8 @@ export function CartProvider({
         () => undefined,
       );
 
-      startTransition(async () => {
+      setInFlight((n) => n + 1);
+      void (async () => {
         try {
           const result = await next;
           setCart(result.cart);
@@ -177,8 +185,11 @@ export function CartProvider({
           setNotice(result.ok ? (result.notice ?? null) : null);
         } catch {
           setError(NETWORK_ERROR);
+        } finally {
+          // Jede Änderung gibt ihren Platz wieder frei, auch bei Fehlern.
+          setInFlight((n) => n - 1);
         }
-      });
+      })();
     },
     [],
   );
