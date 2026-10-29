@@ -59,6 +59,26 @@ describe("CheckoutFlow — Lieferung oder Abholung", () => {
   });
 });
 
+describe("CheckoutFlow — eingeklappter Schritt 1", () => {
+  it("zeigt zwei Kacheln: Kontakt & Adresse und die Lieferung als Radiogruppe", () => {
+    expect(flow).toMatch(/Kontakt &amp; Adresse/);
+    expect(flow).toMatch(/<fieldset/);
+    expect(flow).toMatch(/<legend className=\{styles\.tileTitle\}>Lieferung<\/legend>/);
+    expect(flow).toMatch(/name="delivery-method"/);
+    expect(css).toMatch(/\.tiles\s*\{/);
+  });
+
+  it("wechselt die Lieferart über dieselbe Server Action wie das Formular", () => {
+    expect(flow).toMatch(/saveAddressAction\(cart\.email \?\? email, address, choice\)/);
+    expect(flow).toMatch(/pendingChoice/);
+  });
+
+  it("«Ändern» sitzt in der Kontakt-Kachel, Schritt 2 hat keine Artikeltabelle mehr", () => {
+    expect(flow).not.toMatch(/reviewTable|review-summary/);
+    expect(css).not.toMatch(/\.reviewTable/);
+  });
+});
+
 describe("Warenkorb und Gratisversand-Balken", () => {
   it("der Balken blendet sich bei Abholung aus", () => {
     expect(meter).toMatch(/if \(count === 0 \|\| pickup\) return null;/);
