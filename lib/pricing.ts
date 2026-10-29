@@ -270,3 +270,44 @@ export function orderImagesForTier(
   if (!tierImage || !images.includes(tierImage)) return images;
   return [tierImage, ...images.filter((src) => src !== tierImage)];
 }
+
+/** Obergrenze der Menge pro Position auf der Produktseite. */
+export const MAX_QUANTITY = 999;
+
+/**
+ * Nur Ziffern, ohne führende Nullen, höchstens MAX_QUANTITY — für die
+ * Eingabe im Mengenfeld, solange getippt wird. Leer bleibt leer und «0» bleibt
+ * «0» (sonst liesse sich «05» nicht tippen); erst `normalizeQuantity` macht
+ * daraus mindestens 1.
+ */
+export function sanitizeQuantityInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  if (digits === "") return "";
+  return Number(digits) > MAX_QUANTITY ? String(MAX_QUANTITY) : digits;
+}
+
+/**
+ * Die gültige Menge zu einer Eingabe: leer, «0» oder Unsinn -> 1, alles über
+ * dem Maximum -> MAX_QUANTITY, Nicht-Ziffern werden verworfen.
+ */
+export function normalizeQuantity(raw: string | number): number {
+  const n =
+    typeof raw === "number"
+      ? Math.floor(raw)
+      : Number(raw.replace(/\D/g, "").slice(0, 6) || "0");
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(MAX_QUANTITY, n);
+}
+
+/**
+ * Welcher Chip gehört zur Menge? Die höchste Stufe, deren «ab»-Menge erreicht
+ * ist (49 -> Stufe 24, 50 -> Stufe 50); unter der ersten Stufe die erste.
+ */
+export function tierForQuantity(
+  chips: ReadonlyArray<{ minQuantity: number }>,
+  quantity: number,
+): number {
+  let hit = chips[0]?.minQuantity ?? 1;
+  for (const c of chips) if (quantity >= c.minQuantity) hit = c.minQuantity;
+  return hit;
+}
