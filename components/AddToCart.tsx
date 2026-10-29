@@ -6,6 +6,7 @@ import { useVariantSelection } from "./VariantSelection";
 import { useTierSelection } from "./TierSelection";
 import { trackAddToCart } from "@/lib/analytics/client";
 import { Price, SaveBadge } from "./Price";
+import { variantControl, variantLabel, variantOptionText } from "@/lib/variant-control";
 import { PriceTable } from "./PriceTable";
 import { formatAmount, formatPrice } from "@/lib/format";
 import {
@@ -50,6 +51,7 @@ import styles from "./AddToCart.module.css";
 export function AddToCart({ product }: { product: ProductView }) {
   const { addLine, isPending } = useCart();
   const multi = product.variants.length > 1;
+  const control = variantControl(product.variants, product.optionTitle);
 
   // Die Auswahl lebt — wenn vorhanden — im VariantSelectionProvider der
   // Produktseite, damit die Galerie das Bild zur gewählten Variante zeigen
@@ -88,7 +90,7 @@ export function AddToCart({ product }: { product: ProductView }) {
   // Ohne useMemo: der React Compiler memoisiert selbst (und lehnte die
   // manuelle Memoisierung ab, seit der Bestand aus der Variante abgeleitet wird).
   const chips =
-    !multi && selected ? tierChips(selected.tiers, product.tierExtras) : [];
+    (!multi || control === "select") && selected ? tierChips(selected.tiers, product.tierExtras) : [];
   const chipMode = chips.length > 1;
   // Der hervorgehobene Chip folgt der Menge, nicht umgekehrt.
   const activeChip = tierForQuantity(chips, quantity);
@@ -132,7 +134,31 @@ export function AddToCart({ product }: { product: ProductView }) {
 
   return (
     <div className={styles.wrap}>
-      {multi && (
+      {control === "select" && (
+        <div className={styles.variants}>
+          <label className="eyebrow" htmlFor="variant-select">
+            {variantLabel(product.optionTitle)}
+          </label>
+          <select
+            id="variant-select"
+            className={styles.select}
+            value={variantId ?? ""}
+            onChange={(e) => {
+              setVariantId(e.target.value);
+              // Die Menge der alten Grösse passt selten zur neuen.
+              setQuantitySafely(1);
+            }}
+          >
+            {product.variants.map((v) => (
+              <option key={v.id} value={v.id} disabled={!v.inStock}>
+                {variantOptionText(v, formatPrice)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {control === "buttons" && (
         <fieldset className={styles.variants}>
           <legend className="eyebrow">Verpackungseinheit</legend>
           <div className={styles.options}>
