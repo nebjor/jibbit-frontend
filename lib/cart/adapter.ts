@@ -39,6 +39,7 @@ export interface MedusaCartLike {
 export interface MedusaLineItemLike {
   id: string;
   variant_id?: string | null;
+  product_id?: string | null;
   product_handle?: string | null;
   product_title?: string | null;
   title?: string | null;
@@ -112,6 +113,7 @@ export function toCartLineView(item: MedusaLineItemLike): CartLineView {
   return {
     id: item.id,
     variantId: item.variant_id ?? "",
+    productId: item.product_id ?? undefined,
     productHandle: item.product_handle ?? "",
     title: item.product_title ?? item.title ?? "",
     // «Default variant» ist Medusas Platzhalter bei Produkten mit nur einer

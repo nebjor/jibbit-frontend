@@ -23,6 +23,7 @@ import type {
   ProductView,
 } from "./types";
 import { normalizeGtin } from "./gtin";
+import { availableQuantityOf } from "./stock";
 import { MOCK_CATEGORIES } from "./mock-catalog";
 
 /** variant id -> its quantity breaks, as returned by /store/price-tiers. */
@@ -144,6 +145,7 @@ export function toVariantView(
       v.manage_inventory === false ||
       v.allow_backorder === true ||
       (v.inventory_quantity ?? 0) > 0,
+    availableQuantity: availableQuantityOf(v),
     // Vorschaubild je Variante: der vorgesehene Haken für «Display zeigt die
     // Box, Heftchen das Einzelstück». Leerstrings zählen als nicht gepflegt.
     image:
