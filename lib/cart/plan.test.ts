@@ -5,6 +5,7 @@ import {
   planCorrectionAfterCreate,
   planRemove,
   planSetQuantity,
+  stepQuantity,
 } from "./plan";
 import type { CartLineView } from "./types";
 
@@ -139,5 +140,39 @@ describe("planCorrectionAfterCreate", () => {
 
   it("does nothing when there is no line to correct", () => {
     expect(planCorrectionAfterCreate(undefined, 4).kind).toBe("noop");
+  });
+});
+
+describe("stepQuantity (Warenkorb-Knöpfe)", () => {
+  // Regression: Wer über den Chip "50" in den Warenkorb kam, verlor mit "−"
+  // die ganze Zeile (50 - Schrittweite 50 = 0 -> löschen) statt 49 zu erhalten.
+  it("minus senkt 50 auf 49, nicht auf 0", () => {
+    expect(stepQuantity(50, -1)).toBe(49);
+  });
+
+  it("minus senkt 2 auf 1", () => {
+    expect(stepQuantity(2, -1)).toBe(1);
+  });
+
+  it("minus bei 1 bleibt bei 1 (Entfernen ist ein eigener Knopf)", () => {
+    expect(stepQuantity(1, -1)).toBe(1);
+  });
+
+  it("plus erhöht immer um 1, auch bei einer Stufenmenge", () => {
+    expect(stepQuantity(50, 1)).toBe(51);
+    expect(stepQuantity(24, 1)).toBe(25);
+  });
+
+  it("plus ist bei MAX_LINE_QUANTITY gedeckelt", () => {
+    expect(stepQuantity(MAX_LINE_QUANTITY, 1)).toBe(MAX_LINE_QUANTITY);
+  });
+
+  it("Stufengrenze abwärts: 50 -> 49 plant ein Update auf 49 (Medusa preist neu)", () => {
+    const lines = [line({ quantity: 50 })];
+    expect(planSetQuantity(lines, "variant_papers", stepQuantity(50, -1))).toEqual({
+      kind: "update",
+      itemId: "item_1",
+      quantity: 49,
+    });
   });
 });
