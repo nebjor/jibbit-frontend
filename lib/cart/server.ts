@@ -22,6 +22,8 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { getCurrentRegionId } from "@/lib/data";
 import type { TenantConfig } from "@/lib/tenant/types";
 import { toCartState } from "./adapter";
+import { applyAvailability, fetchAvailability } from "./availability";
+import { describeInsufficientInventory } from "./stock-error";
 import { clearCartId, readCartId, writeCartId } from "./cookie";
 import {
   planAdd,
@@ -129,6 +131,29 @@ async function cartContext(): Promise<CartContext | null> {
  * NO CART IS CREATED here — an unknown or expired id simply yields an empty
  * cart, and the next mutation creates a fresh one.
  */
+/**
+ * Legt den Bestand auf die Positionen (lib/cart/availability.ts). Ein Fehler
+ * hier darf den Warenkorb nie blockieren: dann bleibt er unverändert und
+ * Medusa prüft beim Abschluss verbindlich.
+ */
+export async function withStock(
+  sdk: Medusa,
+  state: CartState,
+): Promise<CartState> {
+  if (!state.lines.length) return state;
+  try {
+    const availability = await fetchAvailability(
+      sdk,
+      state.lines.map((l) => l.productId ?? ""),
+      await getCurrentRegionId(),
+    );
+    return applyAvailability(state, availability);
+  } catch (error) {
+    logCartError("stock", error);
+    return state;
+  }
+}
+
 export async function readCartState(): Promise<CartState> {
   const cartId = await readCartId();
   if (!cartId) return EMPTY_CART;
@@ -143,7 +168,7 @@ export async function readCartState(): Promise<CartState> {
     // A cart that has been completed is an order now. Showing its lines would
     // invite the customer to "check out" something they already bought.
     if (cart.completed_at) return EMPTY_CART;
-    return toCartState(cart);
+    return await withStock(ctx.sdk, toCartState(cart));
   } catch (error) {
     if (!isNotFound(error)) logCartError("retrieve", error);
     return EMPTY_CART;
@@ -238,7 +263,10 @@ export async function recoverStaleCart(
   }
 }
 
-function failureMessage(error: unknown): string {
+function failureMessage(error: unknown, state?: CartState): string {
+  // Zu wenig Bestand: Artikel und verfügbare Menge nennen (lib/cart/stock-error.ts).
+  const stock = describeInsufficientInventory(error, state?.lines ?? []);
+  if (stock) return stock;
   return staleVariantIds(error) !== null ? UNAVAILABLE_ITEM : describeCartFailure(error);
 }
 
@@ -305,13 +333,15 @@ async function mutate(
 
   try {
     const { id, state } = await getOrCreateCart(ctx);
-    return { ok: true, cart: await applyPlan(ctx, id, state, plan) };
+    const next = await applyPlan(ctx, id, state, plan);
+    return { ok: true, cart: await withStock(ctx.sdk, next) };
   } catch (error) {
     logCartError(where, error);
     const recovered = await recoverStaleCart(ctx, error);
     if (recovered) {
       try {
-        const cart = await applyPlan(ctx, recovered.id, recovered.state, plan);
+        const next = await applyPlan(ctx, recovered.id, recovered.state, plan);
+        const cart = await withStock(ctx.sdk, next);
         return { ok: true, cart, notice: recovered.notice };
       } catch (retryError) {
         logCartError(`${where}:after-recover`, retryError);
@@ -323,7 +353,8 @@ async function mutate(
       }
     }
 
-    return { ok: false, message: failureMessage(error), cart: await readCartState() };
+    const current = await readCartState();
+    return { ok: false, message: failureMessage(error, current), cart: current };
   }
 }
 

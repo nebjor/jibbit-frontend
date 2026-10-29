@@ -152,6 +152,17 @@ function shippingAmount(optionId, itemTotal) {
   return rate.freeFrom !== null && itemTotal >= rate.freeFrom ? 0 : rate.rate;
 }
 
+/** Wie Medusa: mit Bestandsführung darf die Menge den Bestand nicht übersteigen. */
+function exceedsStock(variantId, quantity) {
+  const v = VARIANTS.get(variantId)?.variant;
+  return Boolean(
+    v && v.manage_inventory && !v.allow_backorder && quantity > v.inventory_quantity,
+  );
+}
+
+const stockError = (variantId) =>
+  error(400, `Variant with id: ${variantId} does not have the required inventory`);
+
 function addLineItem(cart, variantId, quantity) {
   const known = VARIANTS.get(variantId);
   if (!known) return false;
@@ -216,7 +227,9 @@ const routes = [
     /^\/store\/products$/,
     (_m, { query }) => {
       const categoryIds = asArray(query.category_id);
+      const ids = asArray(query.id);
       let products = PRODUCTS;
+      if (ids.length) products = products.filter((p) => ids.includes(p.id));
       if (query.handle) products = products.filter((p) => p.handle === query.handle);
       if (categoryIds.length) {
         products = products.filter((p) =>
@@ -284,6 +297,10 @@ const routes = [
     ([id], { body }) => {
       const cart = carts.get(id);
       if (!cart) return notFound("Cart");
+      const wanted =
+        (cart.items.find((i) => i.variant_id === body.variant_id)?.quantity ?? 0) +
+        Number(body.quantity ?? 1);
+      if (exceedsStock(body.variant_id, wanted)) return stockError(body.variant_id);
       if (!addLineItem(cart, body.variant_id, Number(body.quantity ?? 1))) {
         return error(400, `Variant ${body.variant_id} is not available`);
       }
@@ -299,6 +316,9 @@ const routes = [
       if (!cart) return notFound("Cart");
       const item = cart.items.find((i) => i.id === lineId);
       if (!item) return notFound("Line item");
+      if (exceedsStock(item.variant_id, Number(body.quantity))) {
+        return stockError(item.variant_id);
+      }
       item.quantity = Number(body.quantity);
       return { cart: priceCart(cart) };
     },

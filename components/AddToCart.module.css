@@ -292,3 +292,15 @@
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* Gesperrte Preisstufe: Bestand reicht nicht bis zur «ab»-Menge. */
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stockNote {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-warning);
+}

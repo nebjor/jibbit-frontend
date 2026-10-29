@@ -355,3 +355,11 @@ a.checkout:hover {
   text-decoration: none;
   color: var(--c-on-accent);
 }
+
+/* Position über dem Bestand: «Nur noch X verfügbar – Menge anpassen». */
+.stockHint {
+  margin: var(--s-1) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-warning);
+}

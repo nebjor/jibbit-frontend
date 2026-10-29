@@ -21,6 +21,12 @@ import {
   tierForQuantity,
   unitPriceFor,
 } from "@/lib/pricing";
+import {
+  clampToStock,
+  isTierDisabled,
+  stockNote,
+  tierDisabledLabel,
+} from "@/lib/stock";
 import type { ProductView } from "@/lib/types";
 import styles from "./AddToCart.module.css";
 
@@ -64,20 +70,25 @@ export function AddToCart({ product }: { product: ProductView }) {
   // Das Mengenfeld hält den getippten Text (leer ist beim Tippen erlaubt);
   // die gültige Menge (>= 1, <= MAX_QUANTITY) wird daraus abgeleitet.
   const [qtyText, setQtyText] = useState("1");
-  const quantity = normalizeQuantity(qtyText);
-
   const selected = product.variants.find((v) => v.id === variantId);
   const canAdd = Boolean(selected?.inStock);
+
+  // Bestand: null = unbegrenzt. Menge, Eingabe und «+» enden hier; fällt die
+  // Vorauswahl über den Bestand, gilt die grösste erlaubte Menge (lib/stock.ts).
+  const available = selected?.availableQuantity ?? null;
+  const maxQuantity =
+    typeof available === "number" ? Math.min(MAX_QUANTITY, Math.max(1, available)) : MAX_QUANTITY;
+  const quantity = clampToStock(normalizeQuantity(qtyText), available);
 
   const single = useMemo(
     () => product.variants.find((v) => v.packType === "single"),
     [product.variants],
   );
 
-  const chips = useMemo(
-    () => (!multi && selected ? tierChips(selected.tiers, product.tierExtras) : []),
-    [multi, selected, product.tierExtras],
-  );
+  // Ohne useMemo: der React Compiler memoisiert selbst (und lehnte die
+  // manuelle Memoisierung ab, seit der Bestand aus der Variante abgeleitet wird).
+  const chips =
+    !multi && selected ? tierChips(selected.tiers, product.tierExtras) : [];
   const chipMode = chips.length > 1;
   // Der hervorgehobene Chip folgt der Menge, nicht umgekehrt.
   const activeChip = tierForQuantity(chips, quantity);
@@ -90,7 +101,11 @@ export function AddToCart({ product }: { product: ProductView }) {
   const lineTotal = Math.round(unitPrice * quantity * 100) / 100;
   const saving = selected && chipMode ? savingAt(selected.tiers, quantity) : null;
 
+  const note = canAdd ? stockNote(available, selected?.tiers.at(-1)?.minQuantity ?? 0) : null;
   const hasHint = Boolean((saving && saving.amount > 0) || perUnit !== null);
+  const describedBy =
+    [note ? "qty-note" : "", hasHint ? "qty-hint" : ""].filter(Boolean).join(" ") ||
+    undefined;
 
   // Galerie (Stufenfoto) nachziehen, wenn sich die Menge ändert — egal ob
   // per Chip, +/− oder Tastatur.
@@ -99,7 +114,7 @@ export function AddToCart({ product }: { product: ProductView }) {
   };
 
   const setQuantitySafely = (next: number) => {
-    const q = normalizeQuantity(next);
+    const q = clampToStock(normalizeQuantity(next), available);
     setQtyText(String(q));
     syncTier(q);
   };
@@ -107,9 +122,12 @@ export function AddToCart({ product }: { product: ProductView }) {
   const pickTier = (minQuantity: number) => setQuantitySafely(minQuantity);
 
   const onQtyInput = (raw: string) => {
-    const text = sanitizeQuantityInput(raw);
+    const typed = sanitizeQuantityInput(raw);
+    // Über dem Bestand sofort auf den Bestand kappen.
+    const text =
+      typed !== "" && Number(typed) > maxQuantity ? String(maxQuantity) : typed;
     setQtyText(text);
-    syncTier(normalizeQuantity(text));
+    syncTier(clampToStock(normalizeQuantity(text), available));
   };
 
   return (
@@ -150,12 +168,21 @@ export function AddToCart({ product }: { product: ProductView }) {
         <fieldset className={styles.variants}>
           <legend className="eyebrow">Menge wählen</legend>
           <div className={styles.chips}>
-            {chips.map((c) => (
+            {chips.map((c) => {
+              const tooMany = isTierDisabled(c.minQuantity, available);
+              return (
               <button
                 key={c.minQuantity}
                 type="button"
                 className={styles.chip}
                 aria-pressed={c.minQuantity === activeChip}
+                disabled={tooMany}
+                title={tooMany ? tierDisabledLabel(available ?? 0) : undefined}
+                aria-label={
+                  tooMany
+                    ? `${c.label}: ${tierDisabledLabel(available ?? 0)}`
+                    : undefined
+                }
                 onClick={() => pickTier(c.minQuantity)}
               >
                 <span className={styles.chipLabel}>{c.label}</span>
@@ -172,7 +199,8 @@ export function AddToCart({ product }: { product: ProductView }) {
                   <span className={styles.chipBase}>Einzelpreis</span>
                 )}
               </button>
-            ))}
+              );
+            })}
           </div>
         </fieldset>
       ) : (
@@ -208,7 +236,7 @@ export function AddToCart({ product }: { product: ProductView }) {
             autoComplete="off"
             className={`${styles.qtyValue} tnum`}
             value={qtyText}
-            aria-describedby={hasHint ? "qty-hint" : undefined}
+            aria-describedby={describedBy}
             onChange={(e) => onQtyInput(e.target.value)}
             onFocus={(e) => e.target.select()}
             onBlur={() => setQuantitySafely(quantity)}
@@ -217,12 +245,18 @@ export function AddToCart({ product }: { product: ProductView }) {
             type="button"
             className={styles.step}
             aria-label="Menge erhöhen"
-            disabled={quantity >= MAX_QUANTITY}
+            disabled={quantity >= maxQuantity}
             onClick={() => setQuantitySafely(quantity + 1)}
           >
             +
           </button>
         </div>
+
+        {note && (
+          <span id="qty-note" className={styles.stockNote} role="status">
+            {note}
+          </span>
+        )}
 
         {saving && saving.amount > 0 ? (
           <span id="qty-hint" className={styles.perUnit} aria-live="polite">
