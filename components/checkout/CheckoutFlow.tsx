@@ -45,6 +45,11 @@ import type { CartState, CheckoutAddress } from "@/lib/cart/types";
 import { EMPTY_CART } from "@/lib/cart/types";
 import { PICKUP, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
+import {
+  missingForFreeShippingText,
+  quantityTimesPrice,
+  shippingDisplay,
+} from "@/lib/checkout/shipping-display";
 import { ShippingSplitNote } from "@/components/ShippingSplitNote";
 import styles from "./checkout.module.css";
 
@@ -183,6 +188,14 @@ export function CheckoutFlow({
   }
 
   const addressComplete = cart.hasShippingAddress && Boolean(cart.email);
+  // Lieferart und Kosten für Vorschau (Schritt 1) und Zusammenfassung (Schritt 2).
+  // Die Beträge sind Medusas; vor der Methode ist `cart.shipping` die Schätzung.
+  const shippingInfo = shippingDisplay({
+    pickup: cart.pickup,
+    shipping: cart.shipping,
+    estimate: cart.shippingIsEstimate,
+  });
+  const missingText = missingForFreeShippingText(cart.remainingForFreeShipping, cart.pickup);
   const isPickup = delivery === "pickup";
 
   function deliveryOption(
@@ -458,6 +471,8 @@ export function CheckoutFlow({
                   <strong>{PICKUP.label}</strong> — {pickupAddressLines().slice(1).join(", ")}
                   <br />
                   {pickupHoursText()}
+                  <br />
+                  <strong>{shippingInfo.cost}</strong>
                 </address>
               ) : (
                 <address className={styles.address}>
@@ -468,6 +483,17 @@ export function CheckoutFlow({
                   {address.address1}
                   <br />
                   {address.postalCode} {address.city}
+                  <br />
+                  <span className={styles.shippingLine} data-testid="shipping-summary">
+                    <strong>{shippingInfo.label}</strong> ·{" "}
+                    <strong className="tnum">{shippingInfo.cost}</strong>
+                    {shippingInfo.estimate && (
+                      <span className={styles.estimate}> (geschätzt)</span>
+                    )}
+                    {shippingInfo.timing && (
+                      <span className={styles.shippingTiming}>{shippingInfo.timing}</span>
+                    )}
+                  </span>
                 </address>
               ))
             )}
@@ -481,6 +507,69 @@ export function CheckoutFlow({
                   2 · Kaufen
                 </h2>
               </div>
+              <table className={styles.reviewTable} data-testid="review-summary">
+                <caption className="srOnly">Zusammenfassung deiner Bestellung</caption>
+                <thead className="srOnly">
+                  <tr>
+                    <th scope="col">Artikel</th>
+                    <th scope="col">Menge und Einzelpreis</th>
+                    <th scope="col">Betrag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cart.lines.map((line) => (
+                    <tr key={line.id}>
+                      <th scope="row" className={styles.reviewItem}>
+                        {line.title}
+                        {line.variantTitle && ` · ${line.variantTitle}`}
+                      </th>
+                      <td className={`${styles.reviewQty} tnum`}>
+                        {quantityTimesPrice(line.quantity, line.unitPrice)}
+                      </td>
+                      <td className="tnum">{formatPrice(line.lineTotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row" colSpan={2}>
+                      Zwischensumme
+                    </th>
+                    <td className="tnum">{formatPrice(cart.subtotal)}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" colSpan={2}>
+                      {shippingInfo.label}
+                      {shippingInfo.estimate && (
+                        <span className={styles.estimate}> (geschätzt)</span>
+                      )}
+                    </th>
+                    <td className="tnum">{shippingInfo.cost}</td>
+                  </tr>
+                  {cart.taxTotal > 0 && (
+                    <tr>
+                      <th scope="row" colSpan={2}>
+                        enthaltene MwSt.
+                      </th>
+                      <td className="tnum">{formatPrice(cart.taxTotal)}</td>
+                    </tr>
+                  )}
+                  <tr className={styles.reviewGrand}>
+                    <th scope="row" colSpan={2}>
+                      Total
+                    </th>
+                    <td className="tnum">{formatPrice(cart.total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+              {missingText && <p className={styles.freeHint} data-testid="free-hint">{missingText}</p>}
+              {cart.taxTotal > 0 ? (
+                <p className={styles.vatNote}>Alle Preise inkl. MwSt.</p>
+              ) : (
+                <p className={styles.vatNote}>
+                  Endpreise — keine Mehrwertsteuer (nicht steuerpflichtig)
+                </p>
+              )}
               <p className={styles.muted}>
                 Mit dem Klick auf &laquo;Jetzt kaufen&raquo; gibst du eine
                 verbindliche Bestellung ab. Es gelten unsere{" "}
@@ -547,7 +636,13 @@ export function CheckoutFlow({
               <dd className="tnum">{formatPrice(cart.total)}</dd>
             </div>
           </dl>
-          <p className={styles.vatNote}>Endpreise — keine Mehrwertsteuer (nicht steuerpflichtig)</p>
+          {cart.taxTotal > 0 ? (
+            <p className={styles.vatNote}>
+              Alle Preise inkl. MwSt. (enthalten: {formatPrice(cart.taxTotal)})
+            </p>
+          ) : (
+            <p className={styles.vatNote}>Endpreise — keine Mehrwertsteuer (nicht steuerpflichtig)</p>
+          )}
         </aside>
       </div>
     </div>
