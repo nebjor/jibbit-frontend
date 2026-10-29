@@ -114,3 +114,34 @@ test("Getippte Menge unter der Stufe: Stufenpreis darunter, Warenkorb erhält di
   await page.getByRole("button", { name: /In den Warenkorb/ }).click();
   await expect(drawer).toContainText("47 Artikel");
 });
+
+test("Erster Kauf in frischer Sitzung: Mengenknöpfe sind ohne Schliessen bedienbar", async ({
+  page,
+  request,
+}) => {
+  // Das erste Hinzufügen legt den Warenkorb an und setzt das Cookie; Next
+  // rendert danach die Seite neu. Mit langsamen Lesezugriffen (wie live)
+  // dauert dieses Neurendern Sekunden — die Knöpfe dürfen darauf nicht warten.
+  const backend = `http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? 9100}`;
+  await request.post(`${backend}/__slow-reads`, { data: { ms: 4000 } });
+  try {
+    await page.goto(`/products/${papers.handle}`);
+    await page.getByRole("button", { name: new RegExp(papers.tierLabel) }).click();
+    await page.getByRole("button", { name: /In den Warenkorb/ }).click();
+
+    const drawer = page.getByRole("dialog", { name: "Warenkorb" });
+    await expect(drawer).toContainText(`${papers.tierQuantity} Artikel`);
+    const more = drawer.getByRole("button", { name: `Menge von ${papers.title} erhöhen` });
+    const remove = drawer.getByRole("button", { name: /Entfernen/ });
+
+    // Kein Neuladen, kein Schliessen: sobald die eigene Änderung durch ist,
+    // muss die Zeile frei sein — auch wenn das Neurendern der Seite noch läuft.
+    await expect(more).toBeEnabled({ timeout: 2500 });
+    await expect(remove).toBeEnabled({ timeout: 2500 });
+    await more.click();
+    await expect(drawer).toContainText(`${papers.tierQuantity + 1} Artikel`);
+    await expect(drawer).toBeVisible();
+  } finally {
+    await request.post(`${backend}/__slow-reads`, { data: { ms: 0 } });
+  }
+});

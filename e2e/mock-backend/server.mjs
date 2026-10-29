@@ -120,8 +120,20 @@ function createCart() {
     metadata: null,
   };
   carts.set(cart.id, cart);
+  // Test-Hilfe: den nächsten angelegten Warenkorb mit langsamen Lesezugriffen
+  // versehen (siehe POST /__slow-reads).
+  if (slowReads.pending > 0) {
+    slowReads.pending -= 1;
+    slowCartIds.set(cart.id, slowReads.ms);
+  }
   return cart;
 }
+
+// Künstlich langsame GET-Antworten für einzelne Warenkörbe. Das Produktivsystem
+// liest den Warenkorb nach dem ersten Hinzufügen beim Neurendern der Seite
+// nicht in 1 ms; ein Test braucht diese Dauer, um den Fehler zu zeigen.
+const slowReads = { pending: 0, ms: 0 };
+const slowCartIds = new Map();
 
 function priceCart(cart) {
   for (const item of cart.items) {
@@ -239,13 +251,27 @@ const routes = [
     },
   ],
 
+  [
+    "POST",
+    /^\/__slow-reads$/,
+    (_p, { body }) => {
+      // ms = 0 setzt zurück.
+      slowReads.ms = Number(body.ms ?? 0);
+      slowReads.pending = slowReads.ms > 0 ? slowReads.pending + 1 : 0;
+      if (slowReads.ms === 0) slowCartIds.clear();
+      return { ok: true };
+    },
+  ],
+
   ["POST", /^\/store\/carts$/, () => ({ cart: priceCart(createCart()) })],
 
   [
     "GET",
     /^\/store\/carts\/([^/]+)$/,
-    ([id]) => {
+    async ([id]) => {
       const cart = carts.get(id);
+      const delay = slowCartIds.get(id);
+      if (delay) await new Promise((r) => setTimeout(r, delay));
       return cart ? { cart: priceCart(cart) } : notFound("Cart");
     },
   ],
