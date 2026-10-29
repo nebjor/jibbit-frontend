@@ -12,7 +12,7 @@ concurrency:
 jobs:
   storefront:
     name: Storefront
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # ubuntu-latest ist seit Okt. 2026 26.04, dort installiert Playwright 1.56 keinen Chromium
     timeout-minutes: 20
 
     steps:
