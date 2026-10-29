@@ -5,6 +5,7 @@ import { toSearchDoc } from "@/lib/search/server";
 import { buildIndex, search } from "@/lib/search/engine";
 import { ProductCard } from "@/components/ProductCard";
 import { ShopTrust } from "@/components/ShopTrust";
+import { ProduktWunsch } from "@/components/ProduktWunsch";
 import type { ProductView } from "@/lib/types";
 import styles from "./suche.module.css";
 
@@ -105,6 +106,9 @@ export default async function SuchePage({
           )}
         </>
       )}
+
+      {/* Am Ende der Liste, auch ohne Treffer. */}
+      <ProduktWunsch suche={q.length >= MIN_QUERY ? q : undefined} />
     </div>
   );
 }

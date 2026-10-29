@@ -42,6 +42,7 @@ const carts = new Map();
 const identities = new Map();
 const customers = new Map();
 const orders = new Map();
+const wuensche = [];
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -204,6 +205,24 @@ function addLineItem(cart, variantId, quantity) {
 
 const routes = [
   ["GET", /^\/health$/, () => ({ status: "ok" })],
+
+  /**
+   * Produktwunsch (Formular «Nicht gefunden, was du suchst?»): nimmt den
+   * Wunsch an wie die echte Route (204, 400 bei leerem Wunsch) und merkt ihn
+   * sich; der Test liest ihn über GET /e2e/produktwunsch zurück.
+   */
+  [
+    "POST",
+    /^\/store\/produktwunsch$/,
+    (_params, { body, request }) => {
+      if (typeof body.wunsch !== "string" || !body.wunsch.trim()) {
+        return { __status: 400, body: { message: "Bitte beschreibe dein Produkt." } };
+      }
+      wuensche.push({ ...body, clientIp: request.headers["x-jibbit-client-ip"] ?? null });
+      return { __status: 204 };
+    },
+  ],
+  ["GET", /^\/e2e\/produktwunsch$/, () => ({ wuensche })],
 
   /**
    * Google Places API (New), Place Details — nachgespielt für die
@@ -654,6 +673,10 @@ function readBody(request) {
 }
 
 function sendJson(response, status, payload) {
+  if (status === 204) {
+    response.writeHead(204, { "access-control-allow-origin": "*" });
+    return response.end();
+  }
   const body = JSON.stringify(payload);
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
