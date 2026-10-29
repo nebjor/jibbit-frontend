@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   SHIPPING_METHOD_LABEL,
+  deliveryOptionViews,
   handlingTimeText,
-  missingForFreeShippingText,
-  quantityTimesPrice,
   shippingDisplay,
 } from "./shipping-display";
 
@@ -47,19 +46,30 @@ describe("handlingTimeText", () => {
   });
 });
 
-describe("missingForFreeShippingText", () => {
-  it("nennt den fehlenden Betrag", () => {
-    expect(plain(missingForFreeShippingText(26.1))).toBe("Noch CHF 26.10 bis Gratisversand");
+describe("deliveryOptionViews", () => {
+  it("Versand gewählt: Medusas Betrag, Abholung gratis", () => {
+    const [post, pickup] = deliveryOptionViews({ pickup: false, shipping: 4.5, subtotal: 38.4 });
+    expect(post.value).toBe("shipping");
+    expect(post.title).toBe(SHIPPING_METHOD_LABEL);
+    expect(plain(post.cost)).toBe("CHF 4.50");
+    expect(post.estimate).toBe(false);
+    expect(post.detail).toBe("Versand in der Regel innerhalb von 1–3 Werktagen");
+    expect(pickup.value).toBe("pickup");
+    expect(pickup.cost).toBe("Gratis");
+    expect(pickup.estimate).toBe(false);
+    expect(pickup.detail).toContain("Abholzeiten");
   });
 
-  it("schweigt, wenn nichts fehlt oder abgeholt wird", () => {
-    expect(missingForFreeShippingText(0)).toBeNull();
-    expect(missingForFreeShippingText(10, true)).toBeNull();
+  it("Abholung gewählt: Versand nur als Schätzung des Shops", () => {
+    const [post] = deliveryOptionViews({ pickup: true, shipping: 0, subtotal: 38.4 });
+    expect(plain(post.cost)).toBe("CHF 4.50");
+    expect(post.estimate).toBe(true);
+    const [free] = deliveryOptionViews({ pickup: true, shipping: 0, subtotal: 92.4 });
+    expect(free.cost).toBe("Gratis");
   });
-});
 
-describe("quantityTimesPrice", () => {
-  it("formatiert Menge und Einzelpreis", () => {
-    expect(plain(quantityTimesPrice(24, 1.6))).toBe("24 × CHF 1.60");
+  it("Versand gewählt, aber noch ohne Methode auf dem Cart: geschätzt", () => {
+    const [post] = deliveryOptionViews({ pickup: false, shipping: 4.5, subtotal: 10, estimate: true });
+    expect(post.estimate).toBe(true);
   });
 });
