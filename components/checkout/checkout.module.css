@@ -435,3 +435,75 @@
   margin-top: 2px;
   max-width: 30ch;
 }
+
+/* ---- Lieferart-Vorschau (Schritt 1) und Zusammenfassung (Schritt 2) ------ */
+
+.shippingLine {
+  display: inline-block;
+  margin-top: var(--s-2);
+}
+
+.shippingTiming {
+  display: block;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+
+.reviewTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-bottom: var(--s-3);
+}
+
+.reviewTable th,
+.reviewTable td {
+  padding: var(--s-2) 0;
+  text-align: left;
+  font-weight: 400;
+  vertical-align: top;
+}
+
+.reviewTable td:last-child {
+  text-align: right;
+  white-space: nowrap;
+  padding-left: var(--s-3);
+}
+
+.reviewItem {
+  overflow-wrap: anywhere;
+}
+
+.reviewQty {
+  color: var(--c-muted);
+  white-space: nowrap;
+  padding-left: var(--s-3);
+}
+
+.reviewTable tbody tr {
+  border-bottom: var(--border-w) solid var(--c-line);
+}
+
+.reviewTable tfoot tr:first-child th,
+.reviewTable tfoot tr:first-child td {
+  padding-top: var(--s-3);
+}
+
+.reviewTable tfoot th,
+.reviewTable tfoot td {
+  color: var(--c-muted);
+}
+
+.reviewTable tfoot .reviewGrand th,
+.reviewTable tfoot .reviewGrand td {
+  color: var(--c-ink);
+  font-size: 18px;
+  font-weight: 700;
+  border-top: var(--border-w) solid var(--c-line);
+}
+
+.freeHint {
+  margin: 0 0 var(--s-2);
+  font-size: 13px;
+  color: var(--c-ink);
+}

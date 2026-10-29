@@ -114,6 +114,11 @@ describe("toCartState", () => {
     expect(state.total).toBe(42.6);
   });
 
+  it("übernimmt die enthaltene Steuer aus tax_total, ohne sie zu rechnen", () => {
+    expect(toCartState(medusaCart({ tax_total: 3.2 })).taxTotal).toBe(3.2);
+    expect(toCartState(medusaCart()).taxTotal).toBe(0);
+  });
+
   it("falls back to unit price x quantity when a line total is missing", () => {
     const cart = medusaCart();
     cart.items![0].total = undefined;

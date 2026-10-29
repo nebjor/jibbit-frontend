@@ -60,6 +60,8 @@ export interface CartState {
   shipping: number;
   /** Gross grand total — Medusa's `total`. */
   total: number;
+  /** In `total` enthaltene Steuer — Medusas `tax_total`; 0, wenn keine anfällt. */
+  taxTotal?: number;
   /** True once a shipping method sits on the cart, i.e. `shipping` is binding. */
   hasShippingMethod: boolean;
   /**

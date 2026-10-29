@@ -27,6 +27,7 @@ export interface MedusaCartLike {
   item_total?: number | null;
   shipping_total?: number | null;
   total?: number | null;
+  tax_total?: number | null;
   items?: MedusaLineItemLike[] | null;
   /** `data` nur mit `+shipping_methods.data` in den Feldern (lib/cart/server.ts). */
   shipping_methods?: { id: string; data?: Record<string, unknown> | null }[] | null;
@@ -168,6 +169,7 @@ export function toCartState(cart: MedusaCartLike | null | undefined): CartState 
     subtotal: num(cart.item_total),
     shipping: num(cart.shipping_total),
     total: num(cart.total),
+    taxTotal: num(cart.tax_total),
     hasShippingMethod: (cart.shipping_methods ?? []).length > 0,
     pickup: isPickup(cart),
     currency: (cart.currency_code ?? "chf").toUpperCase(),
