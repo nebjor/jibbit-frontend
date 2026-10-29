@@ -17,7 +17,7 @@ test("Hinzufügen öffnet die Schublade mit der Summe der gewählten Stufe", asy
   await expect(drawer).toContainText(chf(SHOP.checkoutTotal));
 });
 
-test("Die Mengenknöpfe springen in Stufengrösse und rechnen neu", async ({ page }) => {
+test("Die Mengenknöpfe ändern um 1 und rechnen neu", async ({ page }) => {
   await page.goto(`/products/${papers.handle}`);
   await page.getByRole("button", { name: new RegExp(papers.tierLabel) }).click();
   await page.getByRole("button", { name: /In den Warenkorb/ }).click();
@@ -37,15 +37,18 @@ test("Die Mengenknöpfe springen in Stufengrösse und rechnen neu", async ({ pag
     name: `Menge von ${papers.title} verringern`,
   });
 
+  // "+" erhöht um 1 (nicht um die Stufe), "−" senkt um 1 — die Zeile bleibt.
   await more.click();
-  await expect(drawer).toContainText(`${papers.tierQuantity * 2} Artikel`);
-  await expect(drawer).toContainText(chf("76.80"));
-  await expect(drawer).toContainText("Gratis");
-
+  await expect(drawer).toContainText(`${papers.tierQuantity + 1} Artikel`);
   await expect(less).toBeEnabled();
   await less.click();
   await expect(drawer).toContainText(`${papers.tierQuantity} Artikel`);
   await expect(drawer).toContainText(chf(papers.lineTotal));
+
+  // Unter die Stufe: 24 -> 23 verlässt den Stufenpreis, die Zeile bleibt.
+  await less.click();
+  await expect(drawer).toContainText(`${papers.tierQuantity - 1} Artikel`);
+  await expect(drawer).toContainText(chf("44.85")); // 23 x 1.95 (Stufe ab 10)
 });
 
 test("Öffnen und Schliessen verschieben den Seiteninhalt nicht", async ({ page }) => {

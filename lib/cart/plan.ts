@@ -88,6 +88,19 @@ export function planSetQuantity(
   return { kind: "update", itemId: existing.id, quantity: qty };
 }
 
+/**
+ * Neue Menge nach einem Klick auf "−" (-1) oder "+" (+1) im Warenkorb.
+ *
+ * IMMER Einerschritte. Früher stand hier die Stufengrösse, mit der die Zeile
+ * in den Warenkorb kam (Chip "50" -> Schritt 50): "−" auf 50 ergab 0 und
+ * löschte die ganze Zeile. Die Stufen-Chips gehören auf die Produktseite; der
+ * Preis je Stufe kommt ohnehin von Medusa. Bei 1 bleibt "−" bei 1 — die Zeile
+ * verschwindet nur über "Entfernen" (planRemove).
+ */
+export function stepQuantity(quantity: number, direction: 1 | -1): number {
+  return Math.max(1, clampQuantity(quantity + direction));
+}
+
 export function planRemove(
   lines: readonly CartLineView[],
   variantId: string,

@@ -135,10 +135,5 @@ export interface CartLine {
   quantity: number;
   /** Copied from the variant so the cart can reprice itself on quantity change. */
   tiers?: PriceTier[];
-  /**
-   * Schrittweite der +/−-Knöpfe im Warenkorb: die Preisstufe, die der Kunde
-   * gewählt hat (24er Display -> 24). Fehlt sie, 1.
-   */
-  step?: number;
   unitsPerPack?: number;
 }
