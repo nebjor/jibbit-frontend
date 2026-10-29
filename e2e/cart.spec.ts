@@ -91,3 +91,26 @@ test("Ein leerer Warenkorb sagt es und verlinkt zurück in den Shop", async ({ p
   await expect(drawer).toContainText("Noch nix drin.");
   await expect(drawer.getByRole("link", { name: "Zum Shop" })).toBeVisible();
 });
+
+test("Getippte Menge unter der Stufe: Stufenpreis darunter, Warenkorb erhält die Menge", async ({
+  page,
+}) => {
+  await page.goto(`/products/${papers.handle}`);
+  const input = page.getByLabel("Menge", { exact: true });
+
+  // 23 liegt in der Stufe «ab 10» (1.95), 23 × 1.95 = 44.85.
+  await input.fill("23");
+  await expect(page.getByRole("button", { name: /In den Warenkorb/ })).toContainText("23 × 1.95");
+  await page.getByRole("button", { name: /In den Warenkorb/ }).click();
+  const drawer = page.getByRole("dialog", { name: "Warenkorb" });
+  await expect(drawer).toContainText("23 Artikel");
+  await expect(drawer).toContainText(chf("44.85"));
+  await page.keyboard.press("Escape");
+
+  // Genau 24: Stufe «24er Display» (1.60), 24 × 1.60 = 38.40 — nach dem
+  // Warenkorb-Eintrag 23 + 24 = 47 Artikel.
+  await input.fill("24");
+  await expect(page.getByRole("button", { name: /In den Warenkorb/ })).toContainText("24 × 1.60");
+  await page.getByRole("button", { name: /In den Warenkorb/ }).click();
+  await expect(drawer).toContainText("47 Artikel");
+});
