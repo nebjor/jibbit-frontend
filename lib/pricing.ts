@@ -272,7 +272,7 @@ export function orderImagesForTier(
 }
 
 /** Obergrenze der Menge pro Position auf der Produktseite. */
-export const MAX_QUANTITY = 999;
+export const MAX_QUANTITY = 9999;
 
 /**
  * Nur Ziffern, ohne führende Nullen, höchstens MAX_QUANTITY — für die

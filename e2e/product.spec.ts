@@ -65,8 +65,8 @@ test("Die Menge ist frei eintippbar, Stufe und Preis folgen sofort", async ({ pa
   await input.blur();
   await expect(input).toHaveValue("1");
 
-  // Über dem Maximum wird auf 999 begrenzt; "−" ist bei 1 gesperrt.
+  // Über dem Maximum wird auf 9999 begrenzt; "−" ist bei 1 gesperrt.
   await expect(page.getByRole("button", { name: "Menge verringern" })).toBeDisabled();
-  await input.fill("5000");
-  await expect(input).toHaveValue("999");
+  await input.fill("50000");
+  await expect(input).toHaveValue("9999");
 });
