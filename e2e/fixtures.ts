@@ -71,7 +71,7 @@ export { expect };
  * name of a number instead of the number.
  */
 export const SHOP = {
-  productCount: 4,
+  productCount: 5,
   papers: {
     handle: "ocb-premium-kss-papers-mit-filter",
     title: "OCB Premium King Size Slim mit Filter",
@@ -86,6 +86,13 @@ export const SHOP = {
     title: "RAW Kristallglas Aschenbecher Ruby",
     price: "27.00",
     compareAt: "29.00",
+  },
+  mate: {
+    handle: "original-mate",
+    title: "Original Mate",
+    label: "Grösse",
+    sizes: ["100 g", "250 g", "500 g", "1 kg"],
+    prices: { "100 g": "6.90", "250 g": "14.90", "1 kg": "49.00" },
   },
   shippingRate: "4.50",
   checkoutTotal: "42.90",

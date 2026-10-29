@@ -304,3 +304,25 @@
   font-weight: 600;
   color: var(--c-warning);
 }
+
+/* Variantenwahl als Auswahlliste (Grössen). Native Liste: 16px verhindert den
+   iOS-Zoom beim Fokus, 44px Mindesthöhe für den Daumen. */
+.select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--s-2);
+  padding: 0 var(--s-4);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  border: var(--border-w) solid var(--c-line);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--c-ink);
+  outline-offset: 2px;
+}

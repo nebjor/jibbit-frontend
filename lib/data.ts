@@ -193,6 +193,8 @@ export async function getCategory(
  */
 export const PRODUCT_FIELDS =
   "*variants.calculated_price,*images,*categories,*tags,+metadata," +
+  // Optionsname («Grösse») für die Variantenwahl der Produktseite.
+  "*options,*variants.options," +
   "+variants.inventory_quantity,+variants.manage_inventory," +
   // `thumbnail` je Variante: Bildzuordnung «Display -> Box, Heftchen ->
   // Einzelstück» auf der Produktseite. Fehlt das Feld in der Antwort, zeigt

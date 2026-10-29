@@ -70,3 +70,45 @@ test("Die Menge ist frei eintippbar, Stufe und Preis folgen sofort", async ({ pa
   await input.fill("50000");
   await expect(input).toHaveValue("9999");
 });
+
+test.describe("Variantenwahl bei Grössen", () => {
+  const { mate } = SHOP;
+
+  test("zeigt eine Auswahlliste mit Optionsname, Preis und ausverkaufter Grösse", async ({ page }) => {
+    await page.goto(`/products/${mate.handle}`);
+
+    const select = page.getByLabel(mate.label, { exact: true });
+    await expect(select).toBeVisible();
+    await expect(select.locator("option")).toHaveCount(4);
+    await expect(select.locator("option").nth(0)).toHaveText(/100 g – CHF\s*6\.90/);
+    // Keine Gebinde-Knöpfe.
+    await expect(page.getByRole("group", { name: "Verpackungseinheit" })).toHaveCount(0);
+
+    const soldOut = select.locator("option", { hasText: "500 g" });
+    await expect(soldOut).toBeDisabled();
+    await expect(soldOut).toHaveText(/ausverkauft/);
+    // Vorauswahl: die erste lieferbare Grösse.
+    await expect(select).toHaveValue("var_mate_100");
+  });
+
+  test("eine andere Grösse ändert Preis und Total im Knopf", async ({ page }) => {
+    await page.goto(`/products/${mate.handle}`);
+    const cta = page.locator('[class*="barPrice"]');
+    await expect(cta).toContainText(chf(mate.prices["100 g"]));
+
+    await page.getByLabel(mate.label, { exact: true }).selectOption("var_mate_1000");
+    await expect(cta).toContainText(chf(mate.prices["1 kg"]));
+    await expect(page).toHaveURL(/variant=var_mate_1000/);
+
+    await page.getByLabel("Menge", { exact: true }).fill("2");
+    await expect(cta).toContainText(chf("98.00"));
+  });
+
+  test("?variant= wählt die Grösse vor", async ({ page }) => {
+    await page.goto(`/products/${mate.handle}?variant=var_mate_250`);
+    await expect(page.getByLabel(mate.label, { exact: true })).toHaveValue("var_mate_250");
+    await expect(page.locator('[class*="barPrice"]')).toContainText(
+      chf(mate.prices["250 g"]),
+    );
+  });
+});

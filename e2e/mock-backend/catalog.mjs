@@ -94,6 +94,12 @@ function variant(id, title, amount, originalAmount, extra = {}) {
   };
 }
 
+const mateSize = (id, title, amount, extra = {}) =>
+  variant(id, title, amount, undefined, {
+    options: [{ id: `optval_${id}`, option_id: "opt_mate_size", value: title }],
+    ...extra,
+  });
+
 export function buildProducts(backendUrl) {
   return [
     {
@@ -186,6 +192,28 @@ export function buildProducts(backendUrl) {
       images: [{ id: "img_raw_1", url: staticUrl(backendUrl, "raw-ruby.png") }],
       metadata: { brand: "RAW" },
       variants: [variant("var_raw_ruby", "Stück", 27, 29)],
+    },
+    {
+      id: "prod_mate",
+      handle: "original-mate",
+      title: "Original Mate",
+      subtitle: "Mate-Tee, lose",
+      description: "Kräftiger Mate-Tee, lose, in vier Grössen. Je grösser die Packung, desto günstiger das Gramm.",
+      material: null,
+      collection: null,
+      categories: [CATEGORIES[2]],
+      tags: [],
+      // Echte Grössenvarianten: Option «Grösse» (kein Gebinde) -> Auswahlliste.
+      options: [{ id: "opt_mate_size", title: "Grösse", values: [] }],
+      images: [{ id: "img_mate_1", url: staticUrl(backendUrl, "raw-ruby.png") }],
+      metadata: { brand: "Mate" },
+      variants: [
+        mateSize("var_mate_100", "100 g", 6.9),
+        mateSize("var_mate_250", "250 g", 14.9),
+        // Bestandsführung an, 0 Stück: ausverkauft.
+        mateSize("var_mate_500", "500 g", 27.9, { manage_inventory: true, inventory_quantity: 0 }),
+        mateSize("var_mate_1000", "1 kg", 49, { manage_inventory: true, inventory_quantity: 12 }),
+      ],
     },
   ];
 }
