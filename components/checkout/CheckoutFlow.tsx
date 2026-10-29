@@ -641,6 +641,12 @@ export function CheckoutFlow({
               <dt>Zwischensumme</dt>
               <dd className="tnum">{formatPrice(cart.subtotal)}</dd>
             </div>
+            {cart.discount > 0 && (
+              <div className={styles.discount}>
+                <dt>Aktionsrabatt (bereits abgezogen)</dt>
+                <dd className="tnum">&minus;{formatPrice(cart.discount)}</dd>
+              </div>
+            )}
             <div>
               <dt>
                 {cart.pickup ? "Abholung" : "Versand"}

@@ -69,6 +69,11 @@ export interface CartState {
   total: number;
   /** In `total` enthaltene Steuer — Medusas `tax_total`; 0, wenn keine anfällt. */
   taxTotal?: number;
+  /**
+   * Aktionsrabatt (brutto) — Medusas `discount_total`, 0 ohne Rabatt. Bereits
+   * in `subtotal`/`total` abgezogen; nur zur Anzeige («davon Aktionsrabatt»).
+   */
+  discount?: number;
   /** True once a shipping method sits on the cart, i.e. `shipping` is binding. */
   hasShippingMethod: boolean;
   /**

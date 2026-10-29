@@ -363,3 +363,8 @@ a.checkout:hover {
   font-weight: 600;
   color: var(--c-warning);
 }
+
+/* Aktionsrabatt-Zeile: Markenfarbe der Ersparnis. */
+.totals > .discount {
+  color: var(--c-save);
+}
