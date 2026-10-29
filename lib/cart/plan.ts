@@ -36,8 +36,8 @@ export type CartMutation =
   | { kind: "delete"; itemId: string }
   | { kind: "noop" };
 
-/** Medusa rejects quantities above this; the PDP stepper caps at the same value. */
-export const MAX_LINE_QUANTITY = 999;
+/** Obergrenze pro Position (Grossbestellungen bis 9999 Stück); die Produktseite deckelt gleich. */
+export const MAX_LINE_QUANTITY = 9999;
 
 function clampQuantity(quantity: number): number {
   if (!Number.isFinite(quantity)) return 0;

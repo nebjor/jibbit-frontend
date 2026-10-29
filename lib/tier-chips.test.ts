@@ -54,7 +54,7 @@ describe("Menge frei eintippen", () => {
     expect(normalizeQuantity("")).toBe(1);
     expect(normalizeQuantity("0")).toBe(1);
     expect(normalizeQuantity("007")).toBe(7);
-    expect(normalizeQuantity("5000")).toBe(MAX_QUANTITY);
+    expect(normalizeQuantity("50000")).toBe(MAX_QUANTITY);
     expect(normalizeQuantity("9999999999")).toBe(MAX_QUANTITY);
     expect(normalizeQuantity("1a2-3")).toBe(123);
     expect(normalizeQuantity("abc")).toBe(1);

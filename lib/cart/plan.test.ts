@@ -65,7 +65,7 @@ describe("planAdd", () => {
   });
 
   it("caps at the maximum line quantity", () => {
-    expect(planAdd([], "variant_papers", 5000)).toEqual({
+    expect(planAdd([], "variant_papers", 50000)).toEqual({
       kind: "create",
       variantId: "variant_papers",
       quantity: MAX_LINE_QUANTITY,
