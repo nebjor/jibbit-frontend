@@ -52,6 +52,12 @@ export interface ProductVariantView {
   compareAt?: number;
   inStock: boolean;
   /**
+   * Bestellbare Höchstmenge: null = unbegrenzt (keine Bestandsführung oder
+   * Nachbestellung erlaubt; fehlt das Feld, gilt dasselbe), 0 = ausverkauft.
+   * Der Adapter setzt es immer. Siehe lib/stock.ts.
+   */
+  availableQuantity?: number | null;
+  /**
    * Quantity breaks, ascending and gap-free. Empty when the variant has one
    * flat price — the price table then renders nothing at all.
    */

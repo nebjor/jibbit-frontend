@@ -31,6 +31,13 @@ export interface CartLineView {
   /** Struck-through original, when Medusa reports a higher one. */
   compareAtUnitPrice?: number;
   thumbnail?: string;
+  /** Medusa-Produkt-ID — Schlüssel für die Bestandsabfrage (lib/cart/availability.ts). */
+  productId?: string;
+  /**
+   * Bestellbare Höchstmenge der Variante; null = unbegrenzt, undefined =
+   * unbekannt (wird wie unbegrenzt behandelt). Siehe lib/stock.ts.
+   */
+  availableQuantity?: number | null;
   /**
    * Geprüfte GTIN der Variante (lib/gtin.ts) — nur gesetzt, wenn die
    * Variante mitgeladen wurde (Bestellungen, lib/checkout/order.ts) und der

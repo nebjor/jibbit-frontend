@@ -43,6 +43,7 @@ import "server-only";
 
 import type { HttpTypes } from "@medusajs/types";
 import type Medusa from "@medusajs/js-sdk";
+import { isInsufficientInventory } from "@/lib/cart/stock-error";
 
 export type PaymentHandoff =
   | {
@@ -332,6 +333,11 @@ export async function preparePayment(
     // faking the payment inline would create an unpaid "paid" order. Bubble
     // it up instead; the customer sees the message, the cart stays intact.
     if (error instanceof PaymentSetupError) throw error;
+
+    // Zu wenig Bestand ist kein Zahlungsproblem und darf nicht in den
+    // System-Fallback laufen: den Fehler unverändert weiterreichen, damit die
+    // Kasse Artikel und verfügbare Menge nennen kann (lib/cart/stock-error.ts).
+    if (isInsufficientInventory(error)) throw error;
 
     // The PSP session could not be created (typically: credentials missing in
     // this environment). Fall back to the built-in provider IF the region

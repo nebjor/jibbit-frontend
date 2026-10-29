@@ -139,7 +139,13 @@ export function buildProducts(backendUrl) {
         { id: "img_purize_1", url: staticUrl(backendUrl, SPECIAL_IMAGE_NAMES.brackets) },
       ],
       metadata: { brand: "PURIZE" },
-      variants: [variant("var_purize_xtra", "50er Pack", 4.5)],
+      // Bestandsführung an, 0 Stück: ausverkauft (e2e/bestand.spec.ts).
+      variants: [
+        variant("var_purize_xtra", "50er Pack", 4.5, undefined, {
+          manage_inventory: true,
+          inventory_quantity: 0,
+        }),
+      ],
     },
     {
       id: "prod_kailar_weiss",
@@ -157,7 +163,13 @@ export function buildProducts(backendUrl) {
         { id: "img_kailar_1", url: staticUrl(backendUrl, SPECIAL_IMAGE_NAMES.spaces) },
       ],
       metadata: { brand: "Kailar" },
-      variants: [variant("var_kailar_weiss", "Döschen", 3.9)],
+      // Bestandsführung an, 7 Stück: Stufe «10» ist gesperrt (e2e/bestand.spec.ts).
+      variants: [
+        variant("var_kailar_weiss", "Döschen", 3.9, undefined, {
+          manage_inventory: true,
+          inventory_quantity: 7,
+        }),
+      ],
     },
     {
       id: "prod_raw_ruby",
