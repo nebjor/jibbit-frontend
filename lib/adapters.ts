@@ -163,6 +163,11 @@ export function toVariantView(
   };
 }
 
+/** Name der einzigen Produktoption — bei keiner oder mehreren undefined. */
+function toOptionTitle(productOptions: StoreProduct["options"]): string | undefined {
+  return productOptions?.length === 1 ? nonEmpty(productOptions[0].title) : undefined;
+}
+
 export function toProductView(
   p: StoreProduct,
   tiersByVariant: TiersByVariant = {},
@@ -191,6 +196,7 @@ export function toProductView(
     price: cheapest?.price ?? 0,
     compareAt: cheapest?.compareAt,
     variants,
+    optionTitle: toOptionTitle(p.options),
     images: (p.images ?? []).map((i) => i.url).filter(Boolean),
     featured: p.tags?.some((t) => t.value === "featured") ?? false,
     material: nonEmpty(p.material),

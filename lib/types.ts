@@ -106,6 +106,12 @@ export interface ProductView {
   price: number;
   compareAt?: number;
   variants: ProductVariantView[];
+  /**
+   * Name der Produktoption, nach der sich die Varianten unterscheiden
+   * («Grösse», «Verpackungseinheit»), wenn das Produkt genau eine führt.
+   * Steuert Beschriftung und Art der Variantenwahl (lib/variant-control.ts).
+   */
+  optionTitle?: string;
   images: string[];
   /** Editorially featured on the landing page. */
   featured: boolean;
