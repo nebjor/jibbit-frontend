@@ -8,6 +8,7 @@ import { Price } from "./Price";
 import { usePresence } from "./usePresence";
 import { useScrollLock } from "./useScrollLock";
 import { formatPrice } from "@/lib/format";
+import { stepQuantity } from "@/lib/cart/plan";
 import styles from "./CartDrawer.module.css";
 
 /**
@@ -46,7 +47,6 @@ export function CartDrawer() {
     isOpen,
     closeCart,
     setQuantity,
-    stepFor,
     removeLine,
     count,
     isPending,
@@ -168,15 +168,12 @@ export function CartDrawer() {
                   <div className={styles.lineActions}>
                     <div className={styles.qty}>
                       <button
-                        // In Stufengrösse (24er Display: 48 -> 24 -> weg),
-                        // wie bisher beim Einzelstück (1 -> weg).
+                        // Immer um 1; bei 1 gesperrt — Entfernen hat seinen
+                        // eigenen Knopf.
                         onClick={() =>
-                          setQuantity(
-                            l.variantId,
-                            Math.max(0, l.quantity - stepFor(l.variantId)),
-                          )
+                          setQuantity(l.variantId, stepQuantity(l.quantity, -1))
                         }
-                        disabled={isPending}
+                        disabled={isPending || l.quantity <= 1}
                         aria-label={`Menge von ${l.title} verringern`}
                       >
                         &minus;
@@ -186,7 +183,7 @@ export function CartDrawer() {
                       </span>
                       <button
                         onClick={() =>
-                          setQuantity(l.variantId, l.quantity + stepFor(l.variantId))
+                          setQuantity(l.variantId, stepQuantity(l.quantity, 1))
                         }
                         disabled={isPending}
                         aria-label={`Menge von ${l.title} erhöhen`}

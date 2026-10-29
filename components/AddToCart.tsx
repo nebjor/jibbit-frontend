@@ -250,8 +250,6 @@ export function AddToCart({ product }: { product: ProductView }) {
                 // customer changes the quantity there.
                 tiers: selected.tiers,
                 unitsPerPack: selected.unitsPerPack,
-                // Schrittweite der +/−-Knöpfe im Warenkorb.
-                step,
               },
               quantity,
             );
