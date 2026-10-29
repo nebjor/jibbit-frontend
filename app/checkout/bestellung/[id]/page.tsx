@@ -95,13 +95,8 @@ export default async function OrderConfirmationPage({
             ) : null}
             , sobald sie abholbereit ist.
           </>
-        ) : order.address?.phone ? (
-          <>
-            Sobald dein Paket unterwegs ist, melden wir uns per WhatsApp unter{" "}
-            <strong>{order.address.phone}</strong>.
-          </>
         ) : (
-          <>Sobald dein Paket unterwegs ist, melden wir uns per E-Mail.</>
+          <>Wir schicken dir ein E-Mail, sobald deine Bestellung unterwegs ist.</>
         )}
       </p>
 
