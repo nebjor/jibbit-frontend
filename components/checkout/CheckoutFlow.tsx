@@ -45,11 +45,7 @@ import type { CartState, CheckoutAddress } from "@/lib/cart/types";
 import { EMPTY_CART } from "@/lib/cart/types";
 import { PICKUP, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
-import {
-  missingForFreeShippingText,
-  quantityTimesPrice,
-  shippingDisplay,
-} from "@/lib/checkout/shipping-display";
+import { deliveryOptionViews } from "@/lib/checkout/shipping-display";
 import { ShippingSplitNote } from "@/components/ShippingSplitNote";
 import styles from "./checkout.module.css";
 
@@ -61,6 +57,9 @@ const STEP_LABELS: Record<Step, string> = {
 };
 
 const STEP_ORDER: Step[] = ["address", "review"];
+
+const DELIVERY_ERROR =
+  "Die Lieferart konnte nicht geändert werden. Bitte versuche es nochmals.";
 
 function isReadyToBuy(
   cart: Pick<CartState, "count" | "email" | "hasShippingAddress" | "hasShippingMethod">,
@@ -104,6 +103,9 @@ export function CheckoutFlow({
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
+  // Die Lieferart, die gerade auf den Cart geschrieben wird — die Radiogruppe
+  // zeigt sie sofort als gewählt (optimistisch), bis der Server geantwortet hat.
+  const [pendingChoice, setPendingChoice] = useState<DeliveryChoice | null>(null);
 
   /**
    * Adopt the server-rendered cart ONLY when the provider is holding nothing.
@@ -163,6 +165,49 @@ export function CheckoutFlow({
     });
   }
 
+  /**
+   * Lieferart in der eingeklappten Kasse wechseln: dieselbe Server Action wie
+   * das Formular, mit der Adresse, die die Kasse schon kennt — der Server setzt
+   * die Medusa-Methode neu und liefert den Cart mit den neuen Summen zurück.
+   * Fehlen für die neue Art Angaben (Telefon für die Abholung, Strasse für die
+   * Lieferung), geht das Formular mit dieser Wahl auf, statt still zu scheitern.
+   */
+  function changeDelivery(choice: DeliveryChoice) {
+    if (busy || choice === currentChoice) return;
+    setFormError(null);
+    setNotice(null);
+    setPendingChoice(choice);
+    startTransition(async () => {
+      try {
+        const result = await saveAddressAction(cart.email ?? email, address, choice);
+        if (!result.ok) {
+          if (result.cart?.id) cart.applyCart(result.cart);
+          if (Object.keys(result.errors).length > 0) {
+            setDelivery(choice);
+            setErrors(result.errors);
+            setStep("address");
+            setNotice(
+              choice === "pickup"
+                ? "Für die Abholung fehlen noch Angaben."
+                : "Für die Lieferung fehlt noch deine Adresse.",
+            );
+            return;
+          }
+          setFormError(result.message ?? DELIVERY_ERROR);
+          return;
+        }
+        setErrors({});
+        setDelivery(choice);
+        cart.applyCart(result.cart);
+        setNotice(result.notice ?? null);
+      } catch {
+        setFormError(DELIVERY_ERROR);
+      } finally {
+        setPendingChoice(null);
+      }
+    });
+  }
+
   function submitOrder() {
     setFormError(null);
     startTransition(async () => {
@@ -188,14 +233,16 @@ export function CheckoutFlow({
   }
 
   const addressComplete = cart.hasShippingAddress && Boolean(cart.email);
-  // Lieferart und Kosten für Vorschau (Schritt 1) und Zusammenfassung (Schritt 2).
-  // Die Beträge sind Medusas; vor der Methode ist `cart.shipping` die Schätzung.
-  const shippingInfo = shippingDisplay({
+  // Lieferarten der eingeklappten Kasse. Beträge: Medusas für die gewählte Art,
+  // vor der Methode ist `cart.shipping` die Schätzung.
+  const currentChoice: DeliveryChoice = cart.pickup ? "pickup" : "shipping";
+  const shownChoice = pendingChoice ?? currentChoice;
+  const deliveryViews = deliveryOptionViews({
     pickup: cart.pickup,
     shipping: cart.shipping,
+    subtotal: cart.subtotal,
     estimate: cart.shippingIsEstimate,
   });
-  const missingText = missingForFreeShippingText(cart.remainingForFreeShipping, cart.pickup);
   const isPickup = delivery === "pickup";
 
   function deliveryOption(
@@ -302,15 +349,6 @@ export function CheckoutFlow({
               <h2 id="step-address" className={styles.cardTitle}>
                 1 · Kontakt und Lieferung
               </h2>
-              {step !== "address" && addressComplete && (
-                <button
-                  type="button"
-                  className={styles.changeBtn}
-                  onClick={() => setStep("address")}
-                >
-                  Ändern
-                </button>
-              )}
             </div>
 
             {step === "address" ? (
@@ -455,47 +493,100 @@ export function CheckoutFlow({
               </form>
             ) : (
               addressComplete &&
-              cart.lines.length > 0 &&
-              (cart.pickup ? (
-                <address className={styles.address} data-testid="pickup-summary">
-                  {cart.email}
-                  <br />
-                  {address.firstName} {address.lastName}
-                  {address.phone && (
-                    <>
+              cart.lines.length > 0 && (
+                <div className={styles.tiles}>
+                  <section className={styles.tile} aria-labelledby="tile-contact" data-testid="tile-contact">
+                    <div className={styles.tileHead}>
+                      <h3 id="tile-contact" className={styles.tileTitle}>
+                        Kontakt &amp; Adresse
+                      </h3>
+                      <button
+                        type="button"
+                        className={styles.changeBtn}
+                        onClick={() => {
+                          setDelivery(currentChoice);
+                          setStep("address");
+                        }}
+                      >
+                        Ändern
+                      </button>
+                    </div>
+                    <address className={styles.address}>
+                      {cart.email}
                       <br />
-                      {address.phone}
-                    </>
-                  )}
-                  <br />
-                  <strong>{PICKUP.label}</strong> — {pickupAddressLines().slice(1).join(", ")}
-                  <br />
-                  {pickupHoursText()}
-                  <br />
-                  <strong>{shippingInfo.cost}</strong>
-                </address>
-              ) : (
-                <address className={styles.address}>
-                  {cart.email}
-                  <br />
-                  {address.firstName} {address.lastName}
-                  <br />
-                  {address.address1}
-                  <br />
-                  {address.postalCode} {address.city}
-                  <br />
-                  <span className={styles.shippingLine} data-testid="shipping-summary">
-                    <strong>{shippingInfo.label}</strong> ·{" "}
-                    <strong className="tnum">{shippingInfo.cost}</strong>
-                    {shippingInfo.estimate && (
-                      <span className={styles.estimate}> (geschätzt)</span>
-                    )}
-                    {shippingInfo.timing && (
-                      <span className={styles.shippingTiming}>{shippingInfo.timing}</span>
-                    )}
-                  </span>
-                </address>
-              ))
+                      {address.firstName} {address.lastName}
+                      {address.company && (
+                        <>
+                          <br />
+                          {address.company}
+                        </>
+                      )}
+                      {cart.pickup ? (
+                        address.phone && (
+                          <>
+                            <br />
+                            {address.phone}
+                          </>
+                        )
+                      ) : (
+                        <>
+                          <br />
+                          {address.address1}
+                          {address.address2 && (
+                            <>
+                              <br />
+                              {address.address2}
+                            </>
+                          )}
+                          <br />
+                          {address.postalCode} {address.city}
+                        </>
+                      )}
+                    </address>
+                  </section>
+
+                  <fieldset
+                    className={styles.tile}
+                    data-testid="tile-delivery"
+                    aria-busy={pendingChoice ? true : undefined}
+                  >
+                    <legend className={styles.tileTitle}>Lieferung</legend>
+                    <div className={styles.choices}>
+                      {deliveryViews.map((view) => (
+                        <label
+                          key={view.value}
+                          className={styles.choice}
+                          data-checked={shownChoice === view.value ? "true" : "false"}
+                        >
+                          <input
+                            type="radio"
+                            name="delivery-method"
+                            value={view.value}
+                            className={styles.choiceInput}
+                            checked={shownChoice === view.value}
+                            onChange={() => changeDelivery(view.value)}
+                          />
+                          <span className={styles.choiceBody}>
+                            <span className={styles.choiceHead}>
+                              <span className={styles.choiceTitle}>{view.title}</span>
+                              <span className={`${styles.choicePrice} tnum`}>
+                                {view.cost}
+                                {view.estimate && (
+                                  <span className={styles.estimate}> (geschätzt)</span>
+                                )}
+                              </span>
+                            </span>
+                            <span className={styles.choiceDetail}>{view.detail}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className={styles.tileStatus} role="status">
+                      {pendingChoice ? "Lieferart wird aktualisiert …" : ""}
+                    </p>
+                  </fieldset>
+                </div>
+              )
             )}
           </section>
 
@@ -507,69 +598,6 @@ export function CheckoutFlow({
                   2 · Kaufen
                 </h2>
               </div>
-              <table className={styles.reviewTable} data-testid="review-summary">
-                <caption className="srOnly">Zusammenfassung deiner Bestellung</caption>
-                <thead className="srOnly">
-                  <tr>
-                    <th scope="col">Artikel</th>
-                    <th scope="col">Menge und Einzelpreis</th>
-                    <th scope="col">Betrag</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cart.lines.map((line) => (
-                    <tr key={line.id}>
-                      <th scope="row" className={styles.reviewItem}>
-                        {line.title}
-                        {line.variantTitle && ` · ${line.variantTitle}`}
-                      </th>
-                      <td className={`${styles.reviewQty} tnum`}>
-                        {quantityTimesPrice(line.quantity, line.unitPrice)}
-                      </td>
-                      <td className="tnum">{formatPrice(line.lineTotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row" colSpan={2}>
-                      Zwischensumme
-                    </th>
-                    <td className="tnum">{formatPrice(cart.subtotal)}</td>
-                  </tr>
-                  <tr>
-                    <th scope="row" colSpan={2}>
-                      {shippingInfo.label}
-                      {shippingInfo.estimate && (
-                        <span className={styles.estimate}> (geschätzt)</span>
-                      )}
-                    </th>
-                    <td className="tnum">{shippingInfo.cost}</td>
-                  </tr>
-                  {cart.taxTotal > 0 && (
-                    <tr>
-                      <th scope="row" colSpan={2}>
-                        enthaltene MwSt.
-                      </th>
-                      <td className="tnum">{formatPrice(cart.taxTotal)}</td>
-                    </tr>
-                  )}
-                  <tr className={styles.reviewGrand}>
-                    <th scope="row" colSpan={2}>
-                      Total
-                    </th>
-                    <td className="tnum">{formatPrice(cart.total)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-              {missingText && <p className={styles.freeHint} data-testid="free-hint">{missingText}</p>}
-              {cart.taxTotal > 0 ? (
-                <p className={styles.vatNote}>Alle Preise inkl. MwSt.</p>
-              ) : (
-                <p className={styles.vatNote}>
-                  Endpreise — keine Mehrwertsteuer (nicht steuerpflichtig)
-                </p>
-              )}
               <p className={styles.muted}>
                 Mit dem Klick auf &laquo;Jetzt kaufen&raquo; gibst du eine
                 verbindliche Bestellung ab. Es gelten unsere{" "}

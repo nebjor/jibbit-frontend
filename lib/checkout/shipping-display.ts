@@ -16,7 +16,9 @@
  * zusammengerechnete Ankunftszeit.
  */
 
+import { estimateShipping } from "@/lib/cart/shipping";
 import { DELIVERY, PICKUP } from "@/lib/config";
+import { pickupAddressLines, pickupHoursText, type DeliveryChoice } from "@/lib/checkout/pickup";
 import { formatPrice } from "@/lib/format";
 
 export const SHIPPING_METHOD_LABEL = "Versand mit der Schweizerischen Post";
@@ -55,17 +57,54 @@ export function handlingTimeText(): string {
   return `Versand in der Regel innerhalb von ${range} Werktagen`;
 }
 
-/**
- * «Noch CHF 26.10 bis Gratisversand» — derselbe Wortlaut wie der
- * FreeShippingMeter (Warenkorb und Kasse). `null`, wenn nichts mehr fehlt
- * oder es nichts freizuschalten gibt (Abholung).
- */
-export function missingForFreeShippingText(remaining: number, pickup = false): string | null {
-  if (pickup || !(remaining > 0)) return null;
-  return `Noch ${formatPrice(remaining)} bis Gratisversand`;
+/** Eine wählbare Lieferart in der eingeklappten Kasse (Radiogruppe «Lieferung»). */
+export interface DeliveryOptionView {
+  value: DeliveryChoice;
+  title: string;
+  /** «CHF 4.50» oder «Gratis». */
+  cost: string;
+  /** Nur die Schätzung des Shops, nicht Medusas Betrag (Lieferart nicht gewählt). */
+  estimate: boolean;
+  /** Lieferzusage bzw. Abholort mit Zeiten. */
+  detail: string;
 }
 
-/** Zeile «Anzahl × Einzelpreis» der Zusammenfassung. */
-export function quantityTimesPrice(quantity: number, unitPrice: number): string {
-  return `${quantity} × ${formatPrice(unitPrice)}`;
+/**
+ * Die Lieferarten, zwischen denen die Kundin in der eingeklappten Kasse wählt.
+ *
+ * Die gewählte Art zeigt Medusas Betrag (`shipping`). Für die nicht gewählte
+ * Versandart kennt nur der Shop eine Schätzung (lib/cart/shipping.ts) — sie
+ * ist als solche markiert, bis die Wahl auf dem Cart steht. Abholung gibt es
+ * nur, wenn sie freigeschaltet ist.
+ */
+export function deliveryOptionViews(input: {
+  pickup: boolean;
+  shipping: number;
+  subtotal: number;
+  estimate?: boolean;
+}): DeliveryOptionView[] {
+  const shippingSelected = !input.pickup;
+  const post = shippingDisplay({
+    pickup: false,
+    shipping: shippingSelected ? input.shipping : estimateShipping(input.subtotal),
+  });
+  const options: DeliveryOptionView[] = [
+    {
+      value: "shipping",
+      title: post.label,
+      cost: post.cost,
+      estimate: shippingSelected ? Boolean(input.estimate) : true,
+      detail: handlingTimeText(),
+    },
+  ];
+  if (PICKUP.enabled) {
+    options.push({
+      value: "pickup",
+      title: PICKUP.label,
+      cost: "Gratis",
+      estimate: false,
+      detail: `${pickupAddressLines().slice(1).join(", ")} · ${pickupHoursText()}. ${PICKUP.note}`,
+    });
+  }
+  return options;
 }
