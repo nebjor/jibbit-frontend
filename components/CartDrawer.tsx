@@ -9,6 +9,7 @@ import { usePresence } from "./usePresence";
 import { useScrollLock } from "./useScrollLock";
 import { formatPrice } from "@/lib/format";
 import { stepQuantity } from "@/lib/cart/plan";
+import { exceedsStock, lineStockHint } from "@/lib/stock";
 import styles from "./CartDrawer.module.css";
 
 /**
@@ -55,6 +56,10 @@ export function CartDrawer() {
   } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
   const presence = usePresence(isOpen, panelRef);
+
+  // Bestand: eine Position über dem Bestand sperrt «Zur Kasse», bis die Menge
+  // angepasst ist (lib/stock.ts).
+  const overStock = lines.some((l) => exceedsStock(l.quantity, l.availableQuantity));
 
   // Gesperrt, solange die Schublade IM DOM ist — also auch während der
   // Schliess-Animation. Käme die Scrollleiste schon bei isOpen=false zurück,
@@ -152,6 +157,11 @@ export function CartDrawer() {
                     {l.variantTitle && (
                       <p className={styles.lineVariant}>{l.variantTitle}</p>
                     )}
+                    {exceedsStock(l.quantity, l.availableQuantity) && (
+                      <p className={styles.stockHint} role="alert">
+                        {lineStockHint(l.availableQuantity ?? 0)}
+                      </p>
+                    )}
                     <p className={styles.linePrice}>
                       <Price
                         price={l.unitPrice}
@@ -185,7 +195,11 @@ export function CartDrawer() {
                         onClick={() =>
                           setQuantity(l.variantId, stepQuantity(l.quantity, 1))
                         }
-                        disabled={isPending}
+                        disabled={
+                          isPending ||
+                          (typeof l.availableQuantity === "number" &&
+                            l.quantity >= l.availableQuantity)
+                        }
                         aria-label={`Menge von ${l.title} erhöhen`}
                       >
                         +
@@ -231,13 +245,19 @@ export function CartDrawer() {
                 </div>
               </dl>
               {/* Primary CTA — the one accent-coloured action in this view. */}
-              <Link
-                href="/checkout"
-                className={styles.checkout}
-                onClick={closeCart}
-              >
-                Zur Kasse
-              </Link>
+              {overStock ? (
+                <button type="button" className={styles.checkout} disabled>
+                  Zur Kasse
+                </button>
+              ) : (
+                <Link
+                  href="/checkout"
+                  className={styles.checkout}
+                  onClick={closeCart}
+                >
+                  Zur Kasse
+                </Link>
+              )}
               {shippingIsEstimate && !pickup && (
                 <p className={styles.soon}>
                   Versandkosten werden an der Kasse definitiv berechnet.

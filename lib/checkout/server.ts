@@ -27,6 +27,10 @@ import type Medusa from "@medusajs/js-sdk";
 import type { HttpTypes } from "@medusajs/types";
 import { toCartState } from "@/lib/cart/adapter";
 import {
+  describeInsufficientInventory,
+  isInsufficientInventory,
+} from "@/lib/cart/stock-error";
+import {
   CART_FIELDS,
   cartContext,
   clearCartId,
@@ -34,6 +38,7 @@ import {
   describeCartFailure,
   logCartError,
   recoverStaleCart,
+  withStock,
   type CartContext,
 } from "@/lib/cart/server";
 import {
@@ -85,6 +90,16 @@ interface LiveCart {
   cart: HttpTypes.StoreCart;
   sdk: Medusa;
   ctx: CartContext;
+}
+
+/**
+ * Deutsche Meldung zu einem Bestandsfehler (Artikel + verfügbare Menge), sonst
+ * null. `error` ist eine Exception oder der Text von `complete`s Cart-Antwort.
+ */
+async function stockMessage(live: LiveCart, error: unknown): Promise<string | null> {
+  if (!isInsufficientInventory(error)) return null;
+  const state = await withStock(live.sdk, toCartState(live.cart));
+  return describeInsufficientInventory(error, state.lines);
 }
 
 /** The live Medusa cart, or null when there is none to check out. */
@@ -311,6 +326,8 @@ export async function placeOrder(): Promise<PlaceOrderResult> {
     handoff = await preparePayment(live.sdk, cart);
   } catch (error) {
     logCartError("checkout:payment", error);
+    const stock = await stockMessage(live, error);
+    if (stock) return { kind: "error", message: stock };
     return {
       kind: "error",
       message:
@@ -358,9 +375,13 @@ export async function completeCart(): Promise<PlaceOrderResult> {
         ? result.error.message
         : "Die Bestellung konnte nicht abgeschlossen werden.";
     console.warn(`[checkout] complete returned a cart: ${message}`);
-    return { kind: "error", message };
+    // Bestand reicht nicht mehr: Artikel und Menge nennen statt Medusas Text.
+    const stock = await stockMessage(live, message);
+    return { kind: "error", message: stock ?? message };
   } catch (error) {
     logCartError("checkout:complete", error);
+    const stock = await stockMessage(live, error);
+    if (stock) return { kind: "error", message: stock };
     return {
       kind: "error",
       message:
