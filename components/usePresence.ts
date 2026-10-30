@@ -18,6 +18,8 @@ export interface Presence {
   state: "open" | "closed";
   /** Auf das animierte Element legen: beendet den Austritt, sobald die Transition durch ist. */
   onTransitionEnd: (e: TransitionEvent<HTMLElement>) => void;
+  /** Austritt sofort beenden (z. B. bei Seitenwechsel: keine Animation mehr nötig). Wirkt nur im geschlossenen Zustand. */
+  finish: () => void;
 }
 
 /**
@@ -65,6 +67,9 @@ export function usePresence(
   }, [open, state.mounted]);
 
   return {
+    finish: () => {
+      if (!open) dispatch({ type: "exited" });
+    },
     mounted: state.mounted,
     state: state.shown ? "open" : "closed",
     onTransitionEnd: (e) => {

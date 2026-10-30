@@ -74,6 +74,9 @@ describe("CartDrawer — Öffnen/Schliessen", () => {
 
   it("bleibt während des Austritts im DOM und ist dabei inert", () => {
     expect(tsx).toMatch(/usePresence\(isOpen, panelRef\)/);
+    // Seitenwechsel beendet den Austritt (die Kasse zeigte sonst zwei Zusammenfassungen).
+    expect(tsx).toMatch(/usePathname\(\)/);
+    expect(tsx).toMatch(/finishRef\.current\(\);\s*\}, \[pathname\]\)/);
     expect(tsx).toMatch(/if \(!presence\.mounted\) return null/);
     expect(tsx).toMatch(/data-state=\{presence\.state\}/);
     expect(tsx).toMatch(/inert=\{!isOpen \|\| undefined\}/);

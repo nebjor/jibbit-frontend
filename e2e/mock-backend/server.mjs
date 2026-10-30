@@ -122,12 +122,6 @@ function createCart() {
     promotions: [],
   };
   carts.set(cart.id, cart);
-  // Test-Hilfe (POST /__aktion-veraltet): der Warenkorb gilt als VOR dem Start
-  // der Aktion entstanden — Medusa rechnet Promotionen nur beim Schreiben.
-  if (aktionTest.pending > 0) {
-    aktionTest.pending -= 1;
-    cart.aktionTest = true;
-  }
   // Test-Hilfe: den nächsten angelegten Warenkorb mit langsamen Lesezugriffen
   // versehen (siehe POST /__slow-reads).
   if (slowReads.pending > 0) {
@@ -149,7 +143,6 @@ const slowCartIds = new Map();
 // auf Artikel, siehe /store/aktionen) kommt erst bei einem Update dazu, das
 // den Prüfmarker `aktion_geprueft` trägt — also beim Nachziehen der Storefront.
 // Positionen hinzufügen ändert daran nichts: so bleibt er «vor der Aktion».
-const aktionTest = { pending: 0 };
 const AKTION_PROZENT = 20;
 
 function aktionNachziehen(cart, body) {
@@ -349,9 +342,21 @@ const routes = [
   [
     "POST",
     /^\/__aktion-veraltet$/,
-    () => {
-      // Der NÄCHSTE angelegte Warenkorb ist «vor der Aktion entstanden».
-      aktionTest.pending += 1;
+    (_m, { body }) => {
+      // Genau DIESER Warenkorb wird zurückgesetzt auf «vor der Aktion entstanden»:
+      // ohne Rabatt und ohne Prüfmarker (Medusa rechnet Promotionen nur beim
+      // Schreiben). Pro Warenkorb statt «der nächste angelegte»: die Specs laufen
+      // parallel (mobile + desktop, mehrere Dateien), ein globaler Zähler würde
+      // von einem fremden Test verbraucht — beim Retry erneut. Und erst NACH dem
+      // Anlegen: schon das Hinzufügen liest den Warenkorb und setzt den Marker.
+      const cart = carts.get(String(body?.cartId ?? ""));
+      if (!cart) return notFound("Cart");
+      cart.aktionTest = true;
+      cart.promotions = [];
+      if (cart.metadata) {
+        delete cart.metadata.aktion_geprueft;
+        delete cart.metadata.aktion_geprueft_am;
+      }
       return { ok: true };
     },
   ],
