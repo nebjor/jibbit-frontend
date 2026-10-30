@@ -1,5 +1,5 @@
 import { getAktionen } from "@/lib/data";
-import { produktHinweis, waehleBanner } from "@/lib/aktionen";
+import { heroAktion, produktHinweis, waehleBanner } from "@/lib/aktionen";
 import { AktionsBanner } from "./AktionsBanner";
 
 /**
@@ -8,8 +8,13 @@ import { AktionsBanner } from "./AktionsBanner";
  * nie; ein ausgefallenes Backend heisst «kein Banner», nie eine Fehlerseite.
  */
 export async function AktionsBannerSlot() {
-  const aktion = waehleBanner(await getAktionen());
-  return aktion ? <AktionsBanner aktion={aktion} /> : null;
+  const alle = await getAktionen();
+  const aktion = waehleBanner(alle);
+  if (!aktion) return null;
+  // Auf der Startseite steht dieselbe Aktion gross als Hero (AktionsHero):
+  // dort nicht doppelt zeigen.
+  const hero = heroAktion(alle);
+  return <AktionsBanner aktion={aktion} ausserStartseite={hero?.code === aktion.code} />;
 }
 
 /**

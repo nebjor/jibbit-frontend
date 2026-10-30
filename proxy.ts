@@ -8,7 +8,7 @@ import {
   applyIndexingHeader,
   isTenantlessAssetPath,
 } from "@/lib/seo/indexing";
-import { legacyAnswer } from "@/lib/seo/legacy-redirects";
+import { categoryRedirectLocation, legacyAnswer } from "@/lib/seo/legacy-redirects";
 import { canonicalHostRedirect } from "@/lib/seo/canonical-path";
 
 /**
@@ -104,6 +104,12 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
         new Headers({ "content-type": "text/plain; charset=utf-8" }),
       ),
     });
+  }
+
+  // Zusammengelegte Kategorie: /?kategorie=filter -> /?kategorie=filter-tips.
+  const kategorie = categoryRedirectLocation(pathname, search);
+  if (kategorie) {
+    return NextResponse.redirect(new URL(kategorie, `https://${domain}`), 301);
   }
 
   // EINE Adresse je Seite: www. -> Hauptdomain, gross geschriebene

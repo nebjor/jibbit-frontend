@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   bannerUeberschrift,
   dismissKey,
@@ -8,10 +9,8 @@ import {
   restMillisekunden,
   type Aktion,
 } from "@/lib/aktionen";
+import { useAktionJetzt } from "./useAktionJetzt";
 import styles from "./AktionsBanner.module.css";
-
-/** Obergrenze für setTimeout (32-Bit-Millisekunden). */
-const MAX_TIMEOUT = 2_147_000_000;
 
 function istWeggeklickt(a: Aktion): boolean {
   try {
@@ -42,36 +41,23 @@ function merkeWeggeklickt(a: Aktion) {
  * Ausgeblendet wird er (a) vom Besucher, gemerkt je Browser-Sitzung, und
  * (b) von selbst, sobald `giltBis` erreicht ist.
  */
-export function AktionsBanner({ aktion }: { aktion: Aktion }) {
-  const [jetzt, setJetzt] = useState<number | null>(null);
+export function AktionsBanner({
+  aktion,
+  ausserStartseite = false,
+}: {
+  aktion: Aktion;
+  /** true: auf der Startseite (ohne Kategorie) steht der Hero statt des Banners. */
+  ausserStartseite?: boolean;
+}) {
   const [weg, setWeg] = useState(false);
-
-  useEffect(() => {
-    // Erst nach dem Mounten lesen (Hydration), und im Callback statt im
-    // Effekt-Körper — kein synchrones setState im Effekt.
-    const start = window.setTimeout(() => {
-      setWeg(istWeggeklickt(aktion));
-      setJetzt(Date.now());
-    }, 0);
-
-    // Minütlich aktualisieren, und genau zum Ende nochmals — sonst bliebe
-    // der Banner bis zu 59 s über das Ende hinaus stehen.
-    const takt = window.setInterval(() => setJetzt(Date.now()), 60_000);
-    const rest = restMillisekunden(aktion.giltBis, Date.now());
-    const ende =
-      rest === null
-        ? undefined
-        : window.setTimeout(() => setJetzt(Date.now()), Math.min(rest, MAX_TIMEOUT));
-    return () => {
-      window.clearTimeout(start);
-      window.clearInterval(takt);
-      if (ende !== undefined) window.clearTimeout(ende);
-    };
-  }, [aktion]);
+  const jetzt = useAktionJetzt(aktion, () => setWeg(istWeggeklickt(aktion)));
+  const pathname = usePathname();
+  const suche = useSearchParams();
+  const heroSteht = ausserStartseite && pathname === "/" && !suche.get("kategorie");
 
   const rest = jetzt === null ? null : restMillisekunden(aktion.giltBis, jetzt);
   const abgelaufen = jetzt !== null && aktion.giltBis !== null && rest === null;
-  if (weg || abgelaufen) return null;
+  if (weg || abgelaufen || heroSteht) return null;
 
   return (
     <section className={styles.banner} role="region" aria-label="Aktion">
