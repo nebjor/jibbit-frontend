@@ -19,8 +19,8 @@
   "dependencies": {
     "@medusajs/js-sdk": "https://registry.npmjs.org/@medusajs/js-sdk/-/js-sdk-2.18.0.tgz",
     "@medusajs/types": "https://registry.npmjs.org/@medusajs/types/-/types-2.18.0.tgz",
-    "next": "16.2.12",
-    "posthog-js": "^1.427.2",
+    "next": "16.4.3",
+    "posthog-js": "^1.444.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1"
@@ -31,7 +31,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.12",
+    "eslint-config-next": "16.4.3",
     "typescript": "^5",
     "vitest": "^3"
   }
