@@ -18,13 +18,27 @@ test("Der Smoke-Test läuft gegen den Teststack durch", async ({ baseURL }, test
   test.setTimeout(90_000);
 
   const repoRoot = path.dirname(testInfo.config.configFile ?? process.cwd());
-  const { stdout } = await run(
-    process.execPath,
-    // Der Katalog hier ist eine Fixture: die Odoo-Weiterleitungen werden
-    // geprüft, die Produktseiten dahinter gibt es nur auf einer echten Umgebung.
-    ["tools/smoke.mjs", `--base-url=${baseURL}`, "--require-sitemap", "--skip-target-pages"],
-    { cwd: repoRoot, encoding: "utf-8" },
-  );
+  // Bei einem Fehlschlag meldet execFile nur "Command failed"; die Ausgabe des
+  // Skripts ist aber genau das, was man zur Diagnose braucht.
+  let stdout: string;
+  try {
+    ({ stdout } = await run(
+      process.execPath,
+      // Der Katalog hier ist eine Fixture: die Odoo-Weiterleitungen werden
+      // geprüft, die Produktseiten dahinter gibt es nur auf einer echten Umgebung.
+      ["tools/smoke.mjs", `--base-url=${baseURL}`, "--require-sitemap", "--skip-target-pages"],
+      { cwd: repoRoot, encoding: "utf-8" },
+    ));
+  } catch (err) {
+    const e = err as { stdout?: string; stderr?: string };
+    throw new Error(
+      `Smoke-Skript fehlgeschlagen.
+--- stdout ---
+${e.stdout ?? ""}
+--- stderr ---
+${e.stderr ?? ""}`,
+    );
+  }
 
   expect(stdout).toContain("0 fehlgeschlagen");
 });
