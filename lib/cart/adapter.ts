@@ -28,6 +28,8 @@ export interface MedusaCartLike {
   shipping_total?: number | null;
   total?: number | null;
   tax_total?: number | null;
+  /** Rabatt aus Promotionen, brutto (inkl. Steuer-Anteil). Nur mit `+discount_total` in den Feldern. */
+  discount_total?: number | null;
   items?: MedusaLineItemLike[] | null;
   /** `data` nur mit `+shipping_methods.data` in den Feldern (lib/cart/server.ts). */
   shipping_methods?: { id: string; data?: Record<string, unknown> | null }[] | null;
@@ -172,6 +174,7 @@ export function toCartState(cart: MedusaCartLike | null | undefined): CartState 
     shipping: num(cart.shipping_total),
     total: num(cart.total),
     taxTotal: num(cart.tax_total),
+    discount: num(cart.discount_total),
     hasShippingMethod: (cart.shipping_methods ?? []).length > 0,
     pickup: isPickup(cart),
     currency: (cart.currency_code ?? "chf").toUpperCase(),

@@ -1,0 +1,75 @@
+/* Aktionsbanner — bewusst das auffälligste Element über dem Header: volle
+   Breite, Markenrot (--c-accent, dieselbe Farbe wie der Haupt-Button). */
+.banner {
+  position: relative;
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  text-align: center;
+  padding: var(--s-3) 48px;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.headline {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.95;
+}
+
+/* 44px grosse Trefferfläche, rechts mittig. */
+.close {
+  position: absolute;
+  top: 50%;
+  right: var(--s-1);
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+@media (min-width: 640px) {
+  .banner {
+    padding: var(--s-4) 64px;
+  }
+
+  .headline {
+    font-size: 32px;
+  }
+
+  .sub {
+    font-size: 15px;
+  }
+}

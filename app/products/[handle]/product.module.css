@@ -144,3 +144,11 @@
     align-items: start;
   }
 }
+
+/* Hinweis unter dem Kaufblock, solange eine Aktion läuft. */
+.aktionsHinweis {
+  margin: var(--s-2) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-save);
+}

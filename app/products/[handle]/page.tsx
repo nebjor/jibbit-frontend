@@ -8,6 +8,7 @@ import { getProduct, getRelatedProducts, getCategory } from "@/lib/data";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductCard } from "@/components/ProductCard";
 import { AddToCart } from "@/components/AddToCart";
+import { AktionsHinweis } from "@/components/AktionsBannerSlot";
 import { VariantHero } from "@/components/VariantHero";
 import { VariantSelectionProvider } from "@/components/VariantSelection";
 import { TierSelectionProvider } from "@/components/TierSelection";
@@ -297,6 +298,10 @@ async function ProductDetails({
             <p className={styles.subtitle}>{product.subtitle}</p>
 
             <AddToCart product={product} />
+
+            {/* Der Preis oben bleibt der reguläre: Medusa zieht die Aktion erst
+                im Warenkorb ab. Nur bei Prozent-Aktion auf alles. */}
+            <AktionsHinweis className={styles.aktionsHinweis} />
 
             <p className={styles.desc}>{product.description}</p>
 

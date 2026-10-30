@@ -274,6 +274,26 @@ const routes = [
 
   [
     "GET",
+    /^\/store\/aktionen$/,
+    () => ({
+      // Wie das echte Backend: nur laufende Aktionen; das Ende liegt immer
+      // 23 h 12 min in der Zukunft, damit der Countdown prüfbar bleibt.
+      aktionen: [
+        {
+          code: "EROEFFNUNG20",
+          titel: "Eröffnung",
+          prozent: 20,
+          gilt_ab: new Date(Date.now() - 3_600_000).toISOString(),
+          gilt_bis: new Date(Date.now() + (23 * 60 + 12) * 60_000).toISOString(),
+          nur_teilsortiment: false,
+          auf_artikel: true,
+        },
+      ],
+    }),
+  ],
+
+  [
+    "GET",
     /^\/store\/price-tiers$/,
     (_m, { query }) => {
       const ids = asArray(query.variant_id);
