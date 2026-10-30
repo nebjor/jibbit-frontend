@@ -22,9 +22,9 @@ export const CATEGORIES = [
     description: "Rolls, King Size, kurz und Slim.",
   },
   {
-    id: "pcat_filter",
-    name: "Filter",
-    handle: "filter",
+    id: "pcat_filter_tips",
+    name: "Filter & Tips",
+    handle: "filter-tips",
     description: "Aktivkohlefilter und Slim Filters.",
   },
   {
@@ -32,6 +32,16 @@ export const CATEGORIES = [
     name: "Zubehör & Glas",
     handle: "zubehoer",
     description: "Aschenbecher aus Kristallglas und weiteres Zubehör.",
+  },
+  // Wie live: «Filter» ist in «Filter & Tips» aufgegangen und im Admin inaktiv.
+  // /?kategorie=filter ist eine 301 (handle-redirects.data.json); die Store-API
+  // liefert die Kategorie deshalb nicht aus (siehe server.mjs).
+  {
+    id: "pcat_filter",
+    name: "Filter",
+    handle: "filter",
+    description: "Aufgegangen in «Filter & Tips».",
+    is_active: false,
   },
 ];
 

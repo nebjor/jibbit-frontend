@@ -22,6 +22,7 @@
 
 import type { MetadataRoute } from "next";
 import type { CategoryView, ProductView } from "../types";
+import handleData from "./handle-redirects.data.json";
 import { absoluteImages, productUrl } from "./jsonld";
 
 /**
@@ -104,11 +105,16 @@ export function sitemapEntries({
       url: `${base}${path}`,
       priority: path === "" ? 1 : 0.6,
     })),
-    ...categories.map((c) => ({
-      // Kodieren: Handles können `&` oder Umlaute enthalten.
-      url: `${base}/?kategorie=${encodeURIComponent(c.handle)}`,
-      priority: 0.8,
-    })),
+    ...categories
+      // Umbenannte Kategorien (z. B. «filter» → «filter-tips») sind eine 301;
+      // Umleitungen gehören nicht in die Sitemap, auch wenn das Backend die
+      // alte Kategorie noch ausliefert.
+      .filter((c) => !Object.hasOwn(handleData.kategorien, c.handle))
+      .map((c) => ({
+        // Kodieren: Handles können `&` oder Umlaute enthalten.
+        url: `${base}/?kategorie=${encodeURIComponent(c.handle)}`,
+        priority: 0.8,
+      })),
     ...products
       .filter((p) => p.handle)
       .map((p) => {
