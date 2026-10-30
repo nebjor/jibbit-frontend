@@ -30,7 +30,7 @@ test("Banner steht auch auf Produktseite, dazu der Hinweis unter dem Kaufblock",
 
   await expect(page.getByRole("region", { name: "Aktion" })).toContainText("20 % auf alles");
   await expect(page.getByTestId("aktions-hinweis")).toHaveText(
-    "20 % Aktionsrabatt wird an der Kasse abgezogen",
+    "Zusätzlich 20 % Aktionsrabatt wird an der Kasse abgezogen",
   );
 });
 
