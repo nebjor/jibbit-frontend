@@ -486,3 +486,8 @@
   color: var(--c-muted);
   min-height: 1em;
 }
+
+/* Aktionsrabatt-Zeile: Markenfarbe der Ersparnis. */
+.totals > .discount {
+  color: var(--c-save);
+}

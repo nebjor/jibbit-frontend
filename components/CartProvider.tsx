@@ -93,6 +93,8 @@ interface CartContextValue {
   shippingIsEstimate: boolean;
   /** In `total` enthaltene Steuer (Medusas `tax_total`), 0 wenn keine anfällt. */
   taxTotal: number;
+  /** Aktionsrabatt (brutto), bereits in `subtotal`/`total` abgezogen; 0 ohne Rabatt. */
+  discount: number;
   /** True once a delivery method is on the cart, i.e. `shipping` is binding. */
   hasShippingMethod: boolean;
   /**
@@ -214,6 +216,7 @@ export function CartProvider({
       shipping,
       shippingIsEstimate,
       taxTotal: cart.taxTotal ?? 0,
+      discount: cart.discount ?? 0,
       hasShippingMethod: cart.hasShippingMethod,
       pickup: cart.pickup,
       total,

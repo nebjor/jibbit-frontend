@@ -7,6 +7,9 @@ const sdk = {
     category: { list: vi.fn(down) },
     product: { list: vi.fn(down) },
   },
+  client: {
+    fetch: vi.fn<(...args: unknown[]) => Promise<unknown>>(down),
+  },
 };
 
 vi.mock("@/lib/tenant/context", () => ({
@@ -23,6 +26,7 @@ import {
   getProduct,
   getProducts,
   getStaticProductHandles,
+  getAktionen,
 } from "./data";
 import { MOCK_PRODUCTS } from "./mock-catalog";
 
@@ -136,5 +140,44 @@ describe("catalog beyond one page", () => {
       .mockResolvedValueOnce({ products: page(0, 100), count: 230 } as never)
       .mockRejectedValueOnce(new TypeError("fetch failed"));
     await expect(getProducts()).rejects.toBeInstanceOf(CatalogUnavailableError);
+  });
+});
+
+/** Aktionsbanner: nie ein Fehler, höchstens kein Banner. */
+describe("getAktionen", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    sdk.client.fetch.mockReset();
+  });
+
+  it("holt /store/aktionen mit 60 s Cache und mappt die laufenden Aktionen", async () => {
+    sdk.client.fetch.mockResolvedValue({
+      aktionen: [
+        {
+          code: "EROEFFNUNG20",
+          titel: "Eröffnung",
+          prozent: 20,
+          gilt_ab: null,
+          gilt_bis: new Date(Date.now() + 3_600_000).toISOString(),
+          nur_teilsortiment: false,
+        },
+      ],
+    });
+    const aktionen = await getAktionen();
+    expect(aktionen).toHaveLength(1);
+    expect(aktionen[0]).toMatchObject({ code: "EROEFFNUNG20", prozent: 20 });
+    expect(sdk.client.fetch).toHaveBeenCalledWith("/store/aktionen", {
+      next: { revalidate: 60 },
+    });
+  });
+
+  it("Backend-Fehler → leere Liste, kein Wurf", async () => {
+    sdk.client.fetch.mockRejectedValue(new TypeError("fetch failed"));
+    await expect(getAktionen()).resolves.toEqual([]);
+  });
+
+  it("Unsinn als Antwort → leere Liste", async () => {
+    sdk.client.fetch.mockResolvedValue("<html>");
+    await expect(getAktionen()).resolves.toEqual([]);
   });
 });
