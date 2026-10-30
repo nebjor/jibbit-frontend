@@ -26,6 +26,7 @@ import "server-only";
 import type Medusa from "@medusajs/js-sdk";
 import type { HttpTypes } from "@medusajs/types";
 import { toCartState } from "@/lib/cart/adapter";
+import { refreshAktionIfNeeded } from "@/lib/cart/aktion-refresh";
 import {
   describeInsufficientInventory,
   isInsufficientInventory,
@@ -109,10 +110,13 @@ async function loadCart(): Promise<LiveCart | null> {
   if (!ctx || !cartId) return null;
 
   try {
-    const { cart } = await ctx.sdk.store.cart.retrieve(cartId, {
+    const { cart: geladen } = await ctx.sdk.store.cart.retrieve(cartId, {
       fields: CART_FIELDS,
     });
-    if (cart.completed_at) return null;
+    if (geladen.completed_at) return null;
+    // Vor Zahlung und Abschluss: der bezahlte Betrag muss dem entsprechen, was
+    // angezeigt wurde — also die Aktion hier ebenfalls nachziehen.
+    const cart = await refreshAktionIfNeeded(ctx.sdk, geladen, CART_FIELDS);
     return { cart, sdk: ctx.sdk, ctx };
   } catch (error) {
     logCartError("checkout:retrieve", error);

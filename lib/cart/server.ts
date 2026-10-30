@@ -22,6 +22,7 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { getCurrentRegionId } from "@/lib/data";
 import type { TenantConfig } from "@/lib/tenant/types";
 import { toCartState } from "./adapter";
+import { refreshAktionIfNeeded } from "./aktion-refresh";
 import { applyAvailability, fetchAvailability } from "./availability";
 import { describeInsufficientInventory } from "./stock-error";
 import { clearCartId, readCartId, writeCartId } from "./cookie";
@@ -162,12 +163,15 @@ export async function readCartState(): Promise<CartState> {
   if (!ctx) return EMPTY_CART;
 
   try {
-    const { cart } = await ctx.sdk.store.cart.retrieve(cartId, {
+    const { cart: geladen } = await ctx.sdk.store.cart.retrieve(cartId, {
       fields: CART_FIELDS,
     });
     // A cart that has been completed is an order now. Showing its lines would
     // invite the customer to "check out" something they already bought.
-    if (cart.completed_at) return EMPTY_CART;
+    if (geladen.completed_at) return EMPTY_CART;
+    // Aktion nachziehen, falls der Warenkorb älter ist als sie (oder sie
+    // überlebt hat): Medusa rechnet Promotionen nur beim Schreiben neu.
+    const cart = await refreshAktionIfNeeded(ctx.sdk, geladen, CART_FIELDS);
     return await withStock(ctx.sdk, toCartState(cart));
   } catch (error) {
     if (!isNotFound(error)) logCartError("retrieve", error);
