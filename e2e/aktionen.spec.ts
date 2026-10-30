@@ -160,7 +160,11 @@ test.describe("Aktion im älteren Warenkorb", () => {
     // Die Kasse zeigt dieselbe Summe.
     await drawer.getByRole("link", { name: "Zur Kasse" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Kasse" })).toBeVisible();
-    await expect(page.getByText("Aktionsrabatt (bereits abgezogen)")).toBeVisible();
-    await expect(page.getByText(chf("30.72")).first()).toBeVisible();
+    // Die Schublade bleibt bis zu 400 ms im DOM (Austritts-Animation,
+    // usePresence) und trägt dieselbe Zeile; erst warten, dann in der Kasse suchen.
+    await expect(drawer).toBeHidden();
+    const uebersicht = page.getByLabel("Bestellübersicht");
+    await expect(uebersicht.getByText("Aktionsrabatt (bereits abgezogen)")).toBeVisible();
+    await expect(uebersicht.getByText(chf("30.72")).first()).toBeVisible();
   });
 });
