@@ -6,6 +6,8 @@ backend via the official JS SDK.
 
 Language: Swiss German (de-CH). Currency: CHF.
 
+<img width="1865" height="990" alt="image" src="https://github.com/user-attachments/assets/8c766587-7f93-4ef4-b681-56adb356dd54" />
+
 ---
 
 ## Running it
