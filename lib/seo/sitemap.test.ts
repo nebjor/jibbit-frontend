@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import handleData from "./handle-redirects.data.json";
 import type { CategoryView, ProductView } from "../types";
 import { SITEMAP_STATIC_PATHS, sitemapEntries, xmlEscape } from "./sitemap";
 
@@ -44,6 +45,13 @@ function build(products: ProductView[], categories = CATEGORIES) {
 }
 
 describe("sitemapEntries", () => {
+  it("listet keine Kategorie, für die es eine Umleitungsregel gibt", () => {
+    const urls = build([]).map((e) => e.url);
+    for (const alt of Object.keys(handleData.kategorien)) {
+      expect(urls).not.toContain(`https://jibbit.ch/?kategorie=${alt}`);
+    }
+  });
+
   it("führt Startseite, Rechtliches, Service, jede Kategorie und jedes Produkt", () => {
     const urls = build([
       product(),
@@ -55,10 +63,11 @@ describe("sitemapEntries", () => {
     }
     expect(urls).toContain("https://jibbit.ch/?kategorie=papers");
     expect(urls).toContain("https://jibbit.ch/?kategorie=filter-tips");
-    expect(urls).toContain("https://jibbit.ch/?kategorie=filter");
+    // «filter» ist umbenannt (301) und gehört nicht in die Sitemap.
+    expect(urls).not.toContain("https://jibbit.ch/?kategorie=filter");
     expect(urls).toContain("https://jibbit.ch/products/ocb-premium-kurz");
     expect(urls).toContain("https://jibbit.ch/products/raw-classic-rolls-slim");
-    expect(urls).toHaveLength(SITEMAP_STATIC_PATHS.length + 3 + 2);
+    expect(urls).toHaveLength(SITEMAP_STATIC_PATHS.length + 2 + 2);
   });
 
   it("nennt nur absolute https-Adressen der Mandantendomain", () => {

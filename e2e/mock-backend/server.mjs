@@ -250,7 +250,11 @@ const routes = [
   [
     "GET",
     /^\/store\/product-categories$/,
-    () => ({ product_categories: CATEGORIES, count: CATEGORIES.length }),
+    () => {
+      // Die Store-API liefert nur aktive Kategorien aus.
+      const aktiv = CATEGORIES.filter((c) => c.is_active !== false);
+      return { product_categories: aktiv, count: aktiv.length };
+    },
   ],
 
   [
