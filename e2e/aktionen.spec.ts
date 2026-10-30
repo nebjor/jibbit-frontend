@@ -1,4 +1,4 @@
-import { test, expect, SHOP } from "./fixtures";
+import { test, expect, SHOP, chf, registerAccount, uniqueEmail } from "./fixtures";
 
 /**
  * Aktionsbanner. Der Mock-Server (e2e/mock-backend) meldet auf
@@ -127,5 +127,40 @@ test.describe("Hero auf der Startseite", () => {
     await expect(hero).toBeHidden();
     // Und der schmale Banner kommt auf der Startseite nicht als Ersatz zurück.
     await expect(page.getByRole("region", { name: "Aktion" })).toHaveCount(0);
+  });
+});
+
+test.describe("Aktion im älteren Warenkorb", () => {
+  // Medusa rechnet Promotionen nur beim Schreiben. Der Mock bildet das nach:
+  // ein per /__aktion-veraltet markierter Warenkorb bleibt ohne Rabatt, bis die
+  // Storefront ihn nachzieht (Update mit Prüfmarker, lib/cart/aktion-refresh.ts).
+  test("Schublade und Kasse ziehen die Aktion nach", async ({ page, request }) => {
+    // Die Kasse verlangt ein Konto; die Anmeldung legt noch keinen Warenkorb an.
+    await registerAccount(page, uniqueEmail());
+    const backend = `http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? 9100}`;
+    await request.post(`${backend}/__aktion-veraltet`);
+
+    await page.goto(`/products/${SHOP.papers.handle}`);
+    await page.getByRole("button", { name: new RegExp(SHOP.papers.tierLabel) }).click();
+    await page.getByRole("button", { name: /In den Warenkorb/ }).click();
+
+    // Direkt nach dem Hinzufügen: noch der alte Stand ohne Aktion.
+    const drawer = page.getByRole("dialog", { name: "Warenkorb" });
+    await expect(drawer).toContainText(`${SHOP.papers.tierQuantity} Artikel`);
+    await expect(drawer).not.toContainText("Aktionsrabatt");
+
+    // Wer später zurückkommt, sieht die Aktion: 38.40 - 20 % = 30.72, + 4.50 Versand.
+    await page.reload();
+    await page.getByRole("button", { name: "Warenkorb öffnen" }).click();
+    await expect(drawer).toContainText("Aktionsrabatt");
+    await expect(drawer).toContainText(chf("7.68"));
+    await expect(drawer).toContainText(chf("30.72"));
+    await expect(drawer).toContainText(chf("35.22"));
+
+    // Die Kasse zeigt dieselbe Summe.
+    await drawer.getByRole("link", { name: "Zur Kasse" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Kasse" })).toBeVisible();
+    await expect(page.getByText("Aktionsrabatt (bereits abgezogen)")).toBeVisible();
+    await expect(page.getByText(chf("30.72")).first()).toBeVisible();
   });
 });

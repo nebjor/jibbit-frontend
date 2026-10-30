@@ -119,8 +119,15 @@ function createCart() {
     billing_address: null,
     payment_collection: null,
     metadata: null,
+    promotions: [],
   };
   carts.set(cart.id, cart);
+  // Test-Hilfe (POST /__aktion-veraltet): der Warenkorb gilt als VOR dem Start
+  // der Aktion entstanden — Medusa rechnet Promotionen nur beim Schreiben.
+  if (aktionTest.pending > 0) {
+    aktionTest.pending -= 1;
+    cart.aktionTest = true;
+  }
   // Test-Hilfe: den nächsten angelegten Warenkorb mit langsamen Lesezugriffen
   // versehen (siehe POST /__slow-reads).
   if (slowReads.pending > 0) {
@@ -136,6 +143,22 @@ function createCart() {
 const slowReads = { pending: 0, ms: 0 };
 const slowCartIds = new Map();
 
+// Aktionen im Warenkorb. Normale Warenkörbe tragen im Mock nie einen Rabatt
+// (die bestehenden Tests rechnen ohne). Nur ein per /__aktion-veraltet
+// markierter Warenkorb verhält sich wie Medusa: die Aktion EROEFFNUNG20 (20 %
+// auf Artikel, siehe /store/aktionen) kommt erst bei einem Update dazu, das
+// den Prüfmarker `aktion_geprueft` trägt — also beim Nachziehen der Storefront.
+// Positionen hinzufügen ändert daran nichts: so bleibt er «vor der Aktion».
+const aktionTest = { pending: 0 };
+const AKTION_PROZENT = 20;
+
+function aktionNachziehen(cart, body) {
+  if (!cart.aktionTest) return;
+  if (body?.metadata?.aktion_geprueft !== undefined) {
+    cart.promotions = [{ code: "EROEFFNUNG20", is_automatic: true }];
+  }
+}
+
 function priceCart(cart) {
   for (const item of cart.items) {
     const known = VARIANTS.get(item.variant_id);
@@ -147,7 +170,11 @@ function priceCart(cart) {
     item.original_total = round2(original * item.quantity);
   }
 
-  const itemTotal = round2(cart.items.reduce((sum, i) => sum + i.total, 0));
+  const gross = round2(cart.items.reduce((sum, i) => sum + i.total, 0));
+  // Wie Medusa: `item_total` ist bereits rabattiert, `discount_total` der Abzug.
+  const discountTotal = cart.promotions?.length ? round2((gross * AKTION_PROZENT) / 100) : 0;
+  const itemTotal = round2(gross - discountTotal);
+  cart.discount_total = discountTotal;
   const method = cart.shipping_methods[0];
   const shippingTotal = method ? shippingAmount(method.shipping_option_id, itemTotal) : 0;
   if (method) method.amount = shippingTotal;
@@ -319,6 +346,16 @@ const routes = [
     },
   ],
 
+  [
+    "POST",
+    /^\/__aktion-veraltet$/,
+    () => {
+      // Der NÄCHSTE angelegte Warenkorb ist «vor der Aktion entstanden».
+      aktionTest.pending += 1;
+      return { ok: true };
+    },
+  ],
+
   ["POST", /^\/store\/carts$/, () => ({ cart: priceCart(createCart()) })],
 
   [
@@ -345,6 +382,7 @@ const routes = [
       if (body.metadata !== undefined) {
         cart.metadata = body.metadata === null ? null : { ...(cart.metadata ?? {}), ...body.metadata };
       }
+      aktionNachziehen(cart, body);
       return { cart: priceCart(cart) };
     },
   ],
