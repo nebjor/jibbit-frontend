@@ -6,8 +6,9 @@
  * weil verschiedene Backend-Kategorien auf dasselbe interne Handle
  * zusammenfielen. Die Regel ist deshalb bewusst streng: EXAKTER
  * String-Vergleich gegen die geladene Kategorienliste, kein Teilstring,
- * kein Präfix — `filter` darf `filter-tips` nicht mitmarkieren und
- * umgekehrt.
+ * kein Präfix — ein Handle, das zufällig Anfang eines anderen ist, darf
+ * dieses nicht mitmarkieren (früher `filter` und `filter-tips`; `filter` ist
+ * inzwischen in `filter-tips` aufgegangen, die Regel gilt weiter).
  *
  * Der Katalog liegt auf der STARTSEITE («shop ist die neue startseite») —
  * aktiv wird also nur auf `/` markiert. Die alte Adresse /shop ist nur

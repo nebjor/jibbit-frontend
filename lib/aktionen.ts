@@ -153,3 +153,38 @@ export function formatRestzeit(rest: number): string {
 export function dismissKey(a: Pick<Aktion, "code">): string {
   return `jibbit-aktionsbanner:${a.code}`;
 }
+
+/**
+ * Die Aktion für den grossen Hero-Block der Startseite: nur eine, die das
+ * ganze Sortiment betrifft und auf Artikel wirkt («20 % auf alles»). Für
+ * Teilsortimente bleibt es beim schmalen Banner.
+ */
+export function heroAktion(aktionen: readonly Aktion[]): Aktion | undefined {
+  return waehleBanner(aktionen.filter((a) => a.aufArtikel && !a.nurTeilsortiment));
+}
+
+const MONATE = [
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember",
+];
+
+/**
+ * «30. Oktober, 19:30 Uhr» — Zeitpunkt in Schweizer Zeit (Europe/Zurich),
+ * egal wo Server oder Besucher stehen. Der Monat kommt aus einer festen
+ * Liste statt aus Intl, damit Server und Browser nie verschieden schreiben.
+ */
+export function formatGiltBis(iso: string): string | null {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  const teile = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Zurich",
+    day: "numeric",
+    month: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(t));
+  const wert = (typ: string) => teile.find((p) => p.type === typ)?.value ?? "";
+  const monat = MONATE[Number(wert("month")) - 1];
+  return `${Number(wert("day"))}. ${monat}, ${wert("hour")}:${wert("minute")} Uhr`;
+}

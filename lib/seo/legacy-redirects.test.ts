@@ -5,6 +5,8 @@ import {
   LANGUAGE_PREFIX,
   ODOO_PRODUCTS,
   RENAMED_HANDLES,
+  RENAMED_CATEGORIES,
+  categoryRedirectLocation,
   UNPUBLISHED_TARGETS,
   legacyAnswer,
   legacyGone,
@@ -265,7 +267,9 @@ describe("legacyRedirectLocation", () => {
   });
 
   it("behält `kategorie` nur auf der früheren Katalogadresse /shop", () => {
-    expect(location("/shop", "?kategorie=filter")).toBe("/?kategorie=filter");
+    // «filter» ist in «filter-tips» aufgegangen: gleich das heutige Handle.
+    expect(location("/shop", "?kategorie=filter")).toBe("/?kategorie=filter-tips");
+    expect(location("/shop", "?kategorie=papers")).toBe("/?kategorie=papers");
     expect(location("/shop", "?search=filter&order=list_price+asc")).toBe("/");
     expect(location("/shop/x-41", "?kategorie=filter")).toBe(
       "/products/ocb-slim-filter-bio-120-tips",
@@ -521,4 +525,32 @@ describe("alle Adressen aus der Search Console", () => {
     ]);
   });
 
+});
+
+describe("zusammengelegte Kategorie «Filter» -> «Filter & Tips»", () => {
+  it("leitet /?kategorie=filter in einem Sprung auf filter-tips", () => {
+    expect(categoryRedirectLocation("/", "?kategorie=filter")).toBe("/?kategorie=filter-tips");
+  });
+
+  it("behält andere Parameter", () => {
+    expect(categoryRedirectLocation("/", "?utm_source=nl&kategorie=filter")).toBe(
+      "/?utm_source=nl&kategorie=filter-tips",
+    );
+  });
+
+  it("lässt filter-tips und andere Kategorien in Ruhe (keine Schleife)", () => {
+    expect(categoryRedirectLocation("/", "?kategorie=filter-tips")).toBeNull();
+    expect(categoryRedirectLocation("/", "?kategorie=papers")).toBeNull();
+    expect(categoryRedirectLocation("/", "")).toBeNull();
+  });
+
+  it("greift nur auf der Startseite", () => {
+    expect(categoryRedirectLocation("/products/x", "?kategorie=filter")).toBeNull();
+  });
+
+  it("zeigt auf eine Kategorie, die es gibt", () => {
+    for (const ziel of Object.values(RENAMED_CATEGORIES)) {
+      expect(staging.kategorien).toContain(ziel);
+    }
+  });
 });

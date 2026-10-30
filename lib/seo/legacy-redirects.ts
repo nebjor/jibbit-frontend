@@ -66,6 +66,28 @@ export const RENAMED_HANDLES: Readonly<Record<string, string>> = handleData.hand
 const RENAMED = new Map(Object.entries(RENAMED_HANDLES));
 
 /**
+ * Alter Kategorie-Handle -> heutiger Handle. Die Kategorie «Filter» wurde
+ * am 2026-10-30 in «Filter & Tips» (`filter-tips`) zusammengelegt und ist im
+ * Admin inaktiv; /?kategorie=filter wäre sonst ein 404.
+ */
+export const RENAMED_CATEGORIES: Readonly<Record<string, string>> = handleData.kategorien;
+
+/**
+ * 301-Ziel (Pfad samt Query) für eine umbenannte/zusammengelegte Kategorie,
+ * oder `null`. Gilt auf der Startseite `/` für jede Domain; andere Parameter
+ * (z. B. utm_*) bleiben erhalten.
+ */
+export function categoryRedirectLocation(pathname: string, search: string): string | null {
+  if (pathname !== "/") return null;
+  const params = new URLSearchParams(search);
+  const handle = params.get("kategorie");
+  const neu = handle === null ? undefined : RENAMED_CATEGORIES[handle];
+  if (!neu) return null;
+  params.set("kategorie", neu);
+  return `/?${params.toString()}`;
+}
+
+/**
  * Seiten mit Entsprechung. `/about-us` hat keine eigene Nachfolgeseite; wer
  * hinter dem Shop steht, sagt im neuen Shop das Impressum.
  */
@@ -203,7 +225,11 @@ export function legacyRedirectLocation(
   for (const [key, value] of old) {
     if (url.searchParams.has(key)) continue;
     if (KEPT_PARAMS.test(key) || (ownCatalogue && key === "kategorie")) {
-      url.searchParams.append(key, value);
+      // /shop?kategorie=filter: gleich auf das heutige Handle (ein Sprung).
+      url.searchParams.append(
+        key,
+        key === "kategorie" ? (RENAMED_CATEGORIES[value] ?? value) : value,
+      );
     }
   }
   return url.pathname + url.search;

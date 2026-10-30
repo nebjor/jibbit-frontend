@@ -131,12 +131,18 @@ async function fetchBackendCategories(
   if (!isBackendConfigured(tenant)) return null;
   try {
     const { product_categories } = await sdk.store.category.list({
-      fields: "id,name,handle,description",
+      fields: "id,name,handle,description,is_active",
       // Ohne Angabe liefert die Store-API nur die ersten 50.
       limit: 200,
     });
     if (!product_categories?.length) return null;
-    return product_categories.map(toCategoryView);
+    // Inaktive Kategorien (z. B. das in «Filter & Tips» aufgegangene «Filter»)
+    // gehören nicht in Navigation und Sitemap. Die Store-API filtert schon
+    // selbst; das hier hält es auch dann ein, wenn sie es einmal nicht tut.
+    const aktiv = product_categories.filter(
+      (c) => (c as { is_active?: boolean }).is_active !== false,
+    );
+    return aktiv.length ? aktiv.map(toCategoryView) : null;
   } catch (err) {
     warnFallback(tenant, "categories", err);
     return null;

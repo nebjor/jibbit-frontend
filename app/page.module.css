@@ -37,25 +37,9 @@
   font-size: 14px;
 }
 
-/* Verweis auf die verwandte Kategorie («Filter» <-> «Filter & Tips»). */
-.related {
-  max-width: 72ch;
-  margin-top: var(--s-1);
-  color: var(--c-muted);
-  font-size: 14px;
-}
-
-.related a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.related a:hover {
-  color: var(--c-ink);
-}
-
 .grid {
+  /* Ankerziel des Hero-Knopfs «Jetzt sparen»; Platz für den klebenden Header. */
+  scroll-margin-top: 96px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--s-3);
