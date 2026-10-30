@@ -96,10 +96,11 @@ function zahl(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
 
-/** Grosse Zeile: «20 % auf alles». */
+/** Grosse Zeile: «Zusätzlich 20 % auf alles» — zusätzlich, weil die Mengenrabatte
+ *  der Produkte unverändert gelten und der Aktionsrabatt obendrauf kommt. */
 export function bannerUeberschrift(a: Aktion): string {
   const ziel = a.nurTeilsortiment ? "auf ausgewählte Artikel" : "auf alles";
-  if (a.prozent !== undefined) return `${zahl(a.prozent)} % ${ziel}`;
+  if (a.prozent !== undefined) return `Zusätzlich ${zahl(a.prozent)} % ${ziel}`;
   if (a.betrag !== undefined) {
     const waehrung = a.waehrung ?? "CHF";
     return `${waehrung} ${zahl(a.betrag)} Rabatt ${a.nurTeilsortiment ? "auf ausgewählte Artikel" : "auf deinen Einkauf"}`;
@@ -118,7 +119,7 @@ export function produktHinweis(aktionen: readonly Aktion[]): string | null {
       (x) => x.prozent !== undefined && x.aufArtikel && !x.nurTeilsortiment,
     ),
   );
-  return a ? `${zahl(a.prozent!)} % Aktionsrabatt wird an der Kasse abgezogen` : null;
+  return a ? `Zusätzlich ${zahl(a.prozent!)} % Aktionsrabatt wird an der Kasse abgezogen` : null;
 }
 
 /** Verbleibende Zeit bis `bis` (ms seit Epoche), oder null wenn abgelaufen/unbefristet. */
