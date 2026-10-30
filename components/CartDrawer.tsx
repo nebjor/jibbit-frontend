@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { FreeShippingMeter } from "./FreeShippingMeter";
 import { Price } from "./Price";
@@ -57,6 +58,20 @@ export function CartDrawer() {
   } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
   const presence = usePresence(isOpen, panelRef);
+
+  // Seitenwechsel («Zur Kasse», «Zum Shop»): die Schublade wird nicht erst nach
+  // ihrer Austritts-Animation ausgehängt, sondern mit der neuen Seite. Sonst
+  // stünde sie (inert, aber im DOM) noch neben der Bestellübersicht der Kasse.
+  // Der Klick schliesst sie weiterhin animiert; nur die Navigation beendet den
+  // Austritt, falls er noch läuft.
+  const pathname = usePathname();
+  const finishRef = useRef(presence.finish);
+  useEffect(() => {
+    finishRef.current = presence.finish;
+  });
+  useEffect(() => {
+    finishRef.current();
+  }, [pathname]);
 
   // Bestand: eine Position über dem Bestand sperrt «Zur Kasse», bis die Menge
   // angepasst ist (lib/stock.ts).
