@@ -64,7 +64,7 @@ export function AktionsBanner({
       <div className={`page ${styles.inner}`}>
         <p className={styles.headline}>{bannerUeberschrift(aktion)}</p>
         <p className={styles.sub}>
-          Wird an der Kasse automatisch abgezogen
+          Zusätzlich zu den Mengenrabatten · Wird an der Kasse automatisch abgezogen
           {rest !== null && (
             <>
               {" "}

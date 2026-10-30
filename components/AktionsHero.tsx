@@ -23,7 +23,7 @@ export function AktionsHero({ aktion, bis }: { aktion: Aktion; bis: string | nul
     <section className={styles.hero} role="region" aria-label="Aktion" data-testid="aktions-hero">
       <h2 className={styles.headline}>{bannerUeberschrift(aktion)}</h2>
       {bis && <p className={styles.bis}>Nur bis {bis}</p>}
-      <p className={styles.sub}>Wird an der Kasse automatisch abgezogen</p>
+      <p className={styles.sub}>Zusätzlich zu den Mengenrabatten · Wird an der Kasse automatisch abgezogen</p>
       {rest !== null && (
         <p className={`tnum ${styles.rest}`} data-testid="aktion-restzeit">
           noch {formatRestzeit(rest)}
