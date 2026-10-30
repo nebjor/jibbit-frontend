@@ -93,14 +93,14 @@ describe("parseAktionen", () => {
 describe("Texte", () => {
   const a = (over = {}) => parseAktionen({ aktionen: [roh(over)] }, JETZT)[0];
   it("Überschrift", () => {
-    expect(bannerUeberschrift(a())).toBe("20 % auf alles");
-    expect(bannerUeberschrift(a({ nur_teilsortiment: true }))).toBe("20 % auf ausgewählte Artikel");
+    expect(bannerUeberschrift(a())).toBe("Zusätzlich 20 % auf alles");
+    expect(bannerUeberschrift(a({ nur_teilsortiment: true }))).toBe("Zusätzlich 20 % auf ausgewählte Artikel");
     expect(bannerUeberschrift(a({ prozent: undefined, betrag: 5, waehrung: "CHF" }))).toBe(
       "CHF 5 Rabatt auf deinen Einkauf",
     );
   });
   it("Produkthinweis nur bei Prozent-Aktion auf das ganze Sortiment", () => {
-    expect(produktHinweis([a()])).toBe("20 % Aktionsrabatt wird an der Kasse abgezogen");
+    expect(produktHinweis([a()])).toBe("Zusätzlich 20 % Aktionsrabatt wird an der Kasse abgezogen");
     expect(produktHinweis([a({ nur_teilsortiment: true })])).toBeNull();
     expect(produktHinweis([a({ auf_artikel: false })])).toBeNull();
     expect(produktHinweis([a({ prozent: undefined, betrag: 5 })])).toBeNull();
