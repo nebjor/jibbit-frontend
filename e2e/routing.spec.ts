@@ -24,6 +24,17 @@ test.describe("Adressen", () => {
     expect(new URL(response.headers().location).pathname).toBe("/");
   });
 
+  test("Die zusammengelegte Kategorie «filter» leitet in einem Sprung auf filter-tips", async ({
+    request,
+  }) => {
+    const response = await request.get("/?kategorie=filter", { maxRedirects: 0 });
+
+    expect(response.status()).toBe(301);
+    const target = new URL(response.headers().location);
+    expect(target.pathname).toBe("/");
+    expect(target.search).toBe("?kategorie=filter-tips");
+  });
+
   test("Eine alte Odoo-Produktadresse leitet auf das heutige Produkt", async ({
     request,
   }) => {

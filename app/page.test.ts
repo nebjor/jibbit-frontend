@@ -16,11 +16,13 @@ import type { CategoryView, ProductView } from "@/lib/types";
 const mocks = vi.hoisted(() => ({
   getProducts: vi.fn(),
   getCategories: vi.fn(),
+  getAktionen: vi.fn(),
 }));
 
 vi.mock("@/lib/data", () => ({
   getProducts: mocks.getProducts,
   getCategories: mocks.getCategories,
+  getAktionen: mocks.getAktionen,
 }));
 
 // Die Seite zeichnet den Katalog als ItemList aus und braucht dafür die
@@ -37,6 +39,7 @@ vi.mock("@/lib/tenant/context", () => ({
 const { default: HomePage, generateMetadata } = await import("./page");
 const { CategoryComingSoon } = await import("./CategoryComingSoon");
 const { ProductCard } = await import("@/components/ProductCard");
+const { AktionsHero } = await import("@/components/AktionsHero");
 const { HomeIntro } = await import("@/components/intro/HomeIntro");
 const { default: NextLink } = await import("next/link");
 
@@ -78,7 +81,22 @@ function textOf(el: any): string {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-async function render(kategorie: string | undefined, products: ProductView[]) {
+const AKTION = {
+  code: "EROEFFNUNG20",
+  titel: "Eröffnung 20 %",
+  prozent: 20,
+  giltAb: null,
+  giltBis: "2026-10-30T18:30:00.000Z",
+  nurTeilsortiment: false,
+  aufArtikel: true,
+};
+
+async function render(
+  kategorie: string | undefined,
+  products: ProductView[],
+  aktionen: unknown[] = [],
+) {
+  mocks.getAktionen.mockResolvedValue(aktionen);
   mocks.getCategories.mockResolvedValue([KRAEUTER, PAPERS]);
   mocks.getProducts.mockResolvedValue(products);
   const page = await HomePage({ searchParams: Promise.resolve({ kategorie }) });
@@ -171,5 +189,25 @@ describe("Startseite — Canonical", () => {
 
   it("zeigt je Kategorie auf ihre eigene Adresse", async () => {
     expect(await canonical("papers")).toBe("/?kategorie=papers");
+  });
+});
+
+describe("Startseite — Hero zur laufenden Aktion", () => {
+  it("zeigt den Hero über dem Katalog, mit Ende in Schweizer Zeit", async () => {
+    const el = await render(undefined, [PRODUKT], [AKTION]);
+    const [hero] = findAll(el, AktionsHero);
+    expect(hero.props.aktion.code).toBe("EROEFFNUNG20");
+    expect(hero.props.bis).toBe("30. Oktober, 19:30 Uhr");
+  });
+
+  it("zeigt keinen Hero in der Kategorieansicht", async () => {
+    const el = await render("papers", [PRODUKT], [AKTION]);
+    expect(findAll(el, AktionsHero)).toHaveLength(0);
+  });
+
+  it("zeigt keinen Hero ohne Aktion oder bei Teilsortiment", async () => {
+    expect(findAll(await render(undefined, [PRODUKT], []), AktionsHero)).toHaveLength(0);
+    const teil = { ...AKTION, nurTeilsortiment: true };
+    expect(findAll(await render(undefined, [PRODUKT], [teil]), AktionsHero)).toHaveLength(0);
   });
 });

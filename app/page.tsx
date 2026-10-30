@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageLoading } from "@/components/PageLoading";
 import type { CategoryView } from "@/lib/types";
-import { getProducts, getCategories } from "@/lib/data";
+import { getAktionen, getProducts, getCategories } from "@/lib/data";
+import { formatGiltBis, heroAktion } from "@/lib/aktionen";
+import { AktionsHero } from "@/components/AktionsHero";
 import { ProductCard } from "@/components/ProductCard";
 import { ShopTrust } from "@/components/ShopTrust";
 import { ProduktWunsch } from "@/components/ProduktWunsch";
@@ -14,7 +15,6 @@ import { CategoryComingSoon } from "./CategoryComingSoon";
 import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { breadcrumbJsonLd, graph, itemListJsonLd } from "@/lib/seo/jsonld";
-import { relatedCategories } from "@/lib/related-categories";
 import { getTenantContext } from "@/lib/tenant/context";
 import styles from "./page.module.css";
 
@@ -92,12 +92,8 @@ export default async function HomePage({ searchParams }: PageProps) {
 async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
   const products = await getProducts({ category: activeCat?.handle });
   const tenant = await getTenantContext();
-
-  // «Filter» und «Filter & Tips» gehören zusammen (lib/related-categories.ts):
-  // die Kategorieansicht verweist auf ihre Schwester.
-  const related = activeCat
-    ? relatedCategories(activeCat.handle, await getCategories())
-    : [];
+  // Hero nur auf der Startseite ohne Kategorie, bei einer Aktion auf alles.
+  const hero = activeCat ? undefined : heroAktion(await getAktionen());
 
   /**
    * Eine LEERE KATEGORIE ist kein Fehlschlag: der Betreiber hat sie angelegt,
@@ -145,6 +141,12 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
     <>
       <JsonLd data={jsonLd} />
       <div className={`page ${styles.wrap}`}>
+        {hero && (
+          <AktionsHero
+            aktion={hero}
+            bis={hero.giltBis ? formatGiltBis(hero.giltBis) : null}
+          />
+        )}
         <header className={styles.head}>
           <div className={styles.headRow}>
             <h1 className={styles.title}>
@@ -161,20 +163,6 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
           {/* Vertrauenszeile: Google-Bewertung des Ladenlokals + drei
               Fakten — Texte in lib/trust.ts, Zahl aus lib/google-profil.ts. */}
           <ShopTrust />
-          {related.length > 0 && (
-            <p className={styles.related}>
-              Passt dazu:{" "}
-              {related.map((c, i) => (
-                <span key={c.id}>
-                  {i > 0 && ", "}
-                  {/* Kodiert: Handles können `&` oder Umlaute enthalten. */}
-                  <Link href={`/?kategorie=${encodeURIComponent(c.handle)}`}>
-                    {c.name}
-                  </Link>
-                </span>
-              ))}
-            </p>
-          )}
         </header>
 
         {comingSoon && activeCat ? (
@@ -190,7 +178,7 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
             </p>
           </div>
         ) : (
-          <div className={styles.grid}>
+          <div id="sortiment" className={styles.grid}>
             {products.map((p, i) => (
               <ProductCard key={p.id} product={p} priority={i < 4} />
             ))}

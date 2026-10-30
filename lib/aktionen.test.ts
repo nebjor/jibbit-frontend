@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   bannerUeberschrift,
   dismissKey,
+  formatGiltBis,
   formatRestzeit,
+  heroAktion,
   parseAktionen,
   produktHinweis,
   restMillisekunden,
@@ -113,5 +115,30 @@ describe("Texte", () => {
   });
   it("Merker-Schlüssel hängt am Code der Aktion", () => {
     expect(dismissKey({ code: "X" })).not.toBe(dismissKey({ code: "Y" }));
+  });
+});
+
+describe("formatGiltBis / heroAktion", () => {
+  it("schreibt das Ende in Schweizer Zeit (Sommerzeit)", () => {
+    expect(formatGiltBis("2026-10-30T18:30:00.000Z")).toBe("30. Oktober, 19:30 Uhr");
+  });
+
+  it("schreibt das Ende in Schweizer Zeit (Winterzeit)", () => {
+    expect(formatGiltBis("2026-12-01T08:05:00.000Z")).toBe("1. Dezember, 09:05 Uhr");
+  });
+
+  it("rollt über Mitternacht in Zürcher Zeit", () => {
+    expect(formatGiltBis("2026-03-31T22:30:00.000Z")).toBe("1. April, 00:30 Uhr");
+  });
+
+  it("gibt bei ungültigem Datum null zurück", () => {
+    expect(formatGiltBis("morgen")).toBeNull();
+  });
+
+  const basis = { code: "A", titel: "", giltAb: null, giltBis: null, aufArtikel: true };
+  it("nimmt für den Hero nur Aktionen auf das ganze Sortiment", () => {
+    expect(heroAktion([{ ...basis, nurTeilsortiment: true, prozent: 10 }])).toBeUndefined();
+    expect(heroAktion([{ ...basis, aufArtikel: false, nurTeilsortiment: false, prozent: 10 }])).toBeUndefined();
+    expect(heroAktion([{ ...basis, nurTeilsortiment: false, prozent: 10 }])?.code).toBe("A");
   });
 });
