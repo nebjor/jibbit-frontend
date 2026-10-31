@@ -4,6 +4,7 @@ import {
   getCategoriesForTenant,
   getProductsForTenant,
 } from "@/lib/data";
+import { FEATURES } from "@/lib/config";
 import { buildMerchantFeed } from "@/lib/seo/merchant-feed";
 import { getTenantContext } from "@/lib/tenant/context";
 import type { TenantConfig } from "@/lib/tenant/types";
@@ -52,6 +53,13 @@ async function renderFeed(tenant: TenantConfig): Promise<string> {
 }
 
 export async function GET(): Promise<Response> {
+  // Shop ohne Merchant-Center-Feed (shop.config.ts, `features.merchantFeed`).
+  if (!FEATURES.merchantFeed) {
+    return new Response("Not Found", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
   const tenant = await getTenantContext();
 
   const cached = unstable_cache(

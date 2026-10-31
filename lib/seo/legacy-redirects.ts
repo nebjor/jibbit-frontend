@@ -45,6 +45,7 @@
  * /products/<alt> -> /products/<neu>, siehe `RENAMED_HANDLES`.
  */
 
+import { FEATURES, STORE } from "../config";
 import data from "./legacy-redirects.data.json";
 import handleData from "./handle-redirects.data.json";
 
@@ -77,8 +78,12 @@ export const RENAMED_CATEGORIES: Readonly<Record<string, string>> = handleData.k
  * oder `null`. Gilt auf der Startseite `/` für jede Domain; andere Parameter
  * (z. B. utm_*) bleiben erhalten.
  */
-export function categoryRedirectLocation(pathname: string, search: string): string | null {
-  if (pathname !== "/") return null;
+export function categoryRedirectLocation(
+  pathname: string,
+  search: string,
+  enabled: boolean = FEATURES.legacyOdooRedirects,
+): string | null {
+  if (!enabled || pathname !== "/") return null;
   const params = new URLSearchParams(search);
   const handle = params.get("kategorie");
   const neu = handle === null ? undefined : RENAMED_CATEGORIES[handle];
@@ -138,7 +143,22 @@ export const LANGUAGE_PREFIX = /^\/[a-z]{2}(?:_[A-Z]{2})?(?=\/|$)/;
 
 const PRODUCT_PATH = /^\/shop\/[^/]+-(\d+)$/;
 const HANDLE_PATH = /^\/products\/([^/]+)$/;
-const LEGACY_DOMAIN = /(?:^|\.)jibbit\.ch$/;
+/** Die Domain des Shops oder eine ihrer Subdomains (www., test.). */
+function isShopDomain(domain: string): boolean {
+  return domain === STORE.domain || domain.endsWith(`.${STORE.domain}`);
+}
+
+/**
+ * Gilt die Altadress-Logik für diese Domain? Schalter des Shops
+ * (shop.config.ts, `features.legacyOdooRedirects`) UND Domain des Shops
+ * (auch www./test.). `enabled` ist nur für Tests überschreibbar.
+ */
+export function isLegacyDomain(
+  domain: string,
+  enabled: boolean = FEATURES.legacyOdooRedirects,
+): boolean {
+  return enabled && isShopDomain(domain);
+}
 
 /**
  * Parameter, die eine Weiterleitung überleben. Alles andere fällt weg —
@@ -192,15 +212,19 @@ function resolveWithLanguage(pathname: string): string | typeof GONE_MARK | null
 }
 
 /** Das Ziel für einen alten Odoo-Pfad dieser Domain, oder `null`. */
-export function legacyRedirect(domain: string, pathname: string): string | null {
-  if (!LEGACY_DOMAIN.test(domain)) return null;
+export function legacyRedirect(
+  domain: string,
+  pathname: string,
+  enabled?: boolean,
+): string | null {
+  if (!isLegacyDomain(domain, enabled)) return null;
   const target = resolveWithLanguage(pathname);
   return typeof target === "string" ? target : null;
 }
 
 /** Gibt es diese alte Adresse ersatzlos nicht mehr (410)? */
-export function legacyGone(domain: string, pathname: string): boolean {
-  return LEGACY_DOMAIN.test(domain) && resolveWithLanguage(pathname) === GONE_MARK;
+export function legacyGone(domain: string, pathname: string, enabled?: boolean): boolean {
+  return isLegacyDomain(domain, enabled) && resolveWithLanguage(pathname) === GONE_MARK;
 }
 
 /**
@@ -215,8 +239,9 @@ export function legacyRedirectLocation(
   domain: string,
   pathname: string,
   search: string,
+  enabled?: boolean,
 ): string | null {
-  const target = legacyRedirect(domain, pathname);
+  const target = legacyRedirect(domain, pathname, enabled);
   if (!target) return null;
 
   const url = new URL(target, "https://x.invalid");
@@ -240,8 +265,9 @@ export function legacyAnswer(
   domain: string,
   pathname: string,
   search: string,
+  enabled?: boolean,
 ): LegacyAnswer | null {
-  const location = legacyRedirectLocation(domain, pathname, search);
+  const location = legacyRedirectLocation(domain, pathname, search, enabled);
   if (location) return { kind: "redirect", location };
-  return legacyGone(domain, pathname) ? { kind: "gone" } : null;
+  return legacyGone(domain, pathname, enabled) ? { kind: "gone" } : null;
 }

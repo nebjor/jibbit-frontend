@@ -70,3 +70,14 @@ describe("Googles Snippet (answer/7105655, 2026-10-05)", () => {
     expect(MERCHANT_WIDGET_OPTIONS.mobileBottomMargin).toBeGreaterThanOrEqual(80);
   });
 });
+
+describe("Schalter features.googleReviews", () => {
+  it("aus: Widget nie konfiguriert, auch wenn alles andere stimmt", () => {
+    expect(badgeConfigured(ok, false)).toBe(false);
+  });
+
+  it("an (Voreinstellung für jibbit): unverändert", () => {
+    expect(badgeConfigured(ok, true)).toBe(true);
+    expect(badgeConfigured(ok)).toBe(true);
+  });
+});

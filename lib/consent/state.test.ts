@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CONSENT_VERSION,
+  effectiveAge,
   isAnalyticsAllowed,
   overlayStep,
   parseAgeAnswer,
@@ -149,5 +150,24 @@ describe("overlayStep", () => {
   it("beides beantwortet: nichts mehr im Weg — egal wie die Wahl ausfiel", () => {
     expect(overlayStep("adult", granted)).toBe("none");
     expect(overlayStep("adult", denied)).toBe("none");
+  });
+});
+
+describe("Altersabfrage abschaltbar (shop.config.ts, features.ageGate)", () => {
+  const consent = { v: CONSENT_VERSION, analytics: true, ts: "" };
+
+  it("ageGate=false überspringt die Altersabfrage — auch ohne Antwort und bei «minor»", () => {
+    expect(overlayStep(null, null, false)).toBe("consent-banner");
+    expect(overlayStep("minor", null, false)).toBe("consent-banner");
+    expect(overlayStep(null, consent, false)).toBe("none");
+    expect(effectiveAge(null, false)).toBe("adult");
+  });
+
+  it("ageGate=true (jibbit) bleibt unverändert", () => {
+    expect(overlayStep(null, null, true)).toBe("age-gate");
+    expect(overlayStep("minor", consent, true)).toBe("age-gate");
+    expect(effectiveAge(null, true)).toBeNull();
+    // Voreinstellung = Schalter des Shops, und der ist für jibbit an.
+    expect(overlayStep(null, null)).toBe("age-gate");
   });
 });

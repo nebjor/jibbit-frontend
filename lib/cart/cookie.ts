@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { SHOP } from "@/shop.config";
 
 /**
  * WHERE THE CART LIVES NOW.
@@ -20,7 +21,7 @@ import { cookies } from "next/headers";
  * the rendering path (layout, pages) ever creates a cart.
  */
 
-const CART_COOKIE = "jibbit_cart_id";
+const CART_COOKIE = SHOP.cookies.cart;
 
 /** A year: long enough that an abandoned cart is still there on a return visit. */
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 365;

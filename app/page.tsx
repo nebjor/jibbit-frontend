@@ -12,7 +12,7 @@ import { ProduktWunsch } from "@/components/ProduktWunsch";
 import { HomeIntro } from "@/components/intro/HomeIntro";
 import { JsonLd } from "@/components/JsonLd";
 import { CategoryComingSoon } from "./CategoryComingSoon";
-import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
+import { FEATURES, PRICE_CLAIM, SHIPPING } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { breadcrumbJsonLd, graph, itemListJsonLd } from "@/lib/seo/jsonld";
 import { getTenantContext } from "@/lib/tenant/context";
@@ -81,7 +81,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           Altersabfrage/Cookie-Hinweis, SEO und Barrierefreiheit sind
           in components/intro/HomeIntro.tsx begründet; alle Zeiten
           stehen in lib/intro/timings.ts. */}
-      <HomeIntro />
+      {FEATURES.intro ? <HomeIntro /> : null}
       <Suspense key={activeCat?.handle} fallback={<PageLoading />}>
         <Catalog activeCat={activeCat} />
       </Suspense>

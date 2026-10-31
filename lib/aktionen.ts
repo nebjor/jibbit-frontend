@@ -1,3 +1,5 @@
+import { SHOP } from "@/shop.config";
+
 /**
  * Aktionsbanner: reine Hilfsfunktionen (kein Server-, kein Browser-Zugriff).
  *
@@ -152,7 +154,7 @@ export function formatRestzeit(rest: number): string {
 
 /** Schlüssel des «weggeklickt»-Merkers (sessionStorage): je Aktion (Code). */
 export function dismissKey(a: Pick<Aktion, "code">): string {
-  return `jibbit-aktionsbanner:${a.code}`;
+  return `${SHOP.id}-aktionsbanner:${a.code}`;
 }
 
 /**

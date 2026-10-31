@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { SHOP } from "@/shop.config";
 import { trackOrderCompleted } from "@/lib/analytics/client";
 
 /**
@@ -47,7 +48,7 @@ export function TrackOrderCompleted({
      * sie wird ohnehin nichts gesendet), und ein blockierter Speicher
      * (Privatmodus) darf das Ereignis nicht verhindern.
      */
-    const dedupeKey = `jibbit_ph_order_${orderId}`;
+    const dedupeKey = `${SHOP.id}_ph_order_${orderId}`;
     try {
       if (window.localStorage.getItem(dedupeKey)) return;
       window.localStorage.setItem(dedupeKey, "1");

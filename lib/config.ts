@@ -1,36 +1,42 @@
-/** Store-wide commercial + brand constants. Single place to change them. */
+import { SHOP } from "@/shop.config";
+import { themeColorOf } from "@/lib/theme";
+
+/**
+ * Store-wide commercial + brand constants.
+ *
+ * DIE WERTE STEHEN IN `shop.config.ts` (Repo-Wurzel, Anleitung:
+ * docs/shop-config.md). Diese Datei reicht sie unter den bisherigen Namen
+ * durch und trägt die Begründungen zu den einzelnen Konstanten — so bleiben
+ * alle Importe (`@/lib/config`) unverändert.
+ */
+export { SHOP };
 
 export const STORE = {
-  name: "jibbit",
-  domain: "jibbit.ch",
-  tagline: "Der erste gemeinschaftsorientierte Online Headshop der Schweiz.",
-  locale: "de-CH",
-  currency: "CHF",
+  name: SHOP.brand.name,
+  domain: SHOP.brand.domain,
+  tagline: SHOP.brand.tagline,
+  /** Zusatz im Seitentitel: «<name> — <titleSuffix>». */
+  titleSuffix: SHOP.brand.titleSuffix,
+  locale: SHOP.brand.locale,
+  currency: SHOP.brand.currency,
 } as const;
+
+/** Schalter je Shop (shop.config.ts, `features`). */
+export const FEATURES = SHOP.features;
 
 /**
  * Discount positioning, shop-wide instead of per price. No superlatives
  * ("günstigste der Schweiz", "Tiefstpreis-Garantie") without proof — UWG
  * Art. 3 Abs. 1 lit. e.
  */
-export const PRICE_CLAIM = {
-  short: "Dauertiefpreise",
-  full: "Dauertiefpreise · mit Mengenrabatt noch günstiger",
-} as const;
+export const PRICE_CLAIM = SHOP.priceClaim;
 
 /**
  * Versand — nur zur Anzeige, gerechnet wird im Backend. Muss mit den Optionen
  * des swiss-shipping-Providers übereinstimmen (medusa-config.ts: `price`,
  * `freeShippingThreshold`).
  */
-export const SHIPPING = {
-  /** Der eine Versandpreis jeder Bestellung, in CHF. */
-  rate: 4.5,
-  /** Was das Paketporto jibbit kostet — nur für «Wir teilen das Paketporto». */
-  postage: 9.0,
-  /** Bestellwert (CHF), ab dem der Versand gratis ist. */
-  freeThreshold: 69.0,
-} as const;
+export const SHIPPING = SHOP.shipping;
 
 /**
  * Payment methods offered, via zahls.ch (official plugin
@@ -38,18 +44,12 @@ export const SHIPPING = {
  * PROMISES. No invoice purchase — zahls.ch has no Powerpay;
  * Rechnungs-/Ratenkauf would be Klarna and needs the "Pay Plus" plan.
  */
-export const PAYMENT_METHODS = [
-  { id: "twint", label: "TWINT" },
-  { id: "card", label: "Kreditkarte (Visa/Mastercard)" },
-  { id: "postfinance", label: "PostFinance" },
-  { id: "apple-pay", label: "Apple Pay" },
-  { id: "google-pay", label: "Google Pay" },
-] as const;
+export const PAYMENT_METHODS = SHOP.paymentMethods;
 
 /**
  * Minimum age for purchase in Switzerland (tobacco-adjacent accessories).
  */
-export const MIN_AGE = 18;
+export const MIN_AGE = SHOP.minAge;
 
 /**
  * Anbieterkennzeichnung — dieselben Angaben, die app/impressum/page.tsx für
@@ -62,18 +62,7 @@ export const MIN_AGE = 18;
  * offenen Punkten, kein Datensatz. Wer sie später auf diese Konstanten
  * umstellt, löst das Problem richtig.
  */
-export const BUSINESS = {
-  legalName: "Neber Import",
-  owner: "Joris Neber",
-  street: "Unterwegli 1",
-  postalCode: "8404",
-  city: "Winterthur",
-  /** ISO-3166-1 alpha-2. Steht auch in jeder Versand- und Rückgabeangabe. */
-  countryCode: "CH",
-  email: "info@jibbit.ch",
-  /** E.164 — schema.org will eine international wählbare Nummer. */
-  telephone: "+41764140890",
-} as const;
+export const BUSINESS = SHOP.business;
 
 /**
  * Abholung im Laden («Abholung im Laden»): Onlinebestellungen können im
@@ -91,28 +80,7 @@ export const BUSINESS = {
  * Option (`metadata.pickup`, `data.pickup`, `type.code = "pickup"`) — siehe
  * lib/checkout/pickup.ts.
  */
-export const PICKUP = {
-  enabled: true,
-  label: "Abholung im Laden",
-  address: {
-    name: "jibbit",
-    street: BUSINESS.street,
-    postalCode: BUSINESS.postalCode,
-    city: BUSINESS.city,
-    countryCode: BUSINESS.countryCode,
-  },
-  /**
-   * Öffnungszeiten als Blöcke; `days` in schema.org-Reihenfolge Mo–So mit
-   * deutschen Kürzeln. Formatiert über `formatOpeningHours` in
-   * lib/checkout/pickup.ts. `null` hiesse: Zeiten unbekannt — dann steht
-   * «nach Vereinbarung» und das Schema trägt keine Zeiten.
-   */
-  hours: [{ days: ["Mo", "Di", "Mi", "Do", "Fr", "Sa"], opens: "09:00", closes: "17:00" }] as
-    | readonly { days: readonly string[]; opens: string; closes: string }[]
-    | null,
-  /** Was die Kundin nach der Bestellung erwartet. */
-  note: "Wir melden uns per E-Mail, sobald deine Bestellung abholbereit ist.",
-} as const;
+export const PICKUP = SHOP.pickup;
 
 /**
  * Lieferfristen in Werktagen, für `OfferShippingDetails.deliveryTime`.
@@ -129,14 +97,7 @@ export const PICKUP = {
  * Die Zahlen müssen mit dem übereinstimmen, was /service/versand schreibt —
  * Google gleicht das Markup gegen die Seite ab.
  */
-export const DELIVERY = {
-  handlingDaysMin: 1,
-  handlingDaysMax: 3,
-  /** A-Post: 1–2 Werktage. */
-  transitDaysMin: 1,
-  /** B-Post: 2–3 Werktage. */
-  transitDaysMax: 3,
-} as const;
+export const DELIVERY = SHOP.delivery;
 
 /**
  * Rückgabe, maschinenlesbar. Menschenlesbar: /service/rueckgabe.
@@ -148,18 +109,13 @@ export const DELIVERY = {
  * ist kein Rückgabefenster und darf auch nicht als eines ausgezeichnet
  * werden.
  */
-export const RETURNS = {
-  category: "MerchantReturnNotPermitted",
-  /** Sachgewährleistung nach OR, in Jahren. Nur Anzeige/Doku. */
-  warrantyYears: 2,
-} as const;
+export const RETURNS = SHOP.returns;
 
 /**
- * Browser theme colour (address bar on mobile).
+ * Browser theme colour (address bar on mobile), Voreinstellung des Shops.
  *
- * ⚠️ This must mirror `--c-ground` in app/tokens.css. It cannot read the CSS
- * custom property, because Next emits it into <meta name="theme-color"> at build
- * time. When you swap the colorway, update this value too — it is the only
- * colour literal outside tokens.css.
+ * Kommt aus `SHOP.theme` (`themeColor`, sonst `tokens["--c-ground"]`, sonst
+ * der Standard aus app/tokens.css) — siehe lib/theme.ts. Ein Mandant
+ * (TenantConfig.theme.themeColor) hat Vorrang.
  */
-export const THEME_COLOR = "#F6F5F3";
+export const THEME_COLOR = themeColorOf(SHOP.theme);
