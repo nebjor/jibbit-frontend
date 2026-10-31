@@ -1,4 +1,4 @@
-import { BUSINESS, PAYMENT_METHODS, SHIPPING } from "./config";
+import { BUSINESS, FEATURES, PAYMENT_METHODS, SHIPPING, SHOP } from "./config";
 import { formatPrice } from "./format";
 
 /**
@@ -47,12 +47,15 @@ import { formatPrice } from "./format";
  * Google-Unternehmensprofil «Jibbit .ch - Headshop» — nur Identität und
  * Link, KEINE Zahlen (die kommen live, siehe oben).
  */
-export const GOOGLE_PROFIL = {
-  name: "Jibbit .ch - Headshop",
-  /** Suchtext für scripts/google-place-id.mjs (Places Text Search). */
-  textQuery: `Jibbit ${BUSINESS.street} ${BUSINESS.city}`,
-  url: "https://www.google.com/maps/place/Jibbit+.ch+-+Headshop/@47.5034579,8.7507617,17z/data=!4m6!3m5!1s0x479a99b97f037e55:0xb2d9dd525e314c6c!8m2!3d47.5034579!4d8.7507617!16s%2Fg%2F11p1f3mtw4",
-} as const;
+export const GOOGLE_PROFIL = SHOP.googleProfile ?? {
+  name: SHOP.brand.name,
+  textQuery: `${SHOP.brand.name} ${BUSINESS.street} ${BUSINESS.city}`,
+  url: "",
+};
+
+/** Bewertungszeile nur mit eingeschalteter Integration UND Unternehmensprofil. */
+export const GOOGLE_PROFIL_ACTIVE: boolean =
+  FEATURES.googleReviews && SHOP.googleProfile !== null;
 
 /** Bewertung des Unternehmensprofils, wie sie gerendert wird. */
 export interface GoogleProfil {

@@ -1,3 +1,5 @@
+import { SHOP } from "@/shop.config";
+
 /* =========================================================================
    INTRO-CHOREOGRAFIE — ALLE ZEITEN STEHEN HIER UND NUR HIER.
    =========================================================================
@@ -48,7 +50,7 @@ export const INTRO_TOTAL_MS = INTRO_PHASE_ORDER.reduce(
 );
 
 /** sessionStorage-Schlüssel: Intro nur beim ERSTEN Besuch pro Sitzung. */
-export const INTRO_SESSION_KEY = "jibbit-intro-seen";
+export const INTRO_SESSION_KEY = `${SHOP.id}-intro-seen`;
 
 /**
  * Notbremse für den Vor-Hydrations-Deckel (Inline-Script in HomeIntro.tsx):

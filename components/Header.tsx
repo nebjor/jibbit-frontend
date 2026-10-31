@@ -7,7 +7,7 @@ import { CategoryNav } from "./CategoryNav";
 import { SearchBar } from "./search/SearchBar";
 import { AktionsBannerSlot } from "./AktionsBannerSlot";
 import { getCategories } from "@/lib/data";
-import { PRICE_CLAIM, SHIPPING } from "@/lib/config";
+import { PRICE_CLAIM, SHIPPING, STORE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import styles from "./Header.module.css";
 
@@ -66,7 +66,7 @@ export async function Header() {
                Position zur LAUFZEIT (FLIP), intro-global.css versteckt
                das Logo hier, bis das Intro-Logo gelandet ist. */
             data-intro-logo-target
-            aria-label="jibbit — Startseite"
+            aria-label={`${STORE.name} — Startseite`}
           >
             <Logo size="md" />
           </Link>

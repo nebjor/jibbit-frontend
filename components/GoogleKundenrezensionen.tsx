@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
-import { DELIVERY, STORE } from "@/lib/config";
+import { DELIVERY, FEATURES, STORE } from "@/lib/config";
 import { isAnalyticsAllowed, onConsentChange } from "@/lib/consent/client";
 import { isAnalyticsAllowed as decideConsent } from "@/lib/consent/state";
 import {
@@ -92,6 +92,7 @@ export function GoogleKundenrezensionen({
 
   // Wächter 1, 2 und 4 brauchen kein DOM — sie entscheiden synchron.
   const eligible =
+    FEATURES.googleReviews &&
     merchantId !== null &&
     domain === STORE.domain &&
     kundenrezensionenPayload(order, { merchantId, delivery: DELIVERY }) !==

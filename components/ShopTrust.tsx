@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getGoogleProfil } from "@/lib/google-profil";
-import { googleTrustItem, TRUST_FACTS, type TrustIcon } from "@/lib/trust";
+import { GOOGLE_PROFIL_ACTIVE, googleTrustItem, TRUST_FACTS, type TrustIcon } from "@/lib/trust";
 import styles from "./ShopTrust.module.css";
 
 /**
@@ -25,11 +25,13 @@ import styles from "./ShopTrust.module.css";
  * gefüllten — die Grafik entspricht der Zahl, nicht einer Rundung.
  */
 export async function ShopTrust() {
-  const profil = await getGoogleProfil();
-  const google = googleTrustItem(profil);
+  // Ohne Google-Integration (shop.config.ts) nur die Fakten, kein Abruf.
+  const profil = GOOGLE_PROFIL_ACTIVE ? await getGoogleProfil() : null;
+  const google = profil ? googleTrustItem(profil) : null;
 
   return (
-    <div className={styles.row} data-trust-source={profil.source}>
+    <div className={styles.row} data-trust-source={profil?.source}>
+      {google ? (
       <a
         href={google.href}
         className={styles.google}
@@ -45,6 +47,7 @@ export async function ShopTrust() {
         )}
         <span className={styles.googleText}>{google.text}</span>
       </a>
+      ) : null}
 
       <ul className={styles.facts} aria-label="Unsere Versprechen">
         {TRUST_FACTS.map((fact) => (

@@ -1,4 +1,4 @@
-import { STORE } from "@/lib/config";
+import { FEATURES, STORE } from "@/lib/config";
 
 /**
  * Google Kundenrezensionen — das STORE WIDGET (ehemals «Badge»), reine
@@ -72,8 +72,12 @@ export interface BadgeGateInput extends BadgeConfigInput {
  * Wächter 1–3 — Schalter, Merchant-ID, eigene Domain. Entscheiden ohne DOM
  * und ohne Cookie, also schon beim Server-Rendern.
  */
-export function badgeConfigured(input: BadgeConfigInput): boolean {
+export function badgeConfigured(
+  input: BadgeConfigInput,
+  googleReviews: boolean = FEATURES.googleReviews,
+): boolean {
   return (
+    googleReviews &&
     input.enabled &&
     input.merchantId !== null &&
     input.domain === STORE.domain

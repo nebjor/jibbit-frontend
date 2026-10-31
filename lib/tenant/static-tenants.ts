@@ -2,6 +2,7 @@ import "server-only";
 
 import type { TenantConfig } from "./types";
 import { normalizeHost } from "./resolve-host";
+import { THEME_COLOR } from "@/lib/config";
 
 /**
  * Operator-provided tenant table, read from the `STATIC_TENANTS` env var.
@@ -94,7 +95,7 @@ export function parseStaticTenants(raw: string | undefined): TenantIndex {
       theme: {
         storeName: entry.theme.storeName,
         domain: entry.theme.domain ?? normalizeHost(entry.host!),
-        themeColor: entry.theme.themeColor ?? "#FFFFFF",
+        themeColor: entry.theme.themeColor ?? THEME_COLOR,
       },
     };
 

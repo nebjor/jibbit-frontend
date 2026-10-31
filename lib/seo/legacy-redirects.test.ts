@@ -554,3 +554,20 @@ describe("zusammengelegte Kategorie «Filter» -> «Filter & Tips»", () => {
     }
   });
 });
+
+describe("Schalter features.legacyOdooRedirects", () => {
+  it("aus: keine Altadress-Antwort, keine Kategorie-Umleitung", () => {
+    expect(legacyAnswer("jibbit.ch", "/shop/cart", "", false)).toBeNull();
+    expect(legacyAnswer("jibbit.ch", "/contactus", "", false)).toBeNull();
+    expect(legacyGone("jibbit.ch", "/blog", false)).toBe(false);
+    expect(categoryRedirectLocation("/", "?kategorie=filter", false)).toBeNull();
+  });
+
+  it("an (Voreinstellung für jibbit): wie bisher", () => {
+    expect(legacyAnswer("jibbit.ch", "/shop/cart", "")).toEqual({ kind: "gone" });
+    expect(legacyAnswer("jibbit.ch", "/shop/cart", "", true)).toEqual({ kind: "gone" });
+    expect(legacyAnswer("www.jibbit.ch", "/contactus", "")?.kind).toBe("redirect");
+    expect(legacyAnswer("anderer-shop.ch", "/shop/cart", "")).toBeNull();
+    expect(legacyAnswer("notjibbit.ch", "/shop/cart", "")).toBeNull();
+  });
+});
