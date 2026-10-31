@@ -138,15 +138,24 @@ test.describe("Aktion im älteren Warenkorb", () => {
     // Die Kasse verlangt ein Konto; die Anmeldung legt noch keinen Warenkorb an.
     await registerAccount(page, uniqueEmail());
     const backend = `http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? 9100}`;
-    await request.post(`${backend}/__aktion-veraltet`);
 
     await page.goto(`/products/${SHOP.papers.handle}`);
     await page.getByRole("button", { name: new RegExp(SHOP.papers.tierLabel) }).click();
     await page.getByRole("button", { name: /In den Warenkorb/ }).click();
 
-    // Direkt nach dem Hinzufügen: noch der alte Stand ohne Aktion.
     const drawer = page.getByRole("dialog", { name: "Warenkorb" });
     await expect(drawer).toContainText(`${SHOP.papers.tierQuantity} Artikel`);
+
+    // Genau dieser Warenkorb gilt jetzt als vor der Aktion entstanden (Mock, pro
+    // Warenkorb: ein globaler «nächster Warenkorb»-Zähler würde bei parallelen
+    // Tests und beim Retry von einem fremden Warenkorb verbraucht). Erst nach dem
+    // Hinzufügen, das den Warenkorb selbst schon liest und den Marker setzt.
+    const cartId = (await page.context().cookies()).find((c) => c.name === "jibbit_cart_id")?.value;
+    expect(cartId).toBeTruthy();
+    const markiert = await request.post(`${backend}/__aktion-veraltet`, { data: { cartId } });
+    expect(markiert.ok()).toBe(true);
+
+    // Stand ohne Aktion.
     await expect(drawer).not.toContainText("Aktionsrabatt");
 
     // Wer später zurückkommt, sieht die Aktion: 38.40 - 20 % = 30.72, + 4.50 Versand.
@@ -160,11 +169,10 @@ test.describe("Aktion im älteren Warenkorb", () => {
     // Die Kasse zeigt dieselbe Summe.
     await drawer.getByRole("link", { name: "Zur Kasse" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Kasse" })).toBeVisible();
-    // Die Schublade bleibt bis zu 400 ms im DOM (Austritts-Animation,
-    // usePresence) und trägt dieselbe Zeile; erst warten, dann in der Kasse suchen.
-    await expect(drawer).toBeHidden();
-    const uebersicht = page.getByLabel("Bestellübersicht");
-    await expect(uebersicht.getByText("Aktionsrabatt (bereits abgezogen)")).toBeVisible();
-    await expect(uebersicht.getByText(chf("30.72")).first()).toBeVisible();
+    const summary = page.getByLabel("Bestellübersicht");
+    await expect(summary.getByText("Aktionsrabatt (bereits abgezogen)")).toBeVisible();
+    await expect(summary.getByText(chf("30.72")).first()).toBeVisible();
+    // Die Schublade ist mit dem Seitenwechsel weg, nicht erst nach der Animation.
+    await expect(page.getByRole("dialog", { name: "Warenkorb" })).toHaveCount(0);
   });
 });
