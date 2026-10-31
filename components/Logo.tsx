@@ -1,3 +1,4 @@
+import { STORE } from "@/lib/config";
 import styles from "./Logo.module.css";
 
 /**
@@ -23,7 +24,7 @@ export function Logo({
       data-placeholder="graffiti-tag-svg"
       aria-hidden="true"
     >
-      jibbit
+      {STORE.name}
     </span>
   );
 }

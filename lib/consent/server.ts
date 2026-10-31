@@ -6,6 +6,7 @@ import {
   CONSENT_COOKIE,
   parseAgeAnswer,
   parseConsent,
+  effectiveAge,
   type AgeAnswer,
   type ConsentDecision,
 } from "./state";
@@ -30,7 +31,7 @@ export async function readConsentCookies(): Promise<{
 }> {
   const store = await cookies();
   return {
-    age: parseAgeAnswer(store.get(AGE_COOKIE)?.value),
+    age: effectiveAge(parseAgeAnswer(store.get(AGE_COOKIE)?.value)),
     consent: parseConsent(store.get(CONSENT_COOKIE)?.value),
   };
 }

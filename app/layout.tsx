@@ -7,7 +7,9 @@ import { Footer } from "@/components/Footer";
 import { ConsentGate } from "@/components/consent/ConsentGate";
 import { AnalyticsGate } from "@/components/analytics/AnalyticsGate";
 import { GoogleKundenrezensionenBadge } from "@/components/GoogleKundenrezensionenBadge";
-import { STORE } from "@/lib/config";
+import { STORE, FEATURES } from "@/lib/config";
+import { SHOP } from "@/shop.config";
+import { themeCss } from "@/lib/theme";
 import { getTenantContext } from "@/lib/tenant/context";
 import { readCartState } from "@/lib/cart/server";
 import { readConsentCookies } from "@/lib/consent/server";
@@ -43,15 +45,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(`https://${domain}`),
     title: {
-      default: `${storeName} — Online Headshop Schweiz`,
+      default: `${storeName} — ${STORE.titleSuffix}`,
       template: `%s | ${storeName}`,
     },
     description: STORE.tagline,
     openGraph: {
       type: "website",
-      locale: "de_CH",
+      locale: STORE.locale.replace("-", "_"),
       siteName: storeName,
-      title: `${storeName} — Online Headshop Schweiz`,
+      title: `${storeName} — ${STORE.titleSuffix}`,
       description: STORE.tagline,
     },
     // Zur LAUFZEIT aus SITE_INDEXABLE: Staging bekommt `noindex, nofollow`,
@@ -109,6 +111,9 @@ export default async function RootLayout({
     webSiteJsonLd(tenant.theme),
   );
 
+  // Shop-spezifische Design-Tokens (shop.config.ts, `theme`); null = Standard.
+  const tokenCss = themeCss(SHOP.theme);
+
   // PostHog: Schlüssel/Host zur LAUFZEIT aus der Umgebung gelesen und als
   // Props zum Client gereicht — bewusst kein NEXT_PUBLIC_ (Begründung:
   // lib/analytics/server.ts). GELADEN wird trotzdem erst nach erteilter
@@ -118,11 +123,16 @@ export default async function RootLayout({
   // Google Store Widget («Badge»): Schalter und Merchant-ID ebenfalls zur
   // Laufzeit aus der Umgebung; ob und wann geladen wird, entscheidet die
   // Komponente (Domain, Einwilligung) — components/GoogleKundenrezensionenBadge.tsx.
-  const badgeEnabled = isKundenrezensionenBadgeEnabled();
+  const badgeEnabled = FEATURES.googleReviews && isKundenrezensionenBadgeEnabled();
   const merchantId = badgeEnabled ? getKundenrezensionenMerchantId() : null;
 
   return (
-    <html lang="de-CH">
+    <html lang={STORE.locale}>
+      {tokenCss ? (
+        <head>
+          <style dangerouslySetInnerHTML={{ __html: tokenCss }} />
+        </head>
+      ) : null}
       <body>
         <JsonLd data={siteJsonLd} />
         <CartProvider initialCart={initialCart}>

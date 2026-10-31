@@ -24,6 +24,7 @@
  * Kein `Domain`-Attribut (Mandantenisolation, siehe lib/consent/state.ts).
  */
 
+import { SHOP } from "@/shop.config";
 import {
   AGE_COOKIE,
   AGE_COOKIE_MAX_AGE,
@@ -40,9 +41,9 @@ import {
 } from "./state";
 
 /** Einwilligung erteilt/geändert/widerrufen — Detail: ConsentDecision|null. */
-export const CONSENT_CHANGED_EVENT = "jibbit:consent-changed";
+export const CONSENT_CHANGED_EVENT = `${SHOP.id}:consent-changed`;
 /** Der Footer-Link «Cookie-Einstellungen» will den Dialog (wieder) öffnen. */
-export const CONSENT_OPEN_EVENT = "jibbit:consent-open";
+export const CONSENT_OPEN_EVENT = `${SHOP.id}:consent-open`;
 /**
  * Altersantwort gegeben/zurückgesetzt — Detail: AgeAnswer. Reine
  * ZUSTANDSERWEITERUNG für Mithörer ausserhalb des ConsentGate (derzeit
@@ -50,7 +51,7 @@ export const CONSENT_OPEN_EVENT = "jibbit:consent-open";
  * bestätigtem «adult» starten). Am Verhalten der Einwilligung selbst
  * ändert dieser Kanal nichts — er meldet nur, was ohnehin geschieht.
  */
-export const AGE_CHANGED_EVENT = "jibbit:age-changed";
+export const AGE_CHANGED_EVENT = `${SHOP.id}:age-changed`;
 
 // ---------------------------------------------------------------------------
 // Cookies lesen/schreiben

@@ -1,3 +1,5 @@
+import { SHOP } from "@/shop.config";
+
 /**
  * ALTERSABFRAGE & COOKIE-EINWILLIGUNG — reine Zustandslogik.
  *
@@ -27,13 +29,28 @@
  *    (`isAnalyticsAllowed(null) === false`). Zwingend Notwendiges
  *    (Warenkorb, Anmeldung) läuft immer und braucht keine Einwilligung.
  *
+ * NAMEN: kommen aus `shop.config.ts` (`cookies`); für jibbit bleiben sie
+ * `jibbit_alterscheck` und `jibbit_cookie_consent`, damit bestehende Antworten
+ * gültig bleiben.
+ *
+ * ALTERSABFRAGE AUS (`features.ageGate = false`): dann gibt es kein Cookie und
+ * kein Overlay; `effectiveAge` behandelt jede Antwort als «adult».
+ *
  * MULTI-TENANCY: Beide Cookies werden OHNE `Domain`-Attribut gesetzt —
  * der Browser bindet sie an genau den Host, der sie gesetzt hat (gleiche
  * Begründung wie beim Warenkorb-Cookie, siehe lib/cart/cookie.ts).
  */
 
-export const AGE_COOKIE = "jibbit_alterscheck";
-export const CONSENT_COOKIE = "jibbit_cookie_consent";
+export const AGE_COOKIE = SHOP.cookies.age;
+export const CONSENT_COOKIE = SHOP.cookies.consent;
+
+/** Altersabfrage aktiv? Voreinstellung: Schalter des Shops. */
+export function effectiveAge(
+  age: AgeAnswer,
+  ageGate: boolean = SHOP.features.ageGate,
+): AgeAnswer {
+  return ageGate ? age : "adult";
+}
 
 /**
  * Version des Einwilligungsformats. Wird sie erhöht (z. B. weil neue
@@ -156,7 +173,9 @@ export type OverlayStep = "age-gate" | "consent-banner" | "none";
 export function overlayStep(
   age: AgeAnswer,
   consent: ConsentDecision | null,
+  ageGate: boolean = SHOP.features.ageGate,
 ): OverlayStep {
+  age = effectiveAge(age, ageGate);
   if (age === null || age === "minor") return "age-gate";
   if (consent === null) return "consent-banner";
   return "none";

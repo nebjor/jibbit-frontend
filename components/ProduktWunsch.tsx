@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from "react"
 import { useFormStatus } from "react-dom"
+import { SHOP } from "@/shop.config"
 import { produktwunschSenden } from "@/lib/produktwunsch/actions"
 import { WUNSCH_LEER, type WunschState } from "@/lib/produktwunsch/types"
 import { EMAIL_MAX, MELDUNG_ZU_OFT, WUNSCH_MAX, darfSenden } from "@/lib/produktwunsch/validate"
@@ -19,7 +20,7 @@ import styles from "./ProduktWunsch.module.css"
  * das Backend.
  */
 
-const SPEICHER_KEY = "jibbit-produktwunsch-zeit"
+const SPEICHER_KEY = `${SHOP.id}-produktwunsch-zeit`
 
 function letzterVersand(): number | null {
   try {
