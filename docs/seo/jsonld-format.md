@@ -610,7 +610,7 @@ Anbieterangaben (Adresse, Telefon …) hier gekürzt.
   `https://schema.org/ParcelService` und `https://schema.org/OnSitePickup` (schema.org `DeliveryMethod`;
   Google ignoriert es, andere Leser nicht), und die Organisation ist auf jibbits Domain auch ein
   `Store` (LocalBusiness) mit `openingHoursSpecification` aus `PICKUP.hours` (`lib/config.ts`) —
-  dieselben Zeiten wie im Google-Unternehmensprofil «Jibbit .ch - Headshop» (Mo–Sa 09:00–17:00). Ohne
+  dieselben Zeiten wie im Google-Unternehmensprofil «Jibbit .ch - Headshop» (Mo–Fr 09:00–17:00). Ohne
   Zeiten (`PICKUP.hours = null`) fällt der `Store`-Typ weg: ein LocalBusiness ohne Zeiten ist ein halber
   Eintrag. Kein `hasMap`/`sameAs` zum Profil: die Place-ID/CID war nicht sicher bekannt — nachtragen,
   sobald die Maps-URL vorliegt.

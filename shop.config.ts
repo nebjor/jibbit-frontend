@@ -60,7 +60,7 @@ export const SHOP = defineShopConfig({
       city: business.city,
       countryCode: business.countryCode,
     },
-    hours: [{ days: ["Mo", "Di", "Mi", "Do", "Fr", "Sa"], opens: "09:00", closes: "17:00" }],
+    hours: [{ days: ["Mo", "Di", "Mi", "Do", "Fr"], opens: "09:00", closes: "17:00" }],
     note: "Wir melden uns per E-Mail, sobald deine Bestellung abholbereit ist.",
   },
 
