@@ -63,8 +63,8 @@ describe("Öffnungszeiten", () => {
   });
 
   it("die konfigurierten Zeiten sind die des Google-Unternehmensprofils", () => {
-    expect(formatOpeningHours(PICKUP.hours)).toBe("Mo–Sa 09:00–17:00");
-    expect(pickupHoursText()).toBe("Abholzeiten: Mo–Sa 09:00–17:00");
+    expect(formatOpeningHours(PICKUP.hours)).toBe("Mo–Fr 09:00–17:00");
+    expect(pickupHoursText()).toBe("Abholzeiten: Mo–Fr 09:00–17:00");
   });
 
   it("ohne Zeiten: leer bzw. «nach Vereinbarung», kein Schema", () => {
@@ -77,7 +77,7 @@ describe("Öffnungszeiten", () => {
     expect(openingHoursSpecification(PICKUP.hours)).toEqual([
       {
         "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
         opens: "09:00",
         closes: "17:00",
       },

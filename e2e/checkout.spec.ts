@@ -128,7 +128,7 @@ test("Kasse: Abholung im Laden — nur Name und Telefon, CHF 0.00, kein Gratisve
   await expect(page.getByLabel(/^PLZ/)).toHaveCount(0);
   await expect(page.getByTestId("pickup-address")).toContainText("Unterwegli 1");
   await expect(page.getByTestId("pickup-address")).toContainText("8404 Winterthur");
-  await expect(page.getByTestId("pickup-address")).toContainText("Mo–Sa 09:00–17:00");
+  await expect(page.getByTestId("pickup-address")).toContainText("Mo–Fr 09:00–17:00");
 
   // Ohne Telefon geht es nicht weiter.
   await page.getByLabel(/^E-Mail/).fill(email);

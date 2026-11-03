@@ -112,7 +112,7 @@ test("Abholung im Laden: zeigt Abholort und Zeiten statt einer Lieferadresse", a
   await expect(info).toContainText("Abholung im Laden");
   await expect(info).toContainText("Unterwegli 1");
   await expect(info).toContainText("8404 Winterthur");
-  await expect(info).toContainText("Mo–Sa 09:00–17:00");
+  await expect(info).toContainText("Mo–Fr 09:00–17:00");
   await expect(page.getByRole("heading", { name: "Lieferadresse" })).toHaveCount(0);
   // Kein Porto: die Zeile heisst «Abholung» und kostet CHF 0.00.
   await expect(page.getByText("Abholung", { exact: true })).toBeVisible();
