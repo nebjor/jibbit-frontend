@@ -25,7 +25,7 @@ const FIXTURE_TEXT = "4.8 bei Google · 27 Bewertungen";
 test("Shop-Kopf: Sterne, Zahl und Link aufs Google-Profil — unter dem Titel", async ({ page }) => {
   await page.goto("/");
 
-  const head = page.locator("header").filter({ has: page.getByRole("heading", { level: 1, name: "Shop" }) });
+  const head = page.locator("header").filter({ has: page.getByRole("heading", { level: 1, name: "Online Headshop Schweiz" }) });
   const google = head.locator("[data-trust='google']");
   await expect(google).toBeVisible();
   await expect(google).toHaveText(FIXTURE_TEXT);
@@ -57,8 +57,8 @@ test("Shop-Kopf: die drei Fakten daneben, intern verlinkt", async ({ page }) => 
 });
 
 test("auch auf Kategorieseite und Suche; Promo-Streifen im Header bleibt", async ({ page }) => {
-  await page.goto("/?kategorie=papers");
-  await expect(page.getByRole("heading", { level: 1, name: "Papers" })).toBeVisible();
+  await page.goto("/kategorie/papers");
+  await expect(page.getByRole("heading", { level: 1, name: "Papers kaufen in der Schweiz" })).toBeVisible();
   await expect(page.locator("[data-trust='google']")).toHaveText(FIXTURE_TEXT);
 
   await page.goto("/suche?q=papers");

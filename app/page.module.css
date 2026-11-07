@@ -94,3 +94,80 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* Kategorie-Links über dem Raster: mobil drei schmale Kacheln in einer Reihe,
+   ab 640px Platz für mehr Text. Bewusst niedrig, damit die Ware im ersten
+   Bildschirm bleibt. */
+.cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.cat {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--s-1) var(--s-2);
+  border: var(--border-w) solid var(--c-ink);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.cat:hover {
+  background: var(--c-ink);
+  color: var(--c-ground);
+}
+
+/* Text unter dem Raster. */
+.about {
+  margin-top: var(--s-8);
+  padding-top: var(--s-6);
+  border-top: var(--border-w) solid var(--c-line);
+  max-width: 72ch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.about h2 {
+  font-size: clamp(20px, 3vw, 26px);
+}
+
+.about h3 {
+  font-size: 16px;
+  margin-top: var(--s-2);
+}
+
+.about p {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.about a {
+  text-decoration: underline;
+}
+
+.best {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: 15px;
+}
+
+.best a {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}

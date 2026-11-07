@@ -31,8 +31,19 @@ test.describe("Adressen", () => {
 
     expect(response.status()).toBe(301);
     const target = new URL(response.headers().location);
-    expect(target.pathname).toBe("/");
-    expect(target.search).toBe("?kategorie=filter-tips");
+    expect(target.pathname).toBe("/kategorie/filter-tips");
+    expect(target.search).toBe("");
+  });
+
+  test("Die alte Kategorieadresse /?kategorie=x leitet dauerhaft auf /kategorie/x", async ({
+    request,
+  }) => {
+    const response = await request.get("/?kategorie=papers&utm_source=nl", { maxRedirects: 0 });
+
+    expect(response.status()).toBe(301);
+    const target = new URL(response.headers().location);
+    expect(target.pathname).toBe("/kategorie/papers");
+    expect(target.search).toBe("?utm_source=nl");
   });
 
   test("Eine alte Odoo-Produktadresse leitet auf das heutige Produkt", async ({

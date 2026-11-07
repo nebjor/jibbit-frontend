@@ -18,7 +18,7 @@ test.describe("Erstbesuch", () => {
     await page.getByRole("button", { name: "Nur notwendige" }).click();
     await expect(banner).toBeHidden();
 
-    await expect(page.getByRole("heading", { level: 1, name: "Shop" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Online Headshop Schweiz" })).toBeVisible();
   });
 
   test("«Nein» sperrt den Shop, statt ihn freizugeben", async ({ page }) => {

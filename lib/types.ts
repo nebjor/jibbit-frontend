@@ -22,6 +22,11 @@ export interface CategoryView {
   /** Display name, de-CH */
   name: string;
   description: string;
+  /**
+   * Freie Felder der Medusa-Kategorie (`metadata`). Daraus liest
+   * lib/content/kategorien.ts die SEO-Texte (`seo_title`, `seo_intro` …).
+   */
+  metadata?: Record<string, unknown>;
 }
 
 /**

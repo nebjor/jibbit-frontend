@@ -1,4 +1,5 @@
 import { permanentRedirect } from "next/navigation";
+import { categoryPath } from "@/lib/seo/category-url";
 
 /**
  * /shop IST UMGEZOGEN: der Katalog liegt jetzt direkt auf der Startseite
@@ -10,8 +11,8 @@ import { permanentRedirect } from "next/navigation";
  * Bewusst als Seiten-Umleitung statt in next.config oder proxy.ts gelöst:
  * Domain- und Mandantenauflösung bleiben unangetastet, und die Umleitung
  * wirkt auf jedem Host gleich. Der Query-String zieht vollständig mit
- * (/shop?kategorie=x wird zu /?kategorie=x), damit alte Kategorielinks
- * weiter auf der gefilterten Ansicht landen.
+ * (/shop?kategorie=x wird zu /kategorie/x), damit alte Kategorielinks
+ * weiter auf der Kategorieseite landen.
  */
 export default async function ShopRedirect({
   searchParams,
@@ -31,5 +32,12 @@ export default async function ShopRedirect({
   }
 
   const query = qs.toString();
+  // Kategorieadresse (/shop?kategorie=x) gleich auf die Kategorieseite — ein Sprung.
+  const kategorie = qs.get("kategorie");
+  if (kategorie) {
+    qs.delete("kategorie");
+    const rest = qs.toString();
+    permanentRedirect(categoryPath(kategorie) + (rest ? `?${rest}` : ""));
+  }
   permanentRedirect(query ? `/?${query}` : "/");
 }

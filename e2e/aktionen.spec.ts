@@ -12,7 +12,7 @@ import { test, expect, SHOP, chf, registerAccount, uniqueEmail } from "./fixture
  * hier mit vorgestellter Uhr geprüft.
  */
 
-const KATEGORIE = "/?kategorie=papers";
+const KATEGORIE = "/kategorie/papers";
 
 test("Banner zeigt Aktion und Restzeit", async ({ page }) => {
   await page.goto(KATEGORIE);
@@ -58,7 +58,7 @@ test("Wegklicken blendet den Banner für die Sitzung aus", async ({ page }) => {
 
   // Neu laden und andere Seite: bleibt weg (sessionStorage).
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "Papers" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Papers kaufen in der Schweiz" })).toBeVisible();
   await expect(banner).toBeHidden();
   await page.goto(`/products/${SHOP.papers.handle}`);
   await expect(page.getByRole("heading", { level: 1, name: SHOP.papers.title })).toBeVisible();
@@ -89,7 +89,7 @@ test.describe("Hero auf der Startseite", () => {
     await expect(page.getByRole("region", { name: "Aktion" })).toHaveCount(1);
     // Der Hero steht über der Überschrift «Shop».
     const heroBox = await hero.boundingBox();
-    const h1Box = await page.getByRole("heading", { level: 1, name: "Shop" }).boundingBox();
+    const h1Box = await page.getByRole("heading", { level: 1, name: "Online Headshop Schweiz" }).boundingBox();
     expect(heroBox!.y).toBeLessThan(h1Box!.y);
   });
 

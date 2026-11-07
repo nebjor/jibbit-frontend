@@ -61,3 +61,19 @@ describe("activeCategory", () => {
     expect(activeCategory("/shop", "filter", HANDLES)).toBeNull();
   });
 });
+
+describe("activeCategory — Kategoriepfad /kategorie/<handle>", () => {
+  it("markiert die Kategorie aus dem Pfad, genau einen Eintrag", () => {
+    expect(activeCategory("/kategorie/filter-tips", null, HANDLES)).toBe("filter-tips");
+    expect(activeEntries("/kategorie/filter-tips", null)).toEqual(["filter-tips"]);
+    expect(activeEntries("/kategorie/filter", null)).toEqual(["filter"]);
+  });
+
+  it("dekodiert Sonderzeichen im Handle", () => {
+    expect(activeCategory("/kategorie/a%26b", null, ["a&b"])).toBe("a&b");
+  });
+
+  it("markiert bei unbekanntem Handle nichts", () => {
+    expect(activeCategory("/kategorie/gibts-nicht", null, HANDLES)).toBeNull();
+  });
+});

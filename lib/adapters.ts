@@ -268,5 +268,6 @@ export function toCategoryView(c: StoreProductCategory): CategoryView {
     handle,
     name: c.name ?? fallback?.name ?? handle,
     description: c.description ?? fallback?.description ?? "",
+    ...(c.metadata && Object.keys(c.metadata).length ? { metadata: c.metadata } : {}),
   };
 }

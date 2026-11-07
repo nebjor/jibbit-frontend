@@ -21,6 +21,7 @@ import { VARIANT_PARAM, preselectedVariant } from "@/lib/pricing";
 import { heroGallery } from "@/lib/variant-image";
 import { getTenantContext } from "@/lib/tenant/context";
 import { breadcrumbJsonLd, graph, productJsonLd } from "@/lib/seo/jsonld";
+import { categoryPath } from "@/lib/seo/category-url";
 import styles from "./product.module.css";
 
 /**
@@ -113,6 +114,7 @@ async function ProductDetails({
    * kostet kein statisches Rendering.
    */
   const preselected = preselectedVariant(product.variants, query[VARIANT_PARAM]);
+  const inStock = product.variants.some((v) => v.inStock);
 
   const [related, category, tenant] = await Promise.all([
     getRelatedProducts(product),
@@ -171,13 +173,29 @@ async function ProductDetails({
               name: category.name,
               // Kodiert, wie im sichtbaren Brotkrümel: Handles können `&`
               // oder Umlaute enthalten.
-              url: `${base}/?kategorie=${encodeURIComponent(category.handle)}`,
+              url: `${base}${categoryPath(category.handle)}`,
             },
           ]
         : []),
       // Letzter Eintrag ohne `item` — das ist diese Seite.
       { name: product.title },
     ]),
+  );
+
+  /* Verfügbarkeit und Versand im ersten Bildschirm. Auf dem Handy füllt die
+     Galerie fast die ganze Höhe und der Preis steht in der klebenden Leiste
+     unten — die Zeile steht deshalb mobil ÜBER der Galerie (.deliveryTop),
+     ab 900px in der Infospalte (.delivery); CSS blendet je eine aus. */
+  const deliveryLine = (className: string, testId: string) => (
+    <p className={className} data-testid={testId}>
+      <span className={inStock ? styles.inStock : styles.outOfStock}>
+        {inStock ? "Auf Lager" : "Derzeit ausverkauft"}
+      </span>
+      <span>
+        Versand ab Lager in der Schweiz · gratis ab{" "}
+        {formatPrice(SHIPPING.freeThreshold)}
+      </span>
+    </p>
   );
 
   return (
@@ -193,7 +211,7 @@ async function ProductDetails({
         {category && (
           <>
             {/* Kodiert: Handles können `&` oder Umlaute enthalten. */}
-            <Link href={`/?kategorie=${encodeURIComponent(category.handle)}`}>
+            <Link href={categoryPath(category.handle)}>
               {category.name}
             </Link>
             <span aria-hidden="true">/</span>
@@ -201,6 +219,8 @@ async function ProductDetails({
         )}
         <span className={styles.crumbCurrent}>{product.title}</span>
       </nav>
+
+      {deliveryLine(styles.deliveryTop, "delivery-line-top")}
 
       {/* Der Provider hält NUR die gewählte Variante — Galerie und Kaufbox
           lesen dieselbe Auswahl, die Seite selbst bleibt Server-Komponente.
@@ -296,6 +316,8 @@ async function ProductDetails({
             {product.brand && <p className="eyebrow">{product.brand}</p>}
             <h1 className={styles.title}>{product.title}</h1>
             <p className={styles.subtitle}>{product.subtitle}</p>
+
+            {deliveryLine(styles.delivery, "delivery-line")}
 
             <AddToCart product={product} />
 

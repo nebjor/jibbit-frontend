@@ -48,6 +48,7 @@
 import { FEATURES, STORE } from "../config";
 import data from "./legacy-redirects.data.json";
 import handleData from "./handle-redirects.data.json";
+import { categoryPath } from "./category-url";
 
 /** Odoo-ID -> Handle, oder (mit führendem Schrägstrich) ein Pfad. */
 export const ODOO_PRODUCTS: Readonly<Record<string, string>> = data.produkte;
@@ -74,22 +75,29 @@ const RENAMED = new Map(Object.entries(RENAMED_HANDLES));
 export const RENAMED_CATEGORIES: Readonly<Record<string, string>> = handleData.kategorien;
 
 /**
- * 301-Ziel (Pfad samt Query) für eine umbenannte/zusammengelegte Kategorie,
- * oder `null`. Gilt auf der Startseite `/` für jede Domain; andere Parameter
- * (z. B. utm_*) bleiben erhalten.
+ * 301-Ziel (Pfad samt Query) für die alte Kategorieadresse `/?kategorie=<handle>`:
+ * die Kategorie liegt jetzt unter `/kategorie/<handle>` (lib/seo/category-url.ts).
+ * Gilt auf der Startseite `/` für jede Domain; andere Parameter (z. B. utm_*)
+ * bleiben erhalten, `kategorie` selbst wandert in den Pfad.
+ *
+ * Umbenannte/zusammengelegte Kategorien (`filter` -> `filter-tips`) landen im
+ * SELBEN Sprung auf dem heutigen Handle — nur wo die Altadress-Logik des Shops
+ * aktiv ist (`enabled`), denn die Tabelle gehört zu jibbit. Die Umleitung auf
+ * den Pfad gilt dagegen für jeden Shop.
  */
 export function categoryRedirectLocation(
   pathname: string,
   search: string,
   enabled: boolean = FEATURES.legacyOdooRedirects,
 ): string | null {
-  if (!enabled || pathname !== "/") return null;
+  if (pathname !== "/") return null;
   const params = new URLSearchParams(search);
   const handle = params.get("kategorie");
-  const neu = handle === null ? undefined : RENAMED_CATEGORIES[handle];
-  if (!neu) return null;
-  params.set("kategorie", neu);
-  return `/?${params.toString()}`;
+  if (!handle) return null;
+  const neu = enabled ? RENAMED_CATEGORIES[handle] : undefined;
+  params.delete("kategorie");
+  const rest = params.toString();
+  return categoryPath(neu ?? handle) + (rest ? `?${rest}` : "");
 }
 
 /**
@@ -244,18 +252,18 @@ export function legacyRedirectLocation(
   const target = legacyRedirect(domain, pathname, enabled);
   if (!target) return null;
 
-  const url = new URL(target, "https://x.invalid");
   const old = new URLSearchParams(search);
   const ownCatalogue = pathname === "/shop" && target === "/";
+  // /shop?kategorie=filter: gleich auf die Kategorieseite mit dem heutigen
+  // Handle (ein Sprung).
+  const kategorie = ownCatalogue ? old.get("kategorie") : null;
+  const url = new URL(
+    kategorie ? categoryPath(RENAMED_CATEGORIES[kategorie] ?? kategorie) : target,
+    "https://x.invalid",
+  );
   for (const [key, value] of old) {
     if (url.searchParams.has(key)) continue;
-    if (KEPT_PARAMS.test(key) || (ownCatalogue && key === "kategorie")) {
-      // /shop?kategorie=filter: gleich auf das heutige Handle (ein Sprung).
-      url.searchParams.append(
-        key,
-        key === "kategorie" ? (RENAMED_CATEGORIES[value] ?? value) : value,
-      );
-    }
+    if (KEPT_PARAMS.test(key)) url.searchParams.append(key, value);
   }
   return url.pathname + url.search;
 }

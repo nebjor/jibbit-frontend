@@ -4,13 +4,15 @@ import type { CategoryView, ProductView } from "@/lib/types";
 /**
  * Die Startseite IST der Katalog («shop ist die neue startseite»):
  *
- *   - Produktraster direkt unter «/», samt `kategorie`-Parameter.
+ *   - Produktraster direkt unter «/».
  *   - Das Erstbesuchs-Intro bleibt eingehängt — gleiche Choreografie, es
  *     liegt als Overlay über dem Katalog statt über der Landingpage.
  *   - Kein interner Link zeigt mehr auf /shop; die Adresse ist nur noch
  *     eine Umleitung für Links von aussen (app/shop/page.test.ts).
- *
- * Dazu das Verhalten leerer Kategorien, unverändert von /shop übernommen.
+ *   - Kategorien haben eigene Seiten (app/kategorie/[handle]); die alte
+ *     Form `/?kategorie=x` ist eine dauerhafte Umleitung dorthin.
+ *   - Für die innere Verlinkung: Kategorie-Links mit beschreibendem Text und
+ *     Links auf beliebte Produkte.
  */
 
 const mocks = vi.hoisted(() => ({
@@ -37,18 +39,11 @@ vi.mock("@/lib/tenant/context", () => ({
 }));
 
 const { default: HomePage, generateMetadata } = await import("./page");
-const { CategoryComingSoon } = await import("./CategoryComingSoon");
 const { ProductCard } = await import("@/components/ProductCard");
 const { AktionsHero } = await import("@/components/AktionsHero");
 const { HomeIntro } = await import("@/components/intro/HomeIntro");
 const { default: NextLink } = await import("next/link");
-
-const KRAEUTER: CategoryView = {
-  id: "c1",
-  handle: "kraeutermischungen",
-  name: "Kräutermischungen",
-  description: "",
-};
+const { CategoryLinks, HomeText } = await import("@/components/HomeLinks");
 
 const PAPERS: CategoryView = {
   id: "c2",
@@ -57,10 +52,18 @@ const PAPERS: CategoryView = {
   description: "Papes in allen Grössen.",
 };
 
+const FILTER: CategoryView = {
+  id: "c3",
+  handle: "filter-tips",
+  name: "Filter & Tips",
+  description: "",
+};
+
 const PRODUKT = {
   id: "p1",
   handle: "elements-ultra-thin",
   title: "Elements Ultra Thin",
+  featured: true,
 } as ProductView;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -70,6 +73,14 @@ function findAll(el: any, type: unknown): any[] {
   if (Array.isArray(el)) return el.flatMap((c) => findAll(c, type));
   const self = el.type === type ? [el] : [];
   return [...self, ...findAll(el.props?.children, type)];
+}
+
+/** Die beiden Link-Blöcke der Startseite, einmal ausgewertet. */
+function linkBlocks(el: any) {
+  return [
+    ...findAll(el, CategoryLinks).map((c) => CategoryLinks(c.props)),
+    ...findAll(el, HomeText).map((c) => HomeText(c.props)),
+  ];
 }
 
 /** Der gesamte sichtbare Text des Baums, für Wortlaut-Prüfungen. */
@@ -92,14 +103,14 @@ const AKTION = {
 };
 
 async function render(
-  kategorie: string | undefined,
   products: ProductView[],
   aktionen: unknown[] = [],
+  searchParams: Record<string, string> = {},
 ) {
   mocks.getAktionen.mockResolvedValue(aktionen);
-  mocks.getCategories.mockResolvedValue([KRAEUTER, PAPERS]);
+  mocks.getCategories.mockResolvedValue([PAPERS, FILTER]);
   mocks.getProducts.mockResolvedValue(products);
-  const page = await HomePage({ searchParams: Promise.resolve({ kategorie }) });
+  const page = await HomePage({ searchParams: Promise.resolve(searchParams) });
   const catalog = page.props.children[1].props.children;
   return [page, await catalog.type(catalog.props)];
 }
@@ -108,106 +119,100 @@ afterEach(() => vi.clearAllMocks());
 
 describe("Startseite — der Katalog liegt auf «/»", () => {
   it("zeigt das Produktraster direkt, ohne Landingpage dazwischen", async () => {
-    const el = await render(undefined, [PRODUKT]);
+    const el = await render([PRODUKT]);
     expect(findAll(el, ProductCard)).toHaveLength(1);
     // Kein «Zum Shop»-Umweg mehr: die alte Landing-CTA existiert nicht.
     expect(textOf(el)).not.toContain("Zum Shop");
-  });
-
-  it("filtert über den kategorie-Parameter wie früher /shop", async () => {
-    await render("papers", [PRODUKT]);
-    expect(mocks.getProducts).toHaveBeenCalledWith({ category: "papers" });
+    expect(mocks.getProducts).toHaveBeenCalledWith();
   });
 
   it("hält das Erstbesuchs-Intro eingehängt — genau einmal", async () => {
-    const el = await render(undefined, [PRODUKT]);
+    const el = await render([PRODUKT]);
     expect(findAll(el, HomeIntro)).toHaveLength(1);
   });
 
   it("verlinkt intern nirgends mehr auf /shop", async () => {
-    const el = await render(undefined, [PRODUKT]);
-    const links = findAll(el, NextLink);
+    const el = await render([PRODUKT]);
+    const links = findAll(linkBlocks(el), NextLink);
     expect(
       links.filter((l) => String(l.props.href).startsWith("/shop")),
     ).toHaveLength(0);
   });
-});
 
-describe("Startseite — leere Kategorie (übernommen von /shop)", () => {
-  it("zeigt «bald verfügbar» als Standard für jede Kategorie ohne Produkte", async () => {
-    const el = await render("kraeutermischungen", []);
-    const hints = findAll(el, CategoryComingSoon);
-    expect(hints).toHaveLength(1);
-    expect(hints[0].props.categoryName).toBe("Kräutermischungen");
-    expect(findAll(el, ProductCard)).toHaveLength(0);
-  });
-
-  it("unterdrückt daneben den «0 Produkte»-Zähler", async () => {
-    const el = await render("kraeutermischungen", []);
-    expect(textOf(el)).not.toContain("0 Produkte");
-  });
-
-  it("liest sich als Ankündigung und führt zurück zum ungefilterten Katalog", async () => {
-    const hint = CategoryComingSoon({ categoryName: "Kräutermischungen" });
-    const text = textOf(hint);
-    expect(text).toContain("Bald verfügbar");
-    expect(text).toContain("Kräutermischungen");
-    expect(text).not.toContain("Keine Treffer");
-    expect(text).not.toContain("Nichts gefunden");
-    // Weg zurück ins Sortiment — das liegt jetzt auf der Startseite.
-    const links = findAll(hint, NextLink);
-    expect(links.some((l) => l.props.href === "/")).toBe(true);
-  });
-
-  it("gefüllte Kategorie: Produktraster wie bisher, kein Hinweis", async () => {
-    const el = await render("papers", [PRODUKT]);
-    expect(findAll(el, CategoryComingSoon)).toHaveLength(0);
-    expect(findAll(el, ProductCard)).toHaveLength(1);
-  });
-
-  it("ohne Kategoriefilter bleibt bei leerem Sortiment der nüchterne Block — keine Ankündigung", async () => {
-    const el = await render(undefined, []);
-    expect(findAll(el, CategoryComingSoon)).toHaveLength(0);
+  it("bei leerem Sortiment der nüchterne Block", async () => {
+    const el = await render([]);
     expect(textOf(el)).toContain("Nichts gefunden");
   });
+});
 
-  it("unbekannter Kategorie-Parameter ist ein 404", async () => {
-    await expect(render("gibts-nicht", [PRODUKT])).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+describe("Startseite — innere Verlinkung", () => {
+  it("verlinkt die Kategorien mit beschreibendem Linktext auf /kategorie/<handle>", async () => {
+    const el = await render([PRODUKT]);
+    const links = findAll(linkBlocks(el), NextLink);
+    const hrefs = links.map((l) => String(l.props.href));
+    expect(hrefs).toContain("/kategorie/papers");
+    expect(hrefs).toContain("/kategorie/filter-tips");
+    const papers = links.filter((l) => l.props.href === "/kategorie/papers");
+    expect(papers.map((l) => textOf(l))).toContain("Papers kaufen");
+    const filter = links.filter((l) => l.props.href === "/kategorie/filter-tips");
+    expect(filter.map((l) => textOf(l))).toContain("Filter Tips kaufen");
+    // Kein Link auf die alte Parameterform.
+    expect(hrefs.filter((h) => h.includes("kategorie="))).toHaveLength(0);
+  });
+
+  it("verlinkt beliebte Produkte mit dem Produktnamen als Linktext", async () => {
+    const el = await render([PRODUKT]);
+    const link = findAll(linkBlocks(el), NextLink).find(
+      (l) => l.props.href === "/products/elements-ultra-thin",
+    );
+    expect(link && textOf(link)).toBe("Elements Ultra Thin");
+  });
+
+  it("hat eine beschreibende H1", async () => {
+    const el = await render([PRODUKT]);
+    expect(textOf(el)).toContain("Online Headshop Schweiz");
+  });
+});
+
+describe("Startseite — alte Kategorieadresse", () => {
+  const redirectOf = async (searchParams: Record<string, string>) => {
+    try {
+      await render([PRODUKT], [], searchParams);
+    } catch (e) {
+      return (e as { digest?: string }).digest;
+    }
+    return undefined;
+  };
+
+  it("leitet /?kategorie=x dauerhaft auf /kategorie/x", async () => {
+    const digest = await redirectOf({ kategorie: "papers" });
+    expect(digest).toMatch(/^NEXT_REDIRECT;replace;\/kategorie\/papers;308/);
+  });
+
+  it("nimmt für die zusammengelegte Kategorie gleich das heutige Handle", async () => {
+    const digest = await redirectOf({ kategorie: "filter" });
+    expect(digest).toContain("/kategorie/filter-tips");
   });
 });
 
 describe("Startseite — Canonical", () => {
-  const canonical = async (kategorie: string | undefined) => {
-    mocks.getCategories.mockResolvedValue([KRAEUTER, PAPERS]);
-    const meta = await generateMetadata({ searchParams: Promise.resolve({ kategorie }) });
-    return meta.alternates?.canonical;
-  };
-
-  it("zeigt ohne Filter auf «/»", async () => {
-    expect(await canonical(undefined)).toBe("/");
-  });
-
-  it("zeigt je Kategorie auf ihre eigene Adresse", async () => {
-    expect(await canonical("papers")).toBe("/?kategorie=papers");
+  it("zeigt auf «/»", async () => {
+    const meta = await generateMetadata();
+    expect(meta.alternates?.canonical).toBe("/");
   });
 });
 
 describe("Startseite — Hero zur laufenden Aktion", () => {
   it("zeigt den Hero über dem Katalog, mit Ende in Schweizer Zeit", async () => {
-    const el = await render(undefined, [PRODUKT], [AKTION]);
+    const el = await render([PRODUKT], [AKTION]);
     const [hero] = findAll(el, AktionsHero);
     expect(hero.props.aktion.code).toBe("EROEFFNUNG20");
     expect(hero.props.bis).toBe("30. Oktober, 19:30 Uhr");
   });
 
-  it("zeigt keinen Hero in der Kategorieansicht", async () => {
-    const el = await render("papers", [PRODUKT], [AKTION]);
-    expect(findAll(el, AktionsHero)).toHaveLength(0);
-  });
-
   it("zeigt keinen Hero ohne Aktion oder bei Teilsortiment", async () => {
-    expect(findAll(await render(undefined, [PRODUKT], []), AktionsHero)).toHaveLength(0);
+    expect(findAll(await render([PRODUKT], []), AktionsHero)).toHaveLength(0);
     const teil = { ...AKTION, nurTeilsortiment: true };
-    expect(findAll(await render(undefined, [PRODUKT], [teil]), AktionsHero)).toHaveLength(0);
+    expect(findAll(await render([PRODUKT], [teil]), AktionsHero)).toHaveLength(0);
   });
 });
