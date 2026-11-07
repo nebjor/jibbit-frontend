@@ -15,12 +15,18 @@ import { TierSelectionProvider } from "@/components/TierSelection";
 import { TierGallery } from "@/components/TierGallery";
 import { TrackProductView } from "@/components/analytics/TrackProductView";
 import { JsonLd } from "@/components/JsonLd";
-import { SHIPPING, MIN_AGE } from "@/lib/config";
+import { SHIPPING, MIN_AGE, STORE } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { VARIANT_PARAM, preselectedVariant } from "@/lib/pricing";
 import { heroGallery } from "@/lib/variant-image";
 import { getTenantContext } from "@/lib/tenant/context";
-import { breadcrumbJsonLd, graph, productJsonLd } from "@/lib/seo/jsonld";
+import {
+  absoluteImages,
+  breadcrumbJsonLd,
+  graph,
+  productJsonLd,
+} from "@/lib/seo/jsonld";
+import { metaDescription } from "@/lib/seo/meta";
 import styles from "./product.module.css";
 
 /**
@@ -64,17 +70,43 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
   const { handle } = await params;
-  const product = await getProduct(handle);
+  const [product, tenant] = await Promise.all([
+    getProduct(handle),
+    getTenantContext(),
+  ]);
   if (!product) notFound();
+  const { domain, storeName } = tenant.theme;
+  const description = metaDescription(product.description || product.subtitle);
+  // Absolute Bild-URLs (Link-Vorschau, Google): dieselben wie im JSON-LD.
+  const images = absoluteImages(product.images, domain, tenant.host)
+    .slice(0, 4)
+    .map((url) => ({ url, alt: product.title }));
+  const url = `/products/${handle}`;
   return {
     title: product.title,
-    description: product.description.slice(0, 160),
+    description,
     // EINE kanonische Adresse je Produkt — ohne `?variant=`. Die Varianten-
     // URLs (siehe unten) zeigen dieselbe Seite mit anderer Vorauswahl; Google
     // verlangt für dieses Modell genau eine kanonische URL der ProductGroup.
     // Relativ: `metadataBase` aus dem Layout setzt die Mandantendomain davor.
-    alternates: { canonical: `/products/${handle}` },
-    openGraph: { title: product.title, description: product.subtitle },
+    alternates: { canonical: url },
+    // `openGraph` der Seite ERSETZT das des Layouts komplett (Next merged
+    // nicht tief) — siteName/locale/type müssen deshalb hier nochmals stehen.
+    openGraph: {
+      type: "website",
+      url,
+      siteName: storeName,
+      locale: STORE.locale.replace("-", "_"),
+      title: product.title,
+      description: product.subtitle || description,
+      images,
+    },
+    twitter: {
+      card: images.length ? "summary_large_image" : "summary",
+      title: product.title,
+      description: product.subtitle || description,
+      images: images.map((i) => i.url),
+    },
   };
 }
 
