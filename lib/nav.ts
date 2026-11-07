@@ -1,3 +1,5 @@
+import { categoryHandleFromPath } from "./seo/category-url";
+
 /**
  * Aktiv-Erkennung für die Kategorienavigation.
  *
@@ -11,8 +13,8 @@
  * inzwischen in `filter-tips` aufgegangen, die Regel gilt weiter).
  *
  * Der Katalog liegt auf der STARTSEITE («shop ist die neue startseite») —
- * aktiv wird also nur auf `/` markiert. Die alte Adresse /shop ist nur
- * noch eine dauerhafte Umleitung und zählt hier nicht.
+ * aktiv wird auf `/` («Alles») und auf `/kategorie/<handle>` markiert. Die
+ * alte Adresse /shop und `/?kategorie=` sind nur noch Umleitungen.
  */
 
 /**
@@ -27,6 +29,8 @@ export function activeCategory(
   kategorie: string | null,
   handles: readonly string[],
 ): string | null {
+  const fromPath = categoryHandleFromPath(pathname);
+  if (fromPath !== null) return handles.includes(fromPath) ? fromPath : null;
   if (pathname !== "/") return null;
   if (!kategorie) return "";
   return handles.includes(kategorie) ? kategorie : null;

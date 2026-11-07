@@ -30,7 +30,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("Kasten steht am Ende der Kategorieansicht, nach dem Raster", async ({ page }) => {
-  await page.goto("/?kategorie=papers");
+  await page.goto("/kategorie/papers");
 
   const b = box(page);
   await expect(b).toBeVisible();
@@ -63,7 +63,7 @@ test("Kasten steht auch am Ende der Suchergebnisse und bei null Treffern", async
 });
 
 test("Wunsch senden: Erfolgsmeldung, Kontext kommt im Backend an", async ({ page, request }) => {
-  await page.goto("/?kategorie=papers");
+  await page.goto("/kategorie/papers");
   const b = box(page);
 
   await b.getByLabel("Produktwunsch").fill("Hanfblättchen King Size");
@@ -78,7 +78,7 @@ test("Wunsch senden: Erfolgsmeldung, Kontext kommt im Backend an", async ({ page
   expect(mein).toBeTruthy();
   expect(mein?.email).toBe("kunde@example.ch");
   expect(mein?.kontext.kategorie).toBe("Papers");
-  expect(mein?.kontext.url).toContain("kategorie=papers");
+  expect(mein?.kontext.url).toContain("/kategorie/papers");
 });
 
 test("Wunsch aus der Suche trägt den Suchbegriff", async ({ page, request }) => {
@@ -96,7 +96,7 @@ test("Wunsch aus der Suche trägt den Suchbegriff", async ({ page, request }) =>
 test("Leerer Wunsch wird abgewiesen und nicht gesendet", async ({ page, request }) => {
   // Eindeutige Adresse als Marke: die Projekte laufen parallel gegen dasselbe Mock-Backend.
   const marke = `leer-${Date.now()}@example.ch`;
-  await page.goto("/?kategorie=papers");
+  await page.goto("/kategorie/papers");
   const b = box(page);
 
   await b.getByLabel("Produktwunsch").fill("   ");
@@ -109,7 +109,7 @@ test("Leerer Wunsch wird abgewiesen und nicht gesendet", async ({ page, request 
 });
 
 test("Zweiter Wunsch innerhalb einer Minute wird im Browser gebremst", async ({ page, request }) => {
-  await page.goto("/?kategorie=papers");
+  await page.goto("/kategorie/papers");
   const b = box(page);
   await b.getByLabel("Produktwunsch").fill("Erster Wunsch für die Bremse");
   await b.getByRole("button", { name: "Wunsch senden" }).click();

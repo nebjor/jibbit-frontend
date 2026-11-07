@@ -4,8 +4,8 @@
   "produkte": {
     "2": "raw-black-classic-king-size-slim",
     "3": "ocb-black-premium-rolls-slim",
-    "5": "/?kategorie=papers",
-    "7": "/?kategorie=papers",
+    "5": "/kategorie/papers",
+    "7": "/kategorie/papers",
     "8": "raw-classic-rolls-slim",
     "9": "ocb-premium-kurz",
     "10": "purize-xtra-slim-6mm",

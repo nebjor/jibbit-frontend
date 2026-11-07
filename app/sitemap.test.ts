@@ -69,9 +69,9 @@ describe("sitemap", () => {
     expect(home?.priority).toBe(1);
   });
 
-  it("hängt Kategorien als Filter der Startseite an — Handle kodiert", async () => {
+  it("führt Kategorien unter /kategorie/<handle> — Handle kodiert", async () => {
     const urls = (await sitemap()).map((e) => e.url);
-    expect(urls).toContain("https://test.jibbit.ch/?kategorie=filter-%26-tips");
+    expect(urls).toContain("https://test.jibbit.ch/kategorie/filter-%26-tips");
   });
 
   it("führt die Produktseiten mit Änderungsdatum und Bild", async () => {

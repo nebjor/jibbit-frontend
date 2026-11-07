@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PixelJoint } from "@/components/PixelJoint";
 import { getCategories } from "@/lib/data";
+import { categoryPath } from "@/lib/seo/category-url";
 import styles from "./not-found.module.css";
 
 export default async function NotFound() {
@@ -32,7 +33,7 @@ export default async function NotFound() {
       <ul className={styles.categories}>
         {categories.map((c) => (
           <li key={c.id}>
-            <Link href={`/?kategorie=${encodeURIComponent(c.handle)}`}>{c.name}</Link>
+            <Link href={categoryPath(c.handle)}>{c.name}</Link>
           </li>
         ))}
         <li>

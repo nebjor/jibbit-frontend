@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { activeCategory } from "@/lib/nav";
+import { categoryPath } from "@/lib/seo/category-url";
 import type { CategoryView } from "@/lib/types";
 import styles from "./CategoryNav.module.css";
 
@@ -53,7 +54,7 @@ export function CategoryNav({ categories }: { categories: CategoryView[] }) {
       {categories.map((c) => (
         <Link
           key={c.id}
-          href={`/?kategorie=${encodeURIComponent(c.handle)}`}
+          href={categoryPath(c.handle)}
           aria-current={active === c.handle ? "page" : undefined}
         >
           {c.name}

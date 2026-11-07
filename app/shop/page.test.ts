@@ -36,22 +36,17 @@ describe("/shop — dauerhafte Umleitung auf die Startseite", () => {
     expect(await target({})).toBe("/");
   });
 
-  it("nimmt den Kategoriefilter mit", async () => {
-    expect(await target({ kategorie: "papers" })).toBe("/?kategorie=papers");
+  it("leitet eine Kategorie gleich auf ihre Kategorieseite", async () => {
+    expect(await target({ kategorie: "papers" })).toBe("/kategorie/papers");
   });
 
   it("kodiert Sonderzeichen im Handle", async () => {
     const to = await target({ kategorie: "filter-&-tips" });
-    const url = new URL(to, "https://test.jibbit.ch");
-    expect(url.pathname).toBe("/");
-    expect(url.searchParams.get("kategorie")).toBe("filter-&-tips");
+    expect(to).toBe("/kategorie/filter-%26-tips");
   });
 
   it("nimmt auch übrige Parameter vollständig mit", async () => {
     const to = await target({ kategorie: "papers", ref: "newsletter" });
-    const url = new URL(to, "https://test.jibbit.ch");
-    expect(url.pathname).toBe("/");
-    expect(url.searchParams.get("kategorie")).toBe("papers");
-    expect(url.searchParams.get("ref")).toBe("newsletter");
+    expect(to).toBe("/kategorie/papers?ref=newsletter");
   });
 });

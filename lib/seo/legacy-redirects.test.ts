@@ -14,13 +14,14 @@ import {
   legacyRedirectLocation,
 } from "./legacy-redirects";
 import { SITEMAP_STATIC_PATHS } from "./sitemap";
+import { categoryHandleFromPath, categoryPath } from "./category-url";
 import legacyPaths from "./legacy-paths.fixture.json";
 import staging from "./staging-handles.fixture.json";
 
 const redirect = (path: string) => legacyRedirect("jibbit.ch", path);
 
 const HUMEROS = "/products/black-leaf-el-humeros-konische-huelsen-ks-100x";
-const PAPERS = "/?kategorie=papers";
+const PAPERS = "/kategorie/papers";
 
 // https://jibbit.ch/sitemap.xml (Odoo), Stand vor dem Umzug
 const SITEMAP: Record<string, string | null> = {
@@ -258,7 +259,7 @@ describe("legacyRedirectLocation", () => {
 
   it("hängt Kampagnenparameter an ein Kategorieziel an", () => {
     expect(location("/shop/x-7", "?utm_campaign=herbst&search=x")).toBe(
-      "/?kategorie=papers&utm_campaign=herbst",
+      "/kategorie/papers?utm_campaign=herbst",
     );
   });
 
@@ -268,8 +269,11 @@ describe("legacyRedirectLocation", () => {
 
   it("behält `kategorie` nur auf der früheren Katalogadresse /shop", () => {
     // «filter» ist in «filter-tips» aufgegangen: gleich das heutige Handle.
-    expect(location("/shop", "?kategorie=filter")).toBe("/?kategorie=filter-tips");
-    expect(location("/shop", "?kategorie=papers")).toBe("/?kategorie=papers");
+    expect(location("/shop", "?kategorie=filter")).toBe("/kategorie/filter-tips");
+    expect(location("/shop", "?kategorie=papers")).toBe("/kategorie/papers");
+    expect(location("/shop", "?kategorie=papers&utm_source=nl&search=x")).toBe(
+      "/kategorie/papers?utm_source=nl",
+    );
     expect(location("/shop", "?search=filter&order=list_price+asc")).toBe("/");
     expect(location("/shop/x-41", "?kategorie=filter")).toBe(
       "/products/ocb-slim-filter-bio-120-tips",
@@ -310,7 +314,7 @@ describe("Ziele der Odoo-Weiterleitungen", () => {
     const paths = targets.filter((t) => t.startsWith("/"));
     expect(paths).toEqual([PAPERS]);
     for (const target of paths) {
-      const handle = new URL(target, "https://x.invalid").searchParams.get("kategorie");
+      const handle = categoryHandleFromPath(target);
       expect(handle && categories.has(handle)).toBe(true);
     }
   });
@@ -441,7 +445,7 @@ describe("alle Adressen aus der Search Console", () => {
   const knownTargets = new Set<string>([
     ...SITEMAP_STATIC_PATHS.map((p) => p || "/"),
     "/konto/anmelden",
-    ...staging.kategorien.map((h) => `/?kategorie=${h}`),
+    ...staging.kategorien.map((h) => categoryPath(h)),
     ...[...staging.produkte, ...UNPUBLISHED_TARGETS].map((h) => `/products/${h}`),
   ]);
 
@@ -466,7 +470,7 @@ describe("alle Adressen aus der Search Console", () => {
       expect(answer?.kind, entry).toBe("redirect");
       if (answer?.kind !== "redirect") continue;
       expect(answer.location, entry).not.toBe("/");
-      expect(answer.location, entry).toMatch(/^\/(products\/|\?kategorie=)/);
+      expect(answer.location, entry).toMatch(/^\/(products\/|kategorie\/)/);
     }
   });
 
@@ -528,20 +532,28 @@ describe("alle Adressen aus der Search Console", () => {
 });
 
 describe("zusammengelegte Kategorie «Filter» -> «Filter & Tips»", () => {
-  it("leitet /?kategorie=filter in einem Sprung auf filter-tips", () => {
-    expect(categoryRedirectLocation("/", "?kategorie=filter")).toBe("/?kategorie=filter-tips");
+  it("leitet /?kategorie=filter in einem Sprung auf /kategorie/filter-tips", () => {
+    expect(categoryRedirectLocation("/", "?kategorie=filter")).toBe("/kategorie/filter-tips");
   });
 
   it("behält andere Parameter", () => {
     expect(categoryRedirectLocation("/", "?utm_source=nl&kategorie=filter")).toBe(
-      "/?utm_source=nl&kategorie=filter-tips",
+      "/kategorie/filter-tips?utm_source=nl",
     );
   });
 
-  it("lässt filter-tips und andere Kategorien in Ruhe (keine Schleife)", () => {
-    expect(categoryRedirectLocation("/", "?kategorie=filter-tips")).toBeNull();
-    expect(categoryRedirectLocation("/", "?kategorie=papers")).toBeNull();
+  it("leitet jede Kategorie auf ihren Pfad, die Startseite ohne Parameter nicht", () => {
+    expect(categoryRedirectLocation("/", "?kategorie=filter-tips")).toBe("/kategorie/filter-tips");
+    expect(categoryRedirectLocation("/", "?kategorie=papers")).toBe("/kategorie/papers");
+    expect(categoryRedirectLocation("/", "?kategorie=filter-%26-tips")).toBe(
+      "/kategorie/filter-%26-tips",
+    );
     expect(categoryRedirectLocation("/", "")).toBeNull();
+    expect(categoryRedirectLocation("/", "?kategorie=")).toBeNull();
+  });
+
+  it("führt keine Kette: das Ziel wird nicht noch einmal umgeleitet", () => {
+    expect(categoryRedirectLocation("/kategorie/filter-tips", "")).toBeNull();
   });
 
   it("greift nur auf der Startseite", () => {
@@ -560,7 +572,8 @@ describe("Schalter features.legacyOdooRedirects", () => {
     expect(legacyAnswer("jibbit.ch", "/shop/cart", "", false)).toBeNull();
     expect(legacyAnswer("jibbit.ch", "/contactus", "", false)).toBeNull();
     expect(legacyGone("jibbit.ch", "/blog", false)).toBe(false);
-    expect(categoryRedirectLocation("/", "?kategorie=filter", false)).toBeNull();
+    // Der Pfad gilt für jeden Shop, die Umbenennung nur mit Schalter.
+    expect(categoryRedirectLocation("/", "?kategorie=filter", false)).toBe("/kategorie/filter");
   });
 
   it("an (Voreinstellung für jibbit): wie bisher", () => {

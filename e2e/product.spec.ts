@@ -112,3 +112,27 @@ test.describe("Variantenwahl bei Grössen", () => {
     );
   });
 });
+
+test("Preis, Verfügbarkeit, Versand und Kaufknopf stehen ohne Scrollen im ersten Bildschirm", async ({
+  page,
+}) => {
+  await page.goto(`/products/${papers.handle}`);
+
+  const viewport = page.viewportSize()!;
+  const inFirstScreen = async (locator: ReturnType<typeof page.locator>) => {
+    const box = await locator.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+  };
+
+  const delivery = page.locator("[data-testid^='delivery-line']:visible");
+  await expect(delivery).toContainText("Auf Lager");
+  await expect(delivery).toContainText(/gratis ab\s+CHF\s*69/);
+  await inFirstScreen(delivery);
+
+  // Kaufknopf mit Preis: auf dem Handy in der klebenden Leiste unten.
+  const cta = page.getByRole("button", { name: /In den Warenkorb/ });
+  await expect(cta).toContainText(chf(papers.singlePrice));
+  await inFirstScreen(cta);
+});

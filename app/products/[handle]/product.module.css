@@ -52,6 +52,43 @@
   margin-bottom: var(--s-3);
 }
 
+.deliveryTop,
+.delivery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  font-size: 13px;
+  color: var(--c-muted);
+}
+
+.deliveryTop {
+  margin: 0 0 var(--s-3);
+}
+
+.delivery {
+  display: none;
+  margin: calc(var(--s-2) * -1) 0 var(--s-2);
+}
+
+@media (min-width: 900px) {
+  .deliveryTop {
+    display: none;
+  }
+  .delivery {
+    display: flex;
+  }
+}
+
+.inStock {
+  color: var(--c-ink);
+  font-weight: 700;
+}
+
+.outOfStock {
+  color: var(--c-ink);
+  font-weight: 700;
+}
+
 .desc {
   font-size: 15px;
   line-height: 1.6;
