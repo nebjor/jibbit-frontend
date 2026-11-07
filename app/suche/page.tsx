@@ -100,7 +100,7 @@ export default async function SuchePage({
           ) : (
             <div className={styles.grid}>
               {results.map((p, i) => (
-                <ProductCard key={p.id} product={p} priority={i < 4} />
+                <ProductCard key={p.id} product={p} priority={i < 2} />
               ))}
             </div>
           )}

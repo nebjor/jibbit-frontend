@@ -13,6 +13,23 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   /**
+   * Bildoptimierung (LCP):
+   *  - Kürzere Breitenliste: `next/image` schreibt für jedes Priority-Bild ein
+   *    <link rel=preload> mit dem GANZEN srcset. Die Standardliste hat 10
+   *    Breiten bis 3840 px; Produktbilder sind höchstens ~800 CSS-px breit, so
+   *    ist alles ab 1920 px nur Ballast im <head> und potenzielle
+   *    Optimierer-Last auf der kleinen VPS.
+   *  - `minimumCacheTTL`: Der Optimierer revalidiert Ergebnisse sonst nach
+   *    60 s. Medusa-Dateinamen tragen einen Zeitstempel (`<ms>-name.jpg`),
+   *    ein ersetztes Bild hat also eine neue URL — 31 Tage sind gefahrlos.
+   */
+  images: {
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [96, 128, 256, 384],
+    minimumCacheTTL: 60 * 60 * 24 * 31,
+  },
+
+  /**
    * ZU `images.remotePatterns`: ABSICHTLICH NICHT GESETZT.
    *
    * Die naheliegende Lösung für Produktbilder aus Medusa wäre ein Eintrag mit
