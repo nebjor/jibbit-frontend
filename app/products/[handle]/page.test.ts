@@ -280,7 +280,7 @@ describe("generateMetadata (Produktseite)", () => {
       title: "Papier",
     });
     const og = md.openGraph as { images: { url: string }[] };
-    expect(og.images[0].url).toMatch(/^https:\/\/shop\.example\//);
+    expect(og.images[0].url).toBe("https://cdn.example/box.jpg");
     expect(md.twitter).toMatchObject({ card: "summary_large_image" });
   });
 });
