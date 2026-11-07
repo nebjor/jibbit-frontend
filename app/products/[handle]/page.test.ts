@@ -258,3 +258,29 @@ describe("Produktseite — Bild folgt der Variante", () => {
     expect(heroImg?.props.src).toBeUndefined();
   });
 });
+
+describe("generateMetadata (Produktseite)", () => {
+  it("liefert kanonische URL, vollständige Open-Graph- und Twitter-Daten mit Bild", async () => {
+    mocks.getProduct.mockResolvedValue({
+      handle: "p",
+      title: "Papier",
+      subtitle: "Kurz",
+      description: "Lang\n\nlang",
+      images: ["https://cdn.example/box.jpg"],
+    });
+    const md = await pageModule.generateMetadata({
+      params: Promise.resolve({ handle: "p" }),
+    });
+    expect(md.alternates?.canonical).toBe("/products/p");
+    expect(md.description).toBe("Lang lang");
+    expect(md.openGraph).toMatchObject({
+      type: "website",
+      url: "/products/p",
+      locale: "de_CH",
+      title: "Papier",
+    });
+    const og = md.openGraph as { images: { url: string }[] };
+    expect(og.images[0].url).toMatch(/^https:\/\/shop\.example\//);
+    expect(md.twitter).toMatchObject({ card: "summary_large_image" });
+  });
+});
