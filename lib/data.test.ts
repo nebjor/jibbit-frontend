@@ -12,6 +12,10 @@ const sdk = {
   },
 };
 
+// Der Datencache braucht die Next-Laufzeit; im Test läuft die Funktion direkt.
+vi.mock("next/cache", () => ({
+  unstable_cache: <T extends (...a: never[]) => unknown>(fn: T) => fn,
+}));
 vi.mock("@/lib/tenant/context", () => ({
   getTenantContext: vi.fn(async () => ({ id: "jibbit" })),
 }));
