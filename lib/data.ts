@@ -24,6 +24,8 @@
 
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import { getSdkForTenant, isBackendConfigured } from "./medusa";
 import { getTenantContext } from "./tenant/context";
 import type { TenantConfig } from "./tenant/types";
@@ -32,6 +34,31 @@ import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "./mock-catalog";
 import type { CategoryHandle, CategoryView, ProductView } from "./types";
 import { parseAktionen, type Aktion } from "./aktionen";
 import type Medusa from "@medusajs/js-sdk";
+
+/**
+ * KATALOG-CACHE (Core Web Vitals / TTFB)
+ *
+ * Alle Seiten sind wegen `headers()` (Mandantenauflösung) und Cookies
+ * (Warenkorb) dynamisch und können nicht ISR-statisch sein. Ohne Cache lief
+ * aber jede Anfrage durch mehrere Backend-Roundtrips (Region, Kategorien,
+ * Produktliste seitenweise, Preisstaffeln) — der Hauptanteil der ~550 ms
+ * TTFB. Die Katalogabfragen laufen deshalb durch den Next-Datencache
+ * (`unstable_cache`): höchstens CATALOG_REVALIDATE_SECONDS alt, pro Mandant
+ * getrennt (Schlüssel enthält die Tenant-ID), Tag `catalog` für gezieltes
+ * `revalidateTag`. Fehler (Exceptions) werden NICHT gecacht.
+ *
+ * Nur in Produktion: in Dev/Test soll eine Backend-Änderung sofort sichtbar
+ * sein, und `unstable_cache` braucht dort die Next-Laufzeit.
+ */
+export const CATALOG_REVALIDATE_SECONDS = 60;
+
+function catalogCache<T>(fn: () => Promise<T>, keyParts: string[]): Promise<T> {
+  if (process.env.NODE_ENV !== "production") return fn();
+  return unstable_cache(fn, ["catalog", ...keyParts], {
+    revalidate: CATALOG_REVALIDATE_SECONDS,
+    tags: ["catalog"],
+  })();
+}
 
 export class CatalogUnavailableError extends Error {
   constructor(where: string) {
@@ -161,10 +188,11 @@ export async function getCategories(): Promise<CategoryView[]> {
 export async function getCategoriesForTenant(
   tenant: TenantConfig,
 ): Promise<CategoryView[]> {
-  const sdk = getSdkForTenant(tenant);
-  return (
-    (await fetchBackendCategories(tenant, sdk)) ??
-    (mockAllowed() ? MOCK_CATEGORIES : [])
+  return catalogCache(
+    async () =>
+      (await fetchBackendCategories(tenant, getSdkForTenant(tenant))) ??
+      (mockAllowed() ? MOCK_CATEGORIES : []),
+    ["categories", tenant.id],
   );
 }
 
@@ -227,7 +255,20 @@ export async function getProducts(opts?: {
  * Request-APIs nicht erlaubt sind; siehe app/merchant-feed.tsv/route.ts.
  * Das Mandantenobjekt kommt von `getTenantContext()` AUSSERHALB des Scopes.
  */
-export async function getProductsForTenant(
+export function getProductsForTenant(
+  tenant: TenantConfig,
+  opts?: {
+    category?: CategoryHandle;
+    limit?: number;
+  },
+): Promise<ProductView[]> {
+  return catalogCache(
+    () => fetchProductsForTenant(tenant, opts),
+    ["products", tenant.id, opts?.category ?? "", String(opts?.limit ?? "")],
+  );
+}
+
+async function fetchProductsForTenant(
   tenant: TenantConfig,
   opts?: {
     category?: CategoryHandle;
@@ -410,6 +451,18 @@ export async function getProduct(
   handle: string,
 ): Promise<ProductView | undefined> {
   const tenant = await getTenantContext();
+  // `null` statt `undefined`: der Datencache serialisiert als JSON.
+  const view = await catalogCache(
+    async () => (await fetchProduct(tenant, handle)) ?? null,
+    ["product", tenant.id, handle],
+  );
+  return view ?? undefined;
+}
+
+async function fetchProduct(
+  tenant: TenantConfig,
+  handle: string,
+): Promise<ProductView | undefined> {
   const sdk = getSdkForTenant(tenant);
 
   const findMock = () => MOCK_PRODUCTS.find((p) => p.handle === handle);

@@ -150,7 +150,7 @@ async function Catalog() {
         ) : (
           <div id="sortiment" className={styles.grid}>
             {products.map((p, i) => (
-              <ProductCard key={p.id} product={p} priority={i < 4} />
+              <ProductCard key={p.id} product={p} priority={i < 2} />
             ))}
           </div>
         )}
