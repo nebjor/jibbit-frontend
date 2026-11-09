@@ -9,7 +9,7 @@ test("Konto anlegen, abmelden, wieder anmelden", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Hallo Jana" })).toBeVisible();
 
   await page.getByRole("button", { name: "Abmelden" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Shop" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Online Headshop Schweiz" })).toBeVisible();
 
   await page.goto("/konto/anmelden");
   await page.getByLabel("E-Mail").fill(email);

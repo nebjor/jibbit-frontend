@@ -106,7 +106,8 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     });
   }
 
-  // Zusammengelegte Kategorie: /?kategorie=filter -> /?kategorie=filter-tips.
+  // Alte Kategorieadresse /?kategorie=x -> /kategorie/x (301), eine zusammengelegte
+  // Kategorie (filter -> filter-tips) im selben Sprung.
   const kategorie = categoryRedirectLocation(pathname, search);
   if (kategorie) {
     return NextResponse.redirect(new URL(kategorie, `https://${domain}`), 301);

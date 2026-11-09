@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 import { PageLoading } from "@/components/PageLoading";
-import type { CategoryView } from "@/lib/types";
 import { getAktionen, getProducts, getCategories } from "@/lib/data";
 import { formatGiltBis, heroAktion } from "@/lib/aktionen";
 import { AktionsHero } from "@/components/AktionsHero";
@@ -11,9 +10,11 @@ import { ShopTrust } from "@/components/ShopTrust";
 import { ProduktWunsch } from "@/components/ProduktWunsch";
 import { HomeIntro } from "@/components/intro/HomeIntro";
 import { JsonLd } from "@/components/JsonLd";
-import { CategoryComingSoon } from "./CategoryComingSoon";
 import { FEATURES, PRICE_CLAIM, SHIPPING } from "@/lib/config";
+import { CategoryLinks, HomeText } from "@/components/HomeLinks";
 import { formatPrice } from "@/lib/format";
+import { categoryPath } from "@/lib/seo/category-url";
+import { RENAMED_CATEGORIES } from "@/lib/seo/legacy-redirects";
 import { breadcrumbJsonLd, graph, itemListJsonLd } from "@/lib/seo/jsonld";
 import { getTenantContext } from "@/lib/tenant/context";
 import styles from "./page.module.css";
@@ -30,50 +31,45 @@ import styles from "./page.module.css";
  * und im Footer, die Zahlarten im Header-Streifen (kurz) und im Footer
  * (vollständige Liste). Hier wird nichts davon gedoppelt.
  *
- * Die alte Adresse /shop bleibt als dauerhafte Umleitung hierher bestehen
- * (app/shop/page.tsx); intern verlinkt niemand mehr dorthin.
+ * KATEGORIEN LIEGEN NICHT MEHR HIER. Jede Kategorie hat ihre eigene Seite
+ * unter /kategorie/<handle> (app/kategorie/[handle]/page.tsx) mit eigenem
+ * Titel, Text und FAQ. Die alte Form `/?kategorie=<handle>` leitet der Proxy
+ * mit 301 dorthin um (proxy.ts); die Weiterleitung unten fängt dasselbe ab,
+ * falls eine Anfrage am Proxy vorbeikommt (z. B. in Tests).
  *
- * Der `kategorie`-Parameter wird gegen die GELADENEN Kategorien geprüft
- * (exakter Handle-Vergleich), nicht gegen eine fest verdrahtete Liste —
- * der Betreiber legt Kategorien im Admin an, und jede davon muss hier
- * ohne Code-Änderung funktionieren. Unbekannte Werte ergeben ein echtes
- * 404. Die Kategorienavigation lebt im
- * Header (`CategoryNav`) — diese Seite rendert bewusst keine eigene
- * Filterreihe (Begründung unverändert: keine doppelten Linkreihen).
+ * Für die innere Verlinkung steht über dem Raster eine Reihe mit den
+ * Kategorien (Linktext sagt, was dahinter liegt: «Papers kaufen») und unter
+ * dem Raster ein kurzer Text mit Links auf Kategorien und beliebte Produkte.
+ * Die Kategorienavigation im Header (`CategoryNav`) bleibt die Hauptnavigation.
  */
 
 type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-async function activeCategory(searchParams: PageProps["searchParams"]) {
+/** Alte Kategorieadresse `/?kategorie=x` -> `/kategorie/x` (dauerhaft). */
+async function redirectLegacyCategory(searchParams: PageProps["searchParams"]) {
   const { kategorie } = await searchParams;
   const raw = Array.isArray(kategorie) ? kategorie[0] : kategorie;
-  if (!raw) return undefined;
-  const found = (await getCategories()).find((c) => c.handle === raw);
-  if (!found) notFound();
-  return found;
+  if (!raw) return;
+  const renamed = FEATURES.legacyOdooRedirects ? RENAMED_CATEGORIES[raw] : undefined;
+  permanentRedirect(categoryPath(renamed ?? raw));
 }
 
 /**
  * Der Titel bleibt der Site-Standard aus dem Layout («<Storename> — Online
  * Headshop Schweiz») — er beschreibt den Shop bereits und ist mandantenfähig.
- * Nur die Beschreibung ist seitenspezifisch: sie beschreibt jetzt den
- * Katalog, nicht mehr die Landingpage.
+ * Nur die Beschreibung ist seitenspezifisch.
  */
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const activeCat = await activeCategory(searchParams);
+export async function generateMetadata(): Promise<Metadata> {
   return {
     description: `Papers, Filter und Zubehör für die Schweiz. Faire Preise, Versand ab Lager, Gratisversand ab ${formatPrice(SHIPPING.freeThreshold)}.`,
-    alternates: {
-      canonical: activeCat ? `/?kategorie=${encodeURIComponent(activeCat.handle)}` : "/",
-    },
+    alternates: { canonical: "/" },
   };
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
-  const activeCat = await activeCategory(searchParams);
-  // Erst prüfen, dann streamen: ausserhalb der Grenze setzt notFound() noch ein 404.
+  await redirectLegacyCategory(searchParams);
   return (
     <>
       {/* Erstbesuchs-Intro: legt sich ÜBER den weiterhin serverseitig
@@ -82,59 +78,38 @@ export default async function HomePage({ searchParams }: PageProps) {
           in components/intro/HomeIntro.tsx begründet; alle Zeiten
           stehen in lib/intro/timings.ts. */}
       {FEATURES.intro ? <HomeIntro /> : null}
-      <Suspense key={activeCat?.handle} fallback={<PageLoading />}>
-        <Catalog activeCat={activeCat} />
+      <Suspense fallback={<PageLoading />}>
+        <Catalog />
       </Suspense>
     </>
   );
 }
 
-async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
-  const products = await getProducts({ category: activeCat?.handle });
-  const tenant = await getTenantContext();
-  // Hero nur auf der Startseite ohne Kategorie, bei einer Aktion auf alles.
-  const hero = activeCat ? undefined : heroAktion(await getAktionen());
-
-  /**
-   * Eine LEERE KATEGORIE ist kein Fehlschlag: der Betreiber hat sie angelegt,
-   * die Ware kommt. Sie sagt deshalb «bald verfügbar» (CategoryComingSoon) —
-   * als Standard für jede produktlose Kategorie, ohne Sonderfall je Handle.
-   * Der «0 Produkte»-Zähler entfällt dann; neben einer Ankündigung läse er
-   * sich wie ein Fehler. Das nüchterne «Nichts gefunden» bleibt dem
-   * ungefilterten Sortiment vorbehalten (Backend liefert gar nichts).
-   */
-  const comingSoon = products.length === 0 && activeCat !== undefined;
-
-  const description = activeCat
-    ? activeCat.description
-    : PRICE_CLAIM.full;
+async function Catalog() {
+  const [products, categories, tenant] = await Promise.all([
+    getProducts(),
+    getCategories(),
+    getTenantContext(),
+  ]);
+  // Hero nur bei einer Aktion auf alles.
+  const hero = heroAktion(await getAktionen());
 
   /**
    * Der Katalog als `ItemList`: die Startseite ZEIGT Produkte, sie IST keins.
    * Ohne diese Auskunft muss ein Crawler aus einem Raster von Kacheln raten,
-   * was hier die Hauptsache ist — und Kategoriefilter (`?kategorie=…`) sind
-   * eigene Listen, keine Dubletten derselben Seite.
-   *
-   * Die Brotkrümel bilden denselben Weg ab wie die Kategorienavigation im
-   * Header. Auf der ungefilterten Startseite ist es ein einziger Eintrag —
-   * dann ist die Liste der Weg.
-   *
-   * Steht nichts im Regal («bald verfügbar»), wird auch nichts ausgezeichnet:
-   * eine leere ItemList ist eine Aussage über ein leeres Sortiment.
+   * was hier die Hauptsache ist. Steht nichts im Regal, wird auch nichts
+   * ausgezeichnet: eine leere ItemList ist eine Aussage über ein leeres
+   * Sortiment.
    */
-  const base = `https://${tenant.theme.domain}`;
   const jsonLd = graph(
     products.length
       ? itemListJsonLd({
           products,
           domain: tenant.theme.domain,
-          name: activeCat ? activeCat.name : "Sortiment",
+          name: "Sortiment",
         })
       : undefined,
-    breadcrumbJsonLd([
-      { name: "Shop", url: activeCat ? `${base}/` : undefined },
-      ...(activeCat ? [{ name: activeCat.name }] : []),
-    ]),
+    breadcrumbJsonLd([{ name: "Shop" }]),
   );
 
   return (
@@ -149,27 +124,22 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
         )}
         <header className={styles.head}>
           <div className={styles.headRow}>
-            <h1 className={styles.title}>
-              {activeCat ? activeCat.name : "Shop"}
-            </h1>
-            {!comingSoon && (
-              <p className={styles.count} aria-live="polite">
-                <span className="tnum">{products.length}</span>{" "}
-                {products.length === 1 ? "Produkt" : "Produkte"}
-              </p>
-            )}
+            <h1 className={styles.title}>Online Headshop Schweiz</h1>
+            <p className={styles.count} aria-live="polite">
+              <span className="tnum">{products.length}</span>{" "}
+              {products.length === 1 ? "Produkt" : "Produkte"}
+            </p>
           </div>
-          {description ? <p className={styles.desc}>{description}</p> : null}
+          <p className={styles.desc}>{PRICE_CLAIM.full}</p>
           {/* Vertrauenszeile: Google-Bewertung des Ladenlokals + drei
               Fakten — Texte in lib/trust.ts, Zahl aus lib/google-profil.ts. */}
           <ShopTrust />
         </header>
 
-        {comingSoon && activeCat ? (
-          <CategoryComingSoon categoryName={activeCat.name} />
-        ) : products.length === 0 ? (
-          // Ohne Kategorie heisst leer: das Backend liefert gar nichts.
-          // Kein CTA — der würde nur auf diese Seite selbst zeigen.
+        <CategoryLinks categories={categories} />
+
+        {products.length === 0 ? (
+          // Leer heisst: das Backend liefert gar nichts.
           <div className={styles.empty}>
             <h2 className={styles.emptyTitle}>Nichts gefunden</h2>
             <p>
@@ -185,8 +155,9 @@ async function Catalog({ activeCat }: { activeCat: CategoryView | undefined }) {
           </div>
         )}
 
-        {/* Am Ende jeder Liste, auch bei leerer Kategorie. */}
-        <ProduktWunsch kategorie={activeCat?.name} />
+        <HomeText categories={categories} products={products} />
+
+        <ProduktWunsch />
       </div>
     </>
   );

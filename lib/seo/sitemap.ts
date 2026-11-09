@@ -8,8 +8,8 @@
  *
  * WAS HINEINGEHÖRT
  * Nur kanonische, indexierbare Adressen: Startseite, Rechtliches und Service,
- * jede Kategorieansicht (`/?kategorie=<handle>` ist ihre eigene kanonische
- * Adresse), jedes veröffentlichte Produkt. NICHT hinein gehören: /shop (nur
+ * jede Kategorieseite (`/kategorie/<handle>`, die alte Form
+ * `/?kategorie=<handle>` ist eine 301), jedes veröffentlichte Produkt. NICHT hinein gehören: /shop (nur
  * noch Umleitung), /suche, /checkout, /konto (alle `noindex`) und die
  * Varianten-Adressen `?variant=<id>` — deren Canonical ist die Produktseite.
  *
@@ -24,6 +24,7 @@ import type { MetadataRoute } from "next";
 import type { CategoryView, ProductView } from "../types";
 import handleData from "./handle-redirects.data.json";
 import { absoluteImages, productUrl } from "./jsonld";
+import { categoryPath } from "./category-url";
 
 /**
  * Seiten ohne Katalogbezug, die indexiert werden sollen.
@@ -112,7 +113,7 @@ export function sitemapEntries({
       .filter((c) => !Object.hasOwn(handleData.kategorien, c.handle))
       .map((c) => ({
         // Kodieren: Handles können `&` oder Umlaute enthalten.
-        url: `${base}/?kategorie=${encodeURIComponent(c.handle)}`,
+        url: `${base}${categoryPath(c.handle)}`,
         priority: 0.8,
       })),
     ...products

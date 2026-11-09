@@ -158,7 +158,7 @@ async function fetchBackendCategories(
   if (!isBackendConfigured(tenant)) return null;
   try {
     const { product_categories } = await sdk.store.category.list({
-      fields: "id,name,handle,description,is_active",
+      fields: "id,name,handle,description,is_active,+metadata",
       // Ohne Angabe liefert die Store-API nur die ersten 50.
       limit: 200,
     });

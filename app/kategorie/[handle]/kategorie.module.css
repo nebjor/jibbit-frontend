@@ -1,0 +1,24 @@
+.crumbs {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--c-muted);
+  padding-block: var(--s-2) var(--s-3);
+}
+
+.crumbCurrent {
+  color: var(--c-ink);
+}
+
+.crumbs a {
+  text-decoration: underline;
+}
+
+.intro {
+  max-width: 72ch;
+  margin-top: var(--s-2);
+  color: var(--c-ink);
+  font-size: 15px;
+  line-height: 1.6;
+}

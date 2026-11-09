@@ -596,7 +596,7 @@ describe("Brotkrümel und Listen", () => {
   it("zählt ab 1 und lässt die aktuelle Seite ohne Link", () => {
     const crumbs = breadcrumbJsonLd([
       { name: "Shop", url: "https://jibbit.ch/" },
-      { name: "Filter & Tips", url: "https://jibbit.ch/?kategorie=filter" },
+      { name: "Filter & Tips", url: "https://jibbit.ch/kategorie/filter" },
       { name: "Angel Slim" },
     ]);
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

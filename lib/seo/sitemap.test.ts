@@ -48,7 +48,7 @@ describe("sitemapEntries", () => {
   it("listet keine Kategorie, für die es eine Umleitungsregel gibt", () => {
     const urls = build([]).map((e) => e.url);
     for (const alt of Object.keys(handleData.kategorien)) {
-      expect(urls).not.toContain(`https://jibbit.ch/?kategorie=${alt}`);
+      expect(urls).not.toContain(`https://jibbit.ch/kategorie/${alt}`);
     }
   });
 
@@ -61,10 +61,10 @@ describe("sitemapEntries", () => {
     for (const path of SITEMAP_STATIC_PATHS) {
       expect(urls).toContain(`https://jibbit.ch${path}`);
     }
-    expect(urls).toContain("https://jibbit.ch/?kategorie=papers");
-    expect(urls).toContain("https://jibbit.ch/?kategorie=filter-tips");
+    expect(urls).toContain("https://jibbit.ch/kategorie/papers");
+    expect(urls).toContain("https://jibbit.ch/kategorie/filter-tips");
     // «filter» ist umbenannt (301) und gehört nicht in die Sitemap.
-    expect(urls).not.toContain("https://jibbit.ch/?kategorie=filter");
+    expect(urls).not.toContain("https://jibbit.ch/kategorie/filter");
     expect(urls).toContain("https://jibbit.ch/products/ocb-premium-kurz");
     expect(urls).toContain("https://jibbit.ch/products/raw-classic-rolls-slim");
     expect(urls).toHaveLength(SITEMAP_STATIC_PATHS.length + 2 + 2);
@@ -82,8 +82,8 @@ describe("sitemapEntries", () => {
       const { pathname, searchParams } = new URL(url);
       expect(pathname).not.toMatch(/^\/(shop|suche|checkout|konto)(\/|$)/);
       expect(searchParams.has("variant")).toBe(false);
-      // Der einzige erlaubte Parameter ist die Kategorie der Startseite.
-      expect([...searchParams.keys()].filter((k) => k !== "kategorie")).toEqual([]);
+      // Kategorien haben eigene Pfade; kein Adresse trägt einen Parameter.
+      expect([...searchParams.keys()]).toEqual([]);
     }
   });
 
@@ -106,7 +106,7 @@ describe("sitemapEntries", () => {
       [],
       [{ id: "c", handle: "filter-&-tips", name: "Filter & Tips", description: "" }],
     ).map((e) => e.url);
-    expect(urls).toContain("https://jibbit.ch/?kategorie=filter-%26-tips");
+    expect(urls).toContain("https://jibbit.ch/kategorie/filter-%26-tips");
   });
 });
 
